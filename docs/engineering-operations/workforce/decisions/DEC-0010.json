@@ -1,0 +1,70 @@
+{
+  "schemaVersion": "1.0",
+  "objectType": "Decision",
+  "objectId": "DEC-0010",
+  "revision": 1,
+  "createdAt": "2026-09-25T00:28:09Z",
+  "updatedAt": "2026-09-25T00:28:09Z",
+  "events": [],
+  "state": "ACTIVE",
+  "category": "RESOURCE",
+  "title": "Open worker slots and a shared runner pool",
+  "problem": "TASK-0003 registered AGENT-01..05 on WINDOWS and AGENT-06..10 on WSL runners, binding each slot to a runner class. The owner wants slots that are open: no task, PR or action waits for a specific slot, and every runner is usable by every slot.",
+  "options": [
+    {
+      "id": "open-shared",
+      "summary": "Slots are unbound (runnerClass ANY); the 5 Windows + 5 WSL runners form one shared pool; heavy-build limits count the runner class the task requires"
+    },
+    {
+      "id": "bound",
+      "summary": "Keep each slot bound to a runner class (5 WINDOWS + 5 WSL slots)"
+    }
+  ],
+  "selectedOption": "open-shared",
+  "rationale": "Owner instruction (2026-09-25). A slot is capacity, not identity: the scheduler assigns any READY task to any idle eligible slot, and GitHub routes CI jobs to any free runner by label, so no work is tied to a particular agent. Invariants kept: one Manager; at most 10 active tasks and 1 per slot (DEC-0006); reservations, dependencies, exact-head CI and merge rules unchanged. The DEC-0006 heavy-build limits (WINDOWS 3 / WSL 3 / ANY 5) keep their values but are now counted per runner class required by the task, protecting the shared pool rather than a slot. AGENT_RECONFIGURE lets the Manager or owner change an idle slot; the persistent branches arena/agent-01..10 remain workspaces, not ownership of work.",
+  "scope": {
+    "programs": [
+      "GOVERNANCE"
+    ],
+    "slices": [],
+    "domains": [],
+    "surfaces": []
+  },
+  "authority": {
+    "decidedBy": "OWNER",
+    "managerOnly": false,
+    "humanEscalation": true,
+    "proposedBy": "MANAGER-01"
+  },
+  "evidence": [],
+  "evidenceRefs": [
+    "docs/engineering-operations/workforce/policy.json#runnerPool",
+    "tools/workforce/src/scheduler.mjs",
+    "docs/engineering-operations/RUNNER-PROTOCOL.md"
+  ],
+  "sources": {
+    "issues": [
+      256,
+      264,
+      267
+    ],
+    "prs": [
+      273,
+      274
+    ],
+    "commits": [
+      "3a3baf33b43335eed9c0098db6b370261e85d7bd"
+    ],
+    "requests": []
+  },
+  "supersedes": null,
+  "supersededBy": null,
+  "promotion": {
+    "canonical": false,
+    "mainPath": null,
+    "mainCommitSha": null,
+    "promotedAt": null,
+    "promotedBy": null
+  },
+  "reason": null
+}

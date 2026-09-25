@@ -67,6 +67,11 @@ A create uses `objectId: "NEW"` to get an allocated id, or passes an explicit id
 
 ## Key rules
 
+- **Open slots, shared runners (DEC-0010):** `AGENT-01..10` are capacity, not identities. No task,
+  PR or action is bound to a particular slot; the scheduler gives any READY task to any idle eligible
+  slot. Slots register with `runnerClass: ANY`, and the 5 Windows + 5 WSL runners are one pool.
+  Heavy-build limits count the runner class the task requires (`policy.json#runnerPool`).
+  `AGENT_RECONFIGURE` changes an idle slot.
 - **Actors:** `MANAGER`, `WORKER`, `HUMAN` and `SYSTEM`. The model fails closed.
   - Workers act only on their own task, lease and evidence, and only while they hold a live
     `TASK_ASSIGNMENT` lease.

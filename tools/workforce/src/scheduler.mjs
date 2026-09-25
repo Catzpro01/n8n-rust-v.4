@@ -67,6 +67,15 @@ export function classifyPair(a, b, ctx) {
 }
 
 /** Matcher: can `agent` take `task` right now? Returns { ok, reasons, score }. */
+/**
+ * DEC-0010: runners are one shared pool, so heavy-build load is counted against the runner class
+ * the task requires (a single concrete class), otherwise against ANY - never against the slot.
+ */
+export function heavyRunnerClass(task) {
+  const rcs = (task.requirements?.runnerClasses ?? ['ANY']).filter((r) => r !== 'ANY');
+  return rcs.length === 1 ? rcs[0] : 'ANY';
+}
+
 export function matchAgent(task, agent, ctx) {
   const { policy, activeByAgent, heavyByRunner } = ctx;
   const reasons = [];
@@ -80,7 +89,7 @@ export function matchAgent(task, agent, ctx) {
   if ((activeByAgent.get(agent.objectId) ?? 0) >= cap) reasons.push('agent at capacity');
   const heavy = policy.scheduler.heavyBuildCapacityClasses.includes(task.requirements?.capacityClass);
   if (heavy) {
-    const rc = agent.capacity.runnerClass;
+    const rc = heavyRunnerClass(task);
     const limit = policy.backpressure.maxHeavyBuildsPerRunnerClass[rc] ?? policy.backpressure.maxHeavyBuildsPerRunnerClass.ANY;
     if ((heavyByRunner.get(rc) ?? 0) >= limit) reasons.push(`heavy-build limit reached on ${rc}`);
   }
@@ -104,12 +113,11 @@ export function plan(snapshot, policy, now) {
   const active = tasks.filter((t) => ACTIVE_WORK.has(t.state));
   const activeByAgent = new Map();
   const heavyByRunner = new Map();
-  const agentById = new Map(agents.map((a) => [a.objectId, a]));
   for (const t of active) {
     if (!t.owner) continue;
     activeByAgent.set(t.owner.agentId, (activeByAgent.get(t.owner.agentId) ?? 0) + 1);
     if (policy.scheduler.heavyBuildCapacityClasses.includes(t.requirements?.capacityClass)) {
-      const rc = agentById.get(t.owner.agentId)?.capacity.runnerClass ?? 'ANY';
+      const rc = heavyRunnerClass(t);
       heavyByRunner.set(rc, (heavyByRunner.get(rc) ?? 0) + 1);
     }
   }
@@ -159,7 +167,7 @@ export function plan(snapshot, policy, now) {
     assignments.push({ taskId: task.objectId, agentId: best.agentId, priority: prio, command: 'TASK_ASSIGN' });
     activeByAgent.set(best.agentId, (activeByAgent.get(best.agentId) ?? 0) + 1);
     if (policy.scheduler.heavyBuildCapacityClasses.includes(task.requirements?.capacityClass)) {
-      const rc = agentById.get(best.agentId).capacity.runnerClass;
+      const rc = heavyRunnerClass(task);
       heavyByRunner.set(rc, (heavyByRunner.get(rc) ?? 0) + 1);
     }
     planned.push(task);

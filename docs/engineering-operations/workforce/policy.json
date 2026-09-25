@@ -170,6 +170,7 @@
     "TASK_DEFER":             { "target": "Task", "kind": "update", "roles": { "MANAGER": "any" } },
 
     "AGENT_REGISTER":         { "target": "AgentState", "kind": "create", "roles": { "MANAGER": "any" }, "to": "AVAILABLE" },
+    "AGENT_RECONFIGURE":      { "target": "AgentState", "kind": "update", "roles": { "MANAGER": "any", "HUMAN": "any" } },
     "AGENT_HEARTBEAT":        { "target": "AgentState", "kind": "update", "roles": { "WORKER": "own", "SYSTEM": "allowlist", "MANAGER": "any" } },
     "AGENT_STATUS":           { "target": "AgentState", "kind": "transition", "roles": { "WORKER": "own", "MANAGER": "any" }, "toFromPayload": true, "workerAllowedTo": ["PREPARING", "WORKING", "WAITING_EXTERNAL", "BLOCKED", "READY_FOR_REVIEW", "MERGING", "VERIFYING", "AVAILABLE"] },
     "AGENT_SUSPEND":          { "target": "AgentState", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "SUSPENDED" },
@@ -289,6 +290,14 @@
     "starvationAlertDeferrals": 5,
     "workerIdleAlertHours": 24,
     "heavyBuildCapacityClasses": ["HEAVY"]
+  },
+  "runnerPool": {
+    "decision": "DEC-0010",
+    "model": "SHARED",
+    "slotBinding": "NONE",
+    "defaultRunnerClass": "ANY",
+    "heavyBuildAccounting": "TASK_RUNNER_CLASS",
+    "note": "Worker slots are open: no slot is bound to a runner and no task, PR or action is bound to a specific slot. The 5 Windows + 5 WSL self-hosted runners are one pool usable by every slot; GitHub routes jobs by runner labels. Heavy-build limits count the runner class the task requires, not the slot."
   },
   "backpressure": {
     "maxActiveTasks": 10,

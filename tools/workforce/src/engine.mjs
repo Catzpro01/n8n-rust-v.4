@@ -793,6 +793,21 @@ const HANDLERS = {
     }
   },
 
+  AGENT_RECONFIGURE(ctx) {
+    // DEC-0010: slots are open; the Manager may change a slot's capabilities/capacity only while it holds no work.
+    const agent = ctx.targetObject;
+    const owned = ctx.tx.list('Task').filter((t) => t.owner?.agentId === agent.objectId && !isTerminal(ctx.policy, 'Task', t.state));
+    if (owned.length) fail('POLICY_DENIED', `reconfigure only an idle slot; owned tasks: ${owned.map((t) => t.objectId).join(', ')}`);
+    const { capabilities, capacity } = ctx.p;
+    if (capabilities === undefined && capacity === undefined) fail('INVALID_SCHEMA', 'payload needs capabilities and/or capacity');
+    if (capabilities !== undefined) agent.capabilities = [...new Set(capabilities)].sort();
+    if (capacity !== undefined) {
+      for (const k of Object.keys(capacity)) if (!['class', 'maxConcurrentTasks', 'runnerClass', 'cpuClass', 'memoryClass'].includes(k)) fail('INVALID_SCHEMA', `capacity.${k} is not reconfigurable`);
+      agent.capacity = { ...agent.capacity, ...capacity };
+    }
+    ctx.touch(agent, 'AGENT_RECONFIGURED');
+  },
+
   AGENT_HEARTBEAT(ctx) {
     const agent = ctx.targetObject;
     agent.heartbeat = { ...agent.heartbeat, lastSeenAt: ctx.now, ...(ctx.p.progress ? { lastProgressAt: ctx.now } : {}), ...(ctx.p.runnerId ? { runnerId: ctx.p.runnerId } : {}) };

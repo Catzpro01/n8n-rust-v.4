@@ -40,6 +40,9 @@ this inventory and are unaffected.
    which lets GitHub place it on any of the 10 runners.
 3. Matrix fan-out may use at most 10 parallel self-hosted jobs; more simply queues.
 4. No workflow may pin a single runner name — that silently reduces the fleet to 1.
+5. The 10 runners are **one shared pool** (DEC-0010). No runner is owned by, reserved for or
+   paired with a worker slot; a job started for any `AGENT-01..10` task runs on whichever matching
+   runner is free.
 
 ## 3. Polling interval — at most 1 second
 
