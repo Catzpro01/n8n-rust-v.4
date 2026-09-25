@@ -4,7 +4,7 @@ title: "cleanup.yml: do not abort when main has advanced past the merge commit; 
 slice: GOVERNANCE
 owner: AGENT-01
 branch: arena/agent-01
-status: WORKING
+status: READY_FOR_REVIEW
 depends_on: []
 scope:
   - .github/workflows/cleanup.yml
@@ -21,7 +21,7 @@ acceptance:
   - no secret values are added or printed; existing secret names in the workflow stay env references
 assigned_by: MANAGER
 assigned_at: 2026-09-25T10:55:53.584Z
-updated_at: 2026-09-25T11:11:46.000Z
+updated_at: 2026-09-25T11:22:19.000Z
 ---
 
 ## Context

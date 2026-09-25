@@ -1,7 +1,7 @@
 # AGENT-01 progress
 
 Task: TASK-0018 — cleanup.yml: do not abort when main has advanced past the merge commit; never delete permanent branches
-Status: WORKING
+Status: READY_FOR_REVIEW
 Started: 2026-09-25T10:55:53.584Z
 
 ## Done
@@ -30,10 +30,14 @@ Started: 2026-09-25T10:55:53.584Z
   deepening origin/main by 50 commits", rc=0. PR #292 head (already deleted) → ALREADY_GONE rc=0.
   `arena/agent-01` as head → PROTECTED rc=0. Remote heads unchanged.
 
+- Evidence written to `.arena/evidence/TASK-0018.md`; status → READY_FOR_REVIEW.
+
 ## Remaining
-- Evidence file `.arena/evidence/TASK-0018.md`, status → READY_FOR_REVIEW.
+- Manager review / integration into the GOVERNANCE Slice PR. First real run of the workflow happens on the
+  next merged PR after integration (cannot be triggered from here).
 
 ## Evidence
+- commit b55da97b: runner + workflow + tests (see `.arena/evidence/TASK-0018.md`)
 - tests: `python3 -m pytest -q tools/orchestration/test_cleanup_runner.py` → 28 passed (observed)
 - tests: `python3 -m py_compile tools/orchestration/cleanup_runner.py` → OK (observed)
 - Environment note: this Arena session runs on branch `arena/01a0d83c-n8n-rust-v-4` (branched from
