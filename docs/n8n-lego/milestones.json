@@ -10,15 +10,13 @@
   "executionPointer": {
     "authority": "main (DEC-0020). This block, read together with the slice statuses it names, is the only active-work pointer. arena-manager is Manager memory and handoff, never a milestone source; README.md and .ai/ are generated projections of this file.",
     "historicalLastP2Milestone": "P2.27",
-    "lastVerifiedMain": "602b23fc449c275109278dadcd40301e89f21a69",
+    "lastVerifiedMain": "9d514dbce3218e91f6fac346cf967f93bbfea701",
     "latestCompletedSlice": {
-      "id": "P5-M08",
-      "pr": 304,
-      "mergeSha": "600a21456213602ebdc6193229bab8432e6d1024"
+      "id": "P5-M09",
+      "pr": 314,
+      "mergeSha": "c13ba6dc7bcbb81efb1ccb9786942065ab5f3c26"
     },
-    "activeSlices": [
-      "P5-M09"
-    ],
+    "activeSlices": [],
     "verifyingSlices": [],
     "plannedQueue": [
       "P5-M07",
@@ -3018,7 +3016,7 @@
           "id": "P5-M09",
           "title": "Public /api/v1 credentials (list, create, update, delete, schema; secrets never returned, data validated against the credential type) and users (list, get, create, delete, change role), plus /api/v1/docs (needs a decision on serving Swagger UI without a runtime dependency). Split out of P5-M08",
           "kind": "maintenance",
-          "status": "in-progress",
+          "status": "implemented",
           "checkpoints": [
             {
               "id": "CP-01",
@@ -3073,9 +3071,9 @@
           ],
           "updatedAt": "2026-09-25T19:12:31Z",
           "latestUpdate": "P5-M09: public /api/v1 credentials + users over the editor's backing stores",
-          "mergeSha": null,
+          "mergeSha": "c13ba6dc7bcbb81efb1ccb9786942065ab5f3c26",
           "issue": 85,
-          "evidence": null,
+          "evidence": "docs/n8n-lego/evidence/P5-M09-EVIDENCE.md",
           "owner": "manager (unassigned)",
           "debtSource": "docs/n8n-lego/evidence/P5.8-CERTIFICATION-EVIDENCE.md \u00a77"
         },

@@ -119,5 +119,64 @@ the pinned upstream spec by `apps/n8n-lego/scripts/extract-public-api-spec.py`
 
 | Gate | Result |
 | --- | --- |
-| `node --test apps/n8n-lego/test/*.test.mjs` | see the delivery record |
-| `npm run lego:gate` | see the delivery record |
+| `node --test apps/n8n-lego/test/*.test.mjs` | 2550 / 2553 pass (see §6 for the three environmental failures) |
+| `npm run lego:gate` | pass |
+| `node --test apps/n8n-lego/test/governance-register.test.mjs` | 74 / 74 pass |
+| `node --test apps/n8n-lego/test/live-progress.test.mjs` | 25 / 25 pass |
+| `node --test tools/workforce/test/*.test.mjs` | 7 / 7 pass |
+| `node tools/workforce/src/cli.mjs decisions-check` | ok, no problems |
+| `npm run lego:ai:check` | in sync |
+
+## 5. What the delivery gate required
+
+DEC-0015 requires every required check to have actually run on the PR head, on
+a real runner, before the merge. PR #314 carried ten checks and all ten were
+green on its head `b869574057f6b5f1dd6de4e6aaad25d5e0848d1c`:
+
+| Job | Run | Runner | Result |
+| --- | --- | --- | --- |
+| Level 0 (Check & Format) | 36177715899 | `MDMTEST-n8n-wsl` | SUCCESS |
+| Level 1 (Affected Tests) | 36177715899 | `MDMTEST-n8n-wsl-2` | SUCCESS |
+| Level 2 Workspace Tests (linux) | 36177715909 | `MDMTEST-n8n-wsl-3` | SUCCESS |
+| Level 2 Workspace Tests (windows) | 36177715909 | `laptop-build-worker-5` | SUCCESS |
+| Level 2 Conformance LEGO & Node Catalog | 36177715909 | `MDMTEST-n8n-wsl-5` | SUCCESS |
+| Backend LEGO architecture gate (P2.6) | 36177715914 | `GitHub Actions 1000003458` | SUCCESS |
+| Unit + integration tests and release package | 36177715914 | `GitHub Actions 1000003457` | SUCCESS |
+| Clean clone → start → health → browser smoke → restart | 36177715914 | `GitHub Actions 1000003459` | SUCCESS |
+| Windows worker portability probe | 36177715914 | `laptop-build-worker` | SUCCESS |
+| Post-Merge Verification & Branch Cleanup | 36178000339 | `MDMTEST-n8n-wsl` | SUCCESS |
+
+DEC-0015 verdict: **ALL_GREEN** — self-hosted 5 pass / 0 fail / 0 waiting,
+GitHub-hosted 5 pass.
+
+## 6. Delivery record
+
+| Field | Value |
+| --- | --- |
+| Delivery PR | [#314](https://github.com/Catzpro01/n8n-rust-v.4/pull/314) |
+| PR head | `b869574057f6b5f1dd6de4e6aaad25d5e0848d1c` |
+| Merge commit | `c13ba6dc7bcbb81efb1ccb9786942065ab5f3c26` |
+| Merged | 2026-09-25T19:10:01Z |
+| Changed files | 15 (+2347 / -192) |
+| Checkpoints | CP-01..CP-05, all `completed` |
+
+The checkpoint state was published as live telemetry (`governance(progress):`
+commits `3493fc9c`, `b5ca62a7`, `778e9d23`, `0b5a0de1`, `9d514dbc`), one
+measurable event per commit, straight to `main` as DEC-0021 allows. The
+transition to `implemented`, the merge SHA and the `executionPointer` advance
+are delivery state and were reconciled by the governance PR that closes this
+section, never by telemetry.
+
+Three `rest.test.mjs` cases fail in a fresh clone and are not attributable to
+this slice: `GET /rest/types/nodes.json`,
+`GET /rest/types/node-versions.json` and `POST /rest/node-types` all 404. They
+fail identically on `602b23fc`, the commit before P5-M09 landed, and they need
+the built reference runtime (`npm run setup:reference`) that this checkout does
+not carry. Recorded as environmental, not relabelled as a regression.
+
+One real tool bug was found while reconciling this slice: the Issue #307
+governance test pinned `realtime = 86.1` for the reopened-CP-05 scenario, a
+number that encoded "P5-M09 contributes 0". Once P5-M09's five checkpoints
+completed that stopped being true, and the test failed on correct behaviour. It
+now derives the expectation from CP-05's actual weight instead of pinning a
+literal, so it cannot go stale again.

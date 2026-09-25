@@ -57,8 +57,9 @@ function reopened() {
   slice.mergeSha = null;
   slice.checkpoints[4] = { ...slice.checkpoints[4], status: 'in-progress', completedAt: undefined };
   register.executionPointer.latestCompletedSlice = { id: 'P5-M03', pr: 291, mergeSha: 'cf52701c91e5447f19c32377c38f6ae5eea7f3a7' };
-  // P5-M09 is genuinely in flight on the canonical register, so it stays listed.
-  register.executionPointer.activeSlices = ['P5-M09', 'P5-M08'];
+  // Only P5-M08 is back in flight here; P5-M09 is implemented on the canonical register, and an
+  // implemented slice must never appear in activeSlices.
+  register.executionPointer.activeSlices = ['P5-M08'];
   assert.deepEqual(validateGovernanceRegister(register), []);
   return register;
 }
@@ -524,7 +525,7 @@ test('the live state is readable from the register alone: status, checkpoint, ev
   const rendered = renderReadmeMilestoneSection(REGISTER);
   // Implemented: the ladder row and the pointer carry the delivery record, not a verifying block.
   assert.match(rendered, /\| `P5-M08` \|[^\n]*✅ Implemented \| 100\.0% \| 100\.0% \|/);
-  assert.match(rendered, /Latest completed slice: `P5-M08` \(PR #304, merge `600a2145`\)/);
+  assert.match(rendered, /Latest completed slice: `P5-M09` \(PR #314, merge `c13ba6dc`\)/);
   assert.match(rendered, /CP-05 DEC-0015 self-hosted runner verification on main[^\n]*\(completed, 30\)/);
   assert.match(rendered, /_No verifying slice\._/);
   // The checkpoint evidence the resolver derived, with the runners and run IDs, is on the register.
