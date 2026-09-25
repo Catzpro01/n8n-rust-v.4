@@ -2,11 +2,11 @@
   "schemaVersion": "1.0",
   "objectType": "Decision",
   "objectId": "DEC-0010",
-  "revision": 2,
+  "revision": 3,
   "createdAt": "2026-09-25T00:28:09Z",
-  "updatedAt": "2026-09-25T00:44:40Z",
+  "updatedAt": "2026-09-25T10:43:30Z",
   "events": [],
-  "state": "ACTIVE",
+  "state": "SUPERSEDED",
   "category": "RESOURCE",
   "title": "Open worker slots and a shared runner pool",
   "problem": "TASK-0003 registered AGENT-01..05 on WINDOWS and AGENT-06..10 on WSL runners, binding each slot to a runner class. The owner wants slots that are open: no task, PR or action waits for a specific slot, and every runner is usable by every slot.",
@@ -60,7 +60,7 @@
     "requests": []
   },
   "supersedes": null,
-  "supersededBy": null,
+  "supersededBy": "DEC-0017",
   "promotion": {
     "canonical": true,
     "mainPath": "docs/engineering-operations/workforce/decisions/DEC-0010.json",
@@ -68,5 +68,13 @@
     "promotedAt": "2026-09-25T00:44:40Z",
     "promotedBy": "MANAGER-01"
   },
-  "reason": null
+  "reason": {
+    "code": "SUPERSEDED_BY_OWNER_DECISION",
+    "summary": "Superseded by owner decision DEC-0017 (git-native task model): tasks are owned by the assigned agent and live on its branch. The shared 5 Windows + 5 WSL runner pool from this decision is carried forward unchanged in DEC-0017.",
+    "actor": "OWNER",
+    "refs": [
+      "DEC-0017",
+      "#296"
+    ]
+  }
 }
