@@ -1,0 +1,80 @@
+{
+  "schemaVersion": "1.0",
+  "objectType": "Decision",
+  "objectId": "DEC-0012",
+  "revision": 1,
+  "createdAt": "2026-09-25T00:58:30Z",
+  "updatedAt": "2026-09-25T00:58:30Z",
+  "events": [],
+  "state": "ACTIVE",
+  "category": "RESOURCE",
+  "title": "Recover arena-manager group C (CI/Rust tuning) without weakening any gate",
+  "problem": "arena-manager commits 50231cc0..c072ff27 (group C of the DEC-0008 audit) tune CI and Rust builds. Review found: Level 2 reduced from cargo test --workspace to 5 of 8 crates; runs-on reduced to [self-hosted, linux] (violates RUNNER-PROTOCOL label sets); cargo nextest not provisioned on main runners; clean:false on persistent self-hosted runners; cancel-in-progress would also cancel main push runs used as merge evidence; audit fetch-depth 2 drops origin/main needed by --base; split-debuginfo=unpacked unsupported on windows-msvc; codegen-units=8 contradicts its own rationale (dev default is 256).",
+  "options": [
+    {
+      "id": "recover-reviewed",
+      "summary": "Recover the safe subset and correct the unsafe items so no test set shrinks"
+    },
+    {
+      "id": "as-is",
+      "summary": "Cherry-pick the series unchanged"
+    },
+    {
+      "id": "reject",
+      "summary": "Recover nothing"
+    }
+  ],
+  "selectedOption": "recover-reviewed",
+  "rationale": "Recovered: UTF-8 BOM removal; bash/python3 on Linux runners with full protocol labels [self-hosted, linux, x64, rust-build, n8n-rust]; paths-ignore for docs/markdown/logs; concurrency groups with cancel-in-progress on pull_request only; shallow checkouts where history is unused; Level 0 fmt+check split from Level 1; Level 2 conformance split into its own job; Level 1 affected-crate tests that always include the previous default (n8n-workflow) and escalate to the workspace for Cargo.toml/Cargo.lock/n8n-common changes; Level 2 cargo test --workspace on both Linux and Windows (coverage increases); dev/test profiles debug=1 and dependency opt-level=2. Rejected/corrected: 5-crate subset, bare [self-hosted, linux], nextest, clean:false, main-run cancellation, audit fetch-depth 2, split-debuginfo, codegen-units=8, the validation push trigger on arena-manager (it becomes Manager memory, TASK-0008). The rustfmt commit 83b95552 is already on main. Cargo.toml keeps its existing CRLF line endings (the audit note about CRLF was a misreading: the file is CRLF on main). Performance effects are not claimed; none were measured.",
+  "scope": {
+    "programs": [
+      "GOVERNANCE"
+    ],
+    "slices": [],
+    "domains": [],
+    "surfaces": []
+  },
+  "authority": {
+    "decidedBy": "MANAGER-01",
+    "managerOnly": true,
+    "humanEscalation": false,
+    "proposedBy": "MANAGER-01"
+  },
+  "evidence": [],
+  "evidenceRefs": [
+    ".github/workflows/validation.yml",
+    ".github/workflows/integration.yml",
+    ".github/workflows/audit.yml",
+    ".github/workflows/cleanup.yml",
+    "Cargo.toml",
+    "docs/engineering-operations/RUNNER-PROTOCOL.md"
+  ],
+  "sources": {
+    "issues": [
+      256,
+      259,
+      268
+    ],
+    "prs": [],
+    "commits": [
+      "50231cc07db5c37f88c2f0494b14c738094414da",
+      "83b95552fb980c662f481c6a2d4ed8e885cc95e5",
+      "070fdeb409ce317ea22ce9c5112d806d09eba085",
+      "c8dc8567d4f7ee0d2a8f6ed5f867b5125d6b89e8",
+      "d2c5f98c0b010df7a151a5d051b0ed2860f27687",
+      "3e12228b6fc8e041ac316aa16f8a26aa519352d4",
+      "c072ff27fb2fc15c2dd2f866a8f5b83467052270"
+    ],
+    "requests": []
+  },
+  "supersedes": null,
+  "supersededBy": null,
+  "promotion": {
+    "canonical": false,
+    "mainPath": null,
+    "mainCommitSha": null,
+    "promotedAt": null,
+    "promotedBy": null
+  },
+  "reason": null
+}

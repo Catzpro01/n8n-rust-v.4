@@ -21,7 +21,6 @@ on:
       - 'performance/*'
       - 'security-sandbox/*'
       - 'infrastructure-orchestration/*'
-      - 'arena-manager'
     paths-ignore:
       - '**.md'
       - 'docs/**'
@@ -30,12 +29,13 @@ on:
 
 concurrency:
   group: validation-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Cancel superseded runs on PR refs only; every push to a protected branch keeps its own run (merge evidence).
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   format_and_check:
     name: Level 0 (Check & Format)
-    runs-on: [ self-hosted, linux ]
+    runs-on: [ self-hosted, linux, x64, rust-build, n8n-rust ]
     if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push'
     steps:
       - name: Checkout Code
@@ -44,7 +44,6 @@ jobs:
           fetch-depth: 1
           submodules: false
           lfs: false
-          clean: false
 
       - name: Level 0 - Verify Formatting
         run: cargo fmt --all -- --check
@@ -54,7 +53,7 @@ jobs:
 
   unit_tests:
     name: Level 1 (Affected Tests)
-    runs-on: [ self-hosted, linux ]
+    runs-on: [ self-hosted, linux, x64, rust-build, n8n-rust ]
     if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push'
     steps:
       - name: Checkout Code
@@ -63,18 +62,21 @@ jobs:
           fetch-depth: 2
           submodules: false
           lfs: false
-          clean: false
 
       - name: Level 1 - Affected Crate Unit Tests
+        shell: bash
         run: |
-          # Deteksi crate yang berubah pada commit terakhir
-          AFFECTED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep '^crates/' | cut -d/ -f2 | sort -u | sed 's/^/-p /' | tr '\n' ' ')
-          if [ -z "$AFFECTED" ]; then
-            echo "No crate changes detected in recent commit, running default test set..."
-            cargo nextest run -p n8n-workflow --test-threads=8
+          # HEAD~1 is the base tip for the pull_request merge ref and the previous main for a merge push,
+          # so this diff covers the whole change. n8n-workflow (the previous default set) always runs;
+          # workspace-wide inputs (Cargo.toml, Cargo.lock, n8n-common) run the whole workspace.
+          CHANGED=$(git diff --name-only HEAD~1 HEAD)
+          if echo "$CHANGED" | grep -qE '^(Cargo\.toml|Cargo\.lock|crates/n8n-common/)'; then
+            echo "Workspace-wide input changed: testing the whole workspace"
+            cargo test --workspace
           else
-            echo "Running nextest for affected crates: $AFFECTED"
-            cargo nextest run $AFFECTED --test-threads=8
+            AFFECTED=$( (echo n8n-workflow; echo "$CHANGED" | grep '^crates/' | cut -d/ -f2) | sort -u | sed 's/^/-p /' | tr '\n' ' ')
+            echo "Testing: $AFFECTED"
+            cargo test $AFFECTED
           fi
 
       - name: Report Build & Test Status to Supabase

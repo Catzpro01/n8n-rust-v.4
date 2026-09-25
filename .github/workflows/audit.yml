@@ -12,18 +12,19 @@ on:
 
 concurrency:
   group: audit-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Cancel superseded runs on PR refs only; every push to a protected branch keeps its own run (merge evidence).
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   audit:
     name: Architecture, Contract & Scope Audit
-    runs-on: [ self-hosted, linux ]
+    runs-on: [ self-hosted, linux, x64, rust-build, n8n-rust ]
     if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
 
       - name: Architecture & Scope Conformance Audit
         env:

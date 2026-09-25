@@ -12,22 +12,17 @@ on:
 
 concurrency:
   group: integration-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Cancel superseded runs on PR refs only; every push to a protected branch keeps its own run (merge evidence).
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  integration_crates:
-    name: Level 2 Crate Tests (${{ matrix.os }} - ${{ matrix.crate }})
+  integration_workspace:
+    name: Level 2 Workspace Tests (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
         os: [ linux, windows ]
-        crate:
-          - n8n-workflow
-          - n8n-execution-data
-          - n8n-expression
-          - n8n-nodes-rust
-          - n8n-validation
-    runs-on: [ self-hosted, '${{ matrix.os }}' ]
+    runs-on: [ self-hosted, '${{ matrix.os }}', x64, rust-build, n8n-rust ]
     if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Checkout Code
@@ -36,14 +31,13 @@ jobs:
           fetch-depth: 1
           submodules: false
           lfs: false
-          clean: false
 
-      - name: Level 2 - Parallel Crate Tests
-        run: cargo test -p ${{ matrix.crate }}
+      - name: Level 2 - Full Rust Workspace Tests
+        run: cargo test --workspace
 
   conformance:
     name: Level 2 Conformance LEGO & Node Catalog
-    runs-on: [ self-hosted, linux ]
+    runs-on: [ self-hosted, linux, x64, rust-build, n8n-rust ]
     if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Checkout Code
@@ -52,7 +46,6 @@ jobs:
           fetch-depth: 1
           submodules: false
           lfs: false
-          clean: false
 
       - name: Level 2 - Localization & Catalog Tests
         run: node --test packages/reconstructed-engine/localization.test.mjs packages/reconstructed-engine/node-catalog.test.mjs

@@ -25,18 +25,17 @@ anyhow = "1.0"
 petgraph = "0.6"
 indexmap = { version = "=2.2.6", features = ["serde"] }
 
-# Optimasi Kompilasi & Testing Maksimal (Aman)
+# Build profiles (recovered from arena-manager 50231cc0/c8dc8567, reviewed in TASK-0005):
+# smaller debug info for dev/test builds; optimise third-party dependencies, which compile once
+# and are cached, so test binaries run faster. split-debuginfo and codegen-units are left at the
+# platform defaults (split-debuginfo="unpacked" is not supported on windows-msvc runners; the dev
+# default of 256 codegen units already parallelises compilation).
 [profile.dev]
-debug = 1               # Kurangi penulisan debug symbols ke disk (hemat I/O & RAM 50%+)
-split-debuginfo = "unpacked"
-codegen-units = 8       # Paralelisasi kompilasi backend ke seluruh 8 core CPU
+debug = 1
 
 [profile.test]
 debug = 1
-split-debuginfo = "unpacked"
-codegen-units = 8
 
-# Optimasi khusus crate pihak ketiga (serde, tokio, dll) agar unit test berjalan 3x lebih cepat
 [profile.dev.package."*"]
 opt-level = 2
 

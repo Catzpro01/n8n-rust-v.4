@@ -8,7 +8,7 @@ on:
 jobs:
   cleanup:
     name: Post-Merge Verification & Branch Cleanup
-    runs-on: [ self-hosted, linux ]
+    runs-on: [ self-hosted, linux, x64, rust-build, n8n-rust ]
     if: github.event.pull_request.merged == true
     steps:
       - name: Checkout main
@@ -20,7 +20,7 @@ jobs:
       - name: Post-Merge Main Verification (Level 0 + Level 2)
         run: |
           cargo check --workspace
-          cargo nextest run -p n8n-workflow
+          cargo test -p n8n-workflow
 
       - name: Execute Cleanup & Delete Task Branch
         env:
