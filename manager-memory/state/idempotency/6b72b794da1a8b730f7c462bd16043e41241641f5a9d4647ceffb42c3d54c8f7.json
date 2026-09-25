@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:17090ea7583599b3af5fc8f111e98610a6c9fe36ac34e8d0b3817a45a5afc7a1",
+  "committedAt": "2026-09-25T06:52:00Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-ev-task-0015-commit",
+    "objectType": "Evidence",
+    "objectId": "EVD-0111",
+    "previousRevision": 0,
+    "newRevision": 1,
+    "resultingState": "PROPOSED",
+    "eventId": "EVT-001034",
+    "eventIds": [
+      "EVT-001034"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}

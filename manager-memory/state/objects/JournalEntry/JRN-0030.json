@@ -1,0 +1,19 @@
+{
+  "objectType": "JournalEntry",
+  "objectId": "JRN-0030",
+  "kind": "FACT",
+  "summary": "DEC-0015 delivered: PR #287 head 541fdbcd merged as 0ad42609 under the owner decision it records (issues #285, #286). Exact-head verdict ALLOWED_BY_DEC-0015: GitHub-hosted 3/3 PASS, 7 self-hosted checks WAITING_RUNNER (runners offline). Fresh main green. TASK-0015 is WAITING_RUNNER until the self-hosted checks pass; not COMPLETE.",
+  "author": "MANAGER-01",
+  "refs": [
+    "PR#287",
+    "issue#285",
+    "issue#286"
+  ],
+  "schemaVersion": "1.0",
+  "revision": 1,
+  "createdAt": "2026-09-25T06:52:00Z",
+  "updatedAt": "2026-09-25T06:52:00Z",
+  "events": [
+    "EVT-001044"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:48a8f86b08213331c5e0e0d7646553fafb8cddfe4c721c2d017d7a2c982b23b1",
+  "committedAt": "2026-09-25T06:52:00Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-jrn-dec-0015-merged",
+    "objectType": "JournalEntry",
+    "objectId": "JRN-0030",
+    "previousRevision": 0,
+    "newRevision": 1,
+    "resultingState": null,
+    "eventId": "EVT-001044",
+    "eventIds": [
+      "EVT-001044"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:39f76a067520a74c4eee7256d4499e8700b8226eaec17f87449d7c0ae0280f08",
+  "committedAt": "2026-09-25T06:52:00Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-create-dec-0015",
+    "objectType": "Task",
+    "objectId": "TASK-0015",
+    "previousRevision": 0,
+    "newRevision": 1,
+    "resultingState": "UNASSIGNED",
+    "eventId": "EVT-001033",
+    "eventIds": [
+      "EVT-001033"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}
