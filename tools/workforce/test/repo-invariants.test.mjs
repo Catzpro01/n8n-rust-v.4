@@ -56,7 +56,7 @@ test('canonical decision records are schema-valid and consistent', () => {
   assert.ok(d16 && d16.state === 'ACTIVE' && d16.selectedOption === 'A-manager-executes-slice-tasks', 'DEC-0016 records the Manager-executed Slice task path');
   for (const d of r.records) assert.ok(Date.parse(d.createdAt) <= Date.parse(d.updatedAt), `${d.objectId}: createdAt <= updatedAt`);
   for (const d of r.records.filter((x) => x.promotion.canonical)) assert.ok(Date.parse(d.createdAt) <= Date.parse(d.promotion.promotedAt), `${d.objectId}: created before promotion`);
-  for (const id of ['DEC-0001', 'DEC-0002', 'DEC-0003', 'DEC-0004', 'DEC-0005', 'DEC-0006', 'DEC-0007', 'DEC-0008', 'DEC-0009', 'DEC-0010', 'DEC-0011', 'DEC-0012', 'DEC-0013', 'DEC-0014', 'DEC-0015']) {
+  for (const id of ['DEC-0001', 'DEC-0002', 'DEC-0003', 'DEC-0004', 'DEC-0005', 'DEC-0006', 'DEC-0007', 'DEC-0008', 'DEC-0009', 'DEC-0010', 'DEC-0011', 'DEC-0012', 'DEC-0013', 'DEC-0014', 'DEC-0015', 'DEC-0016']) {
     assert.equal(r.records.find((d) => d.objectId === id).promotion.canonical, true, `${id} promoted canonical`);
   }
 });
