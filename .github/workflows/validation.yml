@@ -74,7 +74,9 @@ jobs:
             echo "Workspace-wide input changed: testing the whole workspace"
             cargo test --workspace
           else
-            AFFECTED=$( (echo n8n-workflow; echo "$CHANGED" | grep '^crates/' | cut -d/ -f2) | sort -u | sed 's/^/-p /' | tr '\n' ' ')
+            # grep exits 1 when no crate changed; under `bash -e -o pipefail` that must not abort the step.
+            CRATES=$(echo "$CHANGED" | { grep '^crates/' || true; } | cut -d/ -f2)
+            AFFECTED=$( (echo n8n-workflow; echo "$CRATES") | grep -v '^$' | sort -u | sed 's/^/-p /' | tr '\n' ' ')
             echo "Testing: $AFFECTED"
             cargo test $AFFECTED
           fi
