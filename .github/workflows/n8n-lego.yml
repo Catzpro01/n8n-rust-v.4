@@ -36,6 +36,18 @@ on:
       - 'tools/lego/**'
       - 'tools/workforce/**'
       - 'docs/engineering-operations/workforce/**'
+      # Inputs the gate reads outside the paths above (TASK-0022): register and
+      # decisions, ADRs, governance JSON, generated .ai, contracts, recorded
+      # upstream goldens, and the engine + frontend packages the runtime loads.
+      # Without them a register-only PR ran no workflow at all (PR #292).
+      - 'docs/n8n-lego/**'
+      - 'docs/architecture/adr/**'
+      - 'docs/engineering-operations/workforce-governance.json'
+      - '.ai/**'
+      - 'contracts/**'
+      - 'tests/reference/agent-4/golden/**'
+      - 'packages/reconstructed-engine/**'
+      - 'packages/frontend-lego/**'
       - 'scripts/release.sh'
       - 'package.json'
       - '.github/workflows/n8n-lego.yml'
@@ -47,6 +59,18 @@ on:
       - 'tools/lego/**'
       - 'tools/workforce/**'
       - 'docs/engineering-operations/workforce/**'
+      # Inputs the gate reads outside the paths above (TASK-0022): register and
+      # decisions, ADRs, governance JSON, generated .ai, contracts, recorded
+      # upstream goldens, and the engine + frontend packages the runtime loads.
+      # Without them a register-only PR ran no workflow at all (PR #292).
+      - 'docs/n8n-lego/**'
+      - 'docs/architecture/adr/**'
+      - 'docs/engineering-operations/workforce-governance.json'
+      - '.ai/**'
+      - 'contracts/**'
+      - 'tests/reference/agent-4/golden/**'
+      - 'packages/reconstructed-engine/**'
+      - 'packages/frontend-lego/**'
       - 'scripts/release.sh'
       - 'package.json'
       - '.github/workflows/n8n-lego.yml'
