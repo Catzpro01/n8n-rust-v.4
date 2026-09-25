@@ -36,6 +36,13 @@ repository is the shared memory; GitHub is the code authority.
     is never copied over `main`. After every delivery PR that changes milestone
     state: merge, post-merge verification, then one governance PR updates the
     register (status, evidence, `executionPointer`), the README projection and
-    `.ai`. Never batch these updates.
+    `.ai`. Never batch these updates. Planning may happen on `arena-manager`,
+    but a milestone change there (or in a local worktree, handoff, issue, PR
+    body or chat) is a proposal pending reconciliation until merged to `main`.
+    Every completed Slice reconciles its milestone state and README projection
+    on `main` after merge and post-merge verification; the cycle is closed only
+    when implementation, register, README, `.ai` and evidence agree. Historical
+    milestone evidence (P2.11-P2.27.x, recorded merge SHAs) is immutable.
+    DEC-0020 complements DEC-0019.
 
 Order of authority: `main` > decision records > `arena-manager` > issue > chat.

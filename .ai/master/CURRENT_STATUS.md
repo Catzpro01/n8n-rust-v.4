@@ -41,7 +41,7 @@ is the row marked as such.
 
 ## Milestone state
 
-- **Active work:** see `MILESTONE_REGISTER.md` → *Active work* (executionPointer, DEC-0020); the rows below are the historical P2 ladder.
+- **Active work:** see `MILESTONE_REGISTER.md` → *Active work* (executionPointer, DEC-0020); canonical register `docs/n8n-lego/milestones.json` on `main`; the rows below are the historical P2 ladder.
 - **Current (historical P2 pointer):** `P2.27` — Contract-Driven Pluggable Runtime & Security Foundation (**complete**)
 - **Previous complete:** `P2.26`
 - **Why next:** P2.16 Agent Machine / execution foundation; P2.17 Agent Machine Runtime Foundation; P2.18 Universal Transport & Envelope Kernel; P2.19 Artifact, Approval & Audit Foundation; P2.21 Runtime Adapter & Harness Stack; P2.22 Node Compatibility & Portability; P2.24 Token & Usage - honest accounting; P2.25 External provider integration - the first real adapters; P2.26 Provider, Workspace & GitHub Integration + Foundation Readiness

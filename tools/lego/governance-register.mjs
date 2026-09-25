@@ -18,7 +18,11 @@
  *  - `implemented` requires a 40-hex merge SHA and evidence (an issue existing is not evidence);
  *  - superseded requires supersededBy; rejected / retired carry a recorded reason;
  *  - feature ids are unique and every slice reference resolves inside its own parent.
+ *  - DEC-0020: milestone truth is main-owned (governance.milestoneAuthority), the historical P2
+ *    ladder is fingerprinted, and README.md / ROADMAP.md are checked as projections, never registers.
  */
+
+import { createHash } from 'node:crypto';
 
 export const TOP_LEVEL_PROGRAMS = Object.freeze(['P0', 'P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10', 'P11']);
 export const EXPECTED_PROGRAM_STATUS = Object.freeze({
@@ -136,6 +140,8 @@ export function validateGovernanceRegister(register) {
     if ((feature.status === 'rejected' || feature.status === 'retired') && !(feature.note || feature.evidence)) fail(`${feature.id}: ${feature.status} without a recorded reason`);
   }
   errors.push(...validateExecutionPointer(register, sliceOwner));
+  errors.push(...validateMilestoneAuthority(register));
+  errors.push(...validateHistoricalPointers(register));
   return errors;
 }
 
@@ -205,7 +211,112 @@ export function validateExecutionPointer(register, sliceOwner = null) {
   return errors;
 }
 
-const sliceTitle = (slice) => String(slice?.title ?? '').split(/[.:;(]/)[0].trim();
+/** DEC-0020 authority block: main owns milestone truth; arena-manager is planning memory only. */
+export const MILESTONE_AUTHORITY = Object.freeze({
+  decision: 'DEC-0020',
+  milestoneTruthOwner: 'main',
+  register: 'docs/n8n-lego/milestones.json',
+  publicProjection: 'README.md',
+  generatedProjection: '.ai/master/MILESTONE_REGISTER.md',
+  planningMemory: 'arena-manager',
+  planningMemoryIsCanonical: false,
+  roadmapOwnsStatus: false,
+});
+
+export function validateMilestoneAuthority(register) {
+  const errors = [];
+  const authority = register?.governance?.milestoneAuthority;
+  if (!authority) return ['milestoneAuthority: missing (DEC-0020 main-owned declaration)'];
+  for (const [key, expected] of Object.entries(MILESTONE_AUTHORITY)) {
+    if (authority[key] !== expected) errors.push(`milestoneAuthority: ${key} must be ${JSON.stringify(expected)} (got ${JSON.stringify(authority[key])})`);
+  }
+  for (const key of ['rule', 'noBatching', 'pendingReconciliation']) {
+    if (!authority[key]) errors.push(`milestoneAuthority: ${key} missing`);
+  }
+  const sequence = authority.postMergeSequence ?? [];
+  for (const step of ['merge to main', 'post-merge verification', 'README milestone projection (generated)', '.ai regeneration', 'governance PR', 'final main verification']) {
+    if (!sequence.includes(step)) errors.push(`milestoneAuthority: postMergeSequence lacks "${step}"`);
+  }
+  // No slice may present a non-main (e.g. arena-manager-only) source as its canonical state.
+  for (const entity of [...(register.programs ?? []), ...(register.futurePrograms ?? [])]) {
+    for (const slice of entity.slices ?? []) {
+      for (const key of ['canonicalSource', 'authority', 'milestoneTruthOwner']) {
+        if (key in slice && slice[key] !== 'main') errors.push(`${slice.id}: ${key} "${slice[key]}" — milestone truth is main-owned (DEC-0020)`);
+      }
+    }
+  }
+  return errors;
+}
+
+/**
+ * Historical P2 ladder (milestones[] and the P2.x slices under program P2) is immutable
+ * implementation history. The fingerprint pins every field; changing it is a deliberate,
+ * reviewed governance act that must update this constant in the same PR.
+ */
+export const HISTORICAL_P2_FINGERPRINT = '0a20c8311e55124254f42cb7fc837b1a0338bd8ed6374d6f6e48333041be43b2';
+
+export function historicalP2Fingerprint(register) {
+  const p2 = (register.programs ?? []).find((program) => program.id === 'P2');
+  const payload = {
+    milestones: register.milestones ?? [],
+    slices: (p2?.slices ?? []).filter((slice) => /^P2\.\d/.test(slice.id)),
+  };
+  return createHash('sha256').update(JSON.stringify(payload)).digest('hex');
+}
+
+export function validateHistoricalPointers(register) {
+  const errors = [];
+  const ladder = register.milestones ?? [];
+  const completed = ladder.filter((milestone) => milestone.status === 'complete').map((milestone) => milestone.id);
+  if (historicalP2Fingerprint(register) !== HISTORICAL_P2_FINGERPRINT) errors.push('historical P2 ladder changed: milestones[] / P2.x slices are immutable history (fingerprint mismatch)');
+  for (const key of ['currentMilestone', 'previousCompletedMilestone']) {
+    const id = register[key];
+    if (/\+/.test(id ?? '')) errors.push(`${key}: "${id}" is a historical placeholder, never a milestone pointer`);
+    else if (!completed.includes(id)) errors.push(`${key}: "${id}" is not a completed historical milestone`);
+  }
+  if (register.currentMilestone !== completed.at(-1)) errors.push(`currentMilestone must be the last completed historical milestone ${completed.at(-1)} (stale pointer)`);
+  if (register.previousCompletedMilestone !== completed.at(-2)) errors.push(`previousCompletedMilestone must be ${completed.at(-2)} (stale pointer)`);
+  for (const milestone of ladder) {
+    if (milestone.status !== 'complete' && !/\+$/.test(milestone.id)) errors.push(`${milestone.id}: the historical ladder only holds completed milestones and the P2.17+ placeholder`);
+  }
+  return errors;
+}
+
+export function registerFingerprint(register) {
+  return createHash('sha256').update(JSON.stringify(register)).digest('hex').slice(0, 16);
+}
+
+const STATUS_ROW = /^\s*\|.*`?\b(P\d{1,2}(?:\.\d+)+\+?|P\d{1,2}-[SM]\d{2}|FUTURE-[A-Z-]+-S\d{2})\b.*\b(implemented|in-progress|planned|blocked|complete|verifying|deferred)\b/;
+
+/**
+ * README.md and ROADMAP.md are projections / narrative, never registers (DEC-0020).
+ * Returns violations; empty means both are consistent with the register.
+ */
+export function validateMilestoneProjections({ register, readme, roadmap }) {
+  const errors = [];
+  const begins = readme.split(README_MARKERS.begin).length - 1;
+  const ends = readme.split(README_MARKERS.end).length - 1;
+  if (begins !== 1 || ends !== 1) errors.push('README.md: the generated milestone-governance block must appear exactly once');
+  else {
+    const start = readme.indexOf(README_MARKERS.begin);
+    const end = readme.indexOf(README_MARKERS.end) + README_MARKERS.end.length;
+    if (readme.slice(start, end) !== renderReadmeMilestoneSection(register)) {
+      errors.push('README.md: milestone-governance block is stale or was generated from a different register (run npm run lego:ai)');
+    }
+    const outside = (readme.slice(0, start) + readme.slice(end)).split('\n');
+    outside.forEach((line, index) => {
+      if (STATUS_ROW.test(line)) errors.push(`README.md: manual milestone status row outside the generated block: "${line.trim().slice(0, 80)}"`);
+    });
+  }
+  if (!roadmap.includes('docs/n8n-lego/milestones.json')) errors.push('ROADMAP.md: must reference the canonical register docs/n8n-lego/milestones.json');
+  if (!/strategic Phase A-F narrative/.test(roadmap) || (roadmap.match(/^## \d+\. /gm) ?? []).length < 3) errors.push('ROADMAP.md: the strategic Phase A-F narrative must remain');
+  roadmap.split('\n').forEach((line) => {
+    if (STATUS_ROW.test(line)) errors.push(`ROADMAP.md: competing milestone status row: "${line.trim().slice(0, 80)}"`);
+  });
+  return errors;
+}
+
+const sliceTitle = (slice) => String(slice?.title ?? '').split(/: |; | \(|\. /)[0].replace(/\.$/, '').trim();
 
 /** The active-work section (MILESTONE_REGISTER.md and README.md). */
 function activeWorkLines(register) {
@@ -241,13 +352,27 @@ export function renderReadmeMilestoneSection(register) {
     const done = program.slices.filter((slice) => slice.status === 'implemented').length;
     return `| ${program.id} | ${cell(program.title)} | ${program.status} | ${done}/${program.slices.length} |`;
   });
+  const verifying = new Map((register.executionPointer?.verifyingSlices ?? []).map((entry) => [entry.id, entry]));
+  const newSlices = [...(register.programs ?? []), ...(register.futurePrograms ?? [])]
+    .flatMap((entity) => (entity.slices ?? []).filter((slice) => NEW_SLICE.test(slice.id) || FUTURE_SLICE.test(slice.id)));
+  const recent = newSlices.filter((slice) => slice.status === 'implemented' && Number.isInteger(slice.pr))
+    .sort((a, b) => b.pr - a.pr).slice(0, 5)
+    .map((slice) => `| \`${slice.id}\` | ${cell(sliceTitle(slice))} | #${slice.pr} | ${short(slice.mergeSha)} |`);
+  const p5 = ((register.programs ?? []).find((program) => program.id === 'P5')?.slices ?? []).filter((slice) => /^P5-M\d{2}$/.test(slice.id))
+    .map((slice) => `| \`${slice.id}\` | ${cell(sliceTitle(slice))} | ${slice.status}${verifying.has(slice.id) ? ' (verifying)' : ''} | ${slice.pr ? `#${slice.pr}` : '—'} | ${short(slice.mergeSha ?? verifying.get(slice.id)?.mergeSha)} |`);
+  const futures = (register.futurePrograms ?? []).map((future) => {
+    const done = (future.slices ?? []).filter((slice) => slice.status === 'implemented').length;
+    return `| ${future.id} | ${(future.legacyMilestones ?? []).join(', ') || '—'} | ${done}/${(future.slices ?? []).length} |`;
+  });
   return `${README_MARKERS.begin}
 ## Current Milestone Governance
 
-- **Canonical source:** [\`docs/n8n-lego/milestones.json\`](docs/n8n-lego/milestones.json) on \`main\`. \`main\` is authoritative (${authority.decision}): ${authority.rule}
-- **Projections:** this section, \`.ai/master/MILESTONE_REGISTER.md\` and \`.ai/master/CURRENT_STATUS.md\` are generated by \`npm run lego:ai\`; \`npm run lego:ai:check\` fails when any of them is stale.
+- **Milestone authority:** \`${authority.milestoneTruthOwner}\` owns milestone truth (${authority.decision}). Canonical register: [\`${authority.register}\`](${authority.register}); generated projections: this section of \`${authority.publicProjection}\`, \`${authority.generatedProjection}\` and \`.ai/master/CURRENT_STATUS.md\`. \`${authority.planningMemory}\` is Manager planning memory only (canonical: ${authority.planningMemoryIsCanonical}); \`docs/n8n-lego/ROADMAP.md\` is strategy narrative and owns no status.
+- **Rule:** ${authority.rule}
+- **Pending reconciliation:** ${authority.pendingReconciliation}
+- **Freshness:** generated by \`npm run lego:ai\` from register ${register.registerVersion} (fingerprint \`${registerFingerprint(register)}\`); \`npm run lego:ai:check\` fails when this section, the \`.ai\` pack or the register disagree.
 - **Top level:** programs P0–P11 only. There is no P12+ or P24+ and no P5.9; legacy P12–P23 are consolidated into future programs. New work is \`Pn-Snn\`, \`Pn-Mnn\` or \`FUTURE-<THEME>-Snn\`.
-- **Historical P2 ladder:** ${ladder.length} completed milestones (\`${ladder[0]}\` … \`${ladder.at(-1)}\`, with the \`P2.27.x\` sub-slices under program P2) are immutable implementation history.${generic.length ? ` The generic ${generic.join(', ')} row is a historical placeholder label; it authorizes no work.` : ''}
+- **Historical P2 ladder:** ${ladder.length} completed milestones (\`${ladder[0]}\` … \`${ladder.at(-1)}\`, with the \`P2.27.x\` sub-slices under program P2) are immutable implementation history. Historical pointers: current \`${register.currentMilestone}\`, previous completed \`${register.previousCompletedMilestone}\` (history, not active work).${generic.length ? ` The generic ${generic.join(', ')} row is a historical placeholder label; it authorizes no work.` : ''}
 
 ### Active work
 
@@ -255,11 +380,29 @@ export function renderReadmeMilestoneSection(register) {
 | --- | --- |
 ${activeWorkLines(register).join('\n')}
 
+### Recently completed slices
+
+| Slice | Title | PR | Merge |
+| --- | --- | --- | --- |
+${recent.join('\n')}
+
+### P5 maintenance ladder
+
+| Slice | Title | Status | PR | Merge |
+| --- | --- | --- | --- | --- |
+${p5.join('\n')}
+
 ### Programs
 
 | Program | Title | Status | Slices implemented |
 | --- | --- | --- | --- |
 ${programs.join('\n')}
+
+### Future programs (legacy P12–P23 consolidated)
+
+| Future program | Legacy milestones | Slices implemented |
+| --- | --- | --- |
+${futures.join('\n')}
 
 ### How milestone state changes
 
@@ -267,7 +410,8 @@ ${programs.join('\n')}
 2. ${authority.noBatching}
 3. ${gov.completionRule}
 4. One delivery PR per slice (DEC-0014); the post-merge register/README/.ai update is a separate governance PR, not a second delivery PR.
-5. Evidence lives in \`docs/n8n-lego/evidence/\`; each slice's \`evidence\` field names its file.
+5. A slice cycle is closed only when implementation, register, this README section, the generated \`.ai\` and evidence agree on \`main\`.
+6. Evidence lives in \`docs/n8n-lego/evidence/\`; each slice's \`evidence\` field names its file.
 ${README_MARKERS.end}`;
 }
 

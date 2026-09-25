@@ -27,7 +27,7 @@ import { fileURLToPath } from 'node:url';
 import { loadRegistry, getChildren, CONTRACT_LOCK_FILE, MANIFEST_FILE } from '../../apps/n8n-lego/src/lego/registry.mjs';
 import { FOUNDATION, NODE_CONTRACT } from '../../apps/n8n-lego/src/lego/foundation.mjs';
 import { buildGraph, impactOf, TEST_TIERS } from './impact-graph.mjs';
-import { validateGovernanceRegister, renderGovernanceSections, syncReadmeMilestoneSection } from './governance-register.mjs';
+import { validateGovernanceRegister, renderGovernanceSections, syncReadmeMilestoneSection, validateMilestoneProjections } from './governance-register.mjs';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const AI_ROOT = join(REPO_ROOT, '.ai');
@@ -1908,7 +1908,7 @@ is the row marked as such.
 
 ${(() => {
     const current = milestones?.milestones?.find((milestone) => milestone.id === milestones.currentMilestone);
-    return `- **Active work:** see \`MILESTONE_REGISTER.md\` → *Active work* (executionPointer, DEC-0020); the rows below are the historical P2 ladder.
+    return `- **Active work:** see \`MILESTONE_REGISTER.md\` → *Active work* (executionPointer, DEC-0020); canonical register \`docs/n8n-lego/milestones.json\` on \`main\`; the rows below are the historical P2 ladder.
 - **Current (historical P2 pointer):** \`${milestones?.currentMilestone ?? '—'}\` — ${current?.title ?? '—'} (**${current?.status ?? '—'}**)
 - **Previous complete:** \`${milestones?.previousCompletedMilestone ?? '—'}\`
 - **Why next:** ${(current?.dependencies ?? []).join('; ') || '—'}
@@ -2353,6 +2353,16 @@ function readmeProjection() {
   return syncReadmeMilestoneSection(readFileSync(README_PATH, 'utf8'), register);
 }
 
+/** DEC-0020: README.md and ROADMAP.md are projections / narrative of the register, never registers. */
+function projectionViolations() {
+  const register = JSON.parse(readFileSync(join(REPO_ROOT, 'docs', 'n8n-lego', 'milestones.json'), 'utf8'));
+  return validateMilestoneProjections({
+    register,
+    readme: readFileSync(README_PATH, 'utf8'),
+    roadmap: readFileSync(join(REPO_ROOT, 'docs', 'n8n-lego', 'ROADMAP.md'), 'utf8'),
+  });
+}
+
 const isCli = process.argv[1]?.endsWith('ai-pack.mjs');
 if (isCli) {
   const files = generate();
@@ -2361,6 +2371,7 @@ if (isCli) {
     const readme = readmeProjection();
     if (!readme.ok) stale.push(`../README.md (${readme.reason})`);
     else if (readme.changed) stale.push('../README.md (milestone-governance block out of date)');
+    stale.push(...projectionViolations().map((problem) => `projection: ${problem}`));
     if (stale.length === 0) {
       process.stdout.write(
         'OK — .ai/ is in sync with the manifest. '

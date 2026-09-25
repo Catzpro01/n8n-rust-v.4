@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 import {
   validateGovernanceRegister, TOP_LEVEL_PROGRAMS, EXPECTED_PROGRAM_STATUS, LEGACY_FUTURE_MILESTONES, countBy,
   README_MARKERS, renderReadmeMilestoneSection, syncReadmeMilestoneSection,
+  validateMilestoneProjections, MILESTONE_AUTHORITY, HISTORICAL_P2_FINGERPRINT, historicalP2Fingerprint,
 } from '../../../tools/lego/governance-register.mjs';
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
@@ -122,6 +123,26 @@ const MUTATIONS = [
   ['a pointer naming an unknown slice', (r) => { r.executionPointer.plannedQueue.push('P5-M99'); }, /unknown slice P5-M99/],
   ['a pointer whose authority is not main', (r) => { r.executionPointer.authority = 'arena-manager'; }, /authority must be main/],
   ['a slice listed twice in the pointer', (r) => { r.executionPointer.blockedSlices.push('P5-M09'); }, /listed in both/],
+  // DEC-0020: main-owned milestone authority
+  ['Main-Owned changed to Manager-Owned', (r) => { r.governance.milestoneAuthority.milestoneTruthOwner = 'arena-manager'; }, /milestoneTruthOwner must be "main"/],
+  ['arena-manager declared canonical', (r) => { r.governance.milestoneAuthority.planningMemoryIsCanonical = true; }, /planningMemoryIsCanonical must be false/],
+  ['a missing Main-Owned declaration', (r) => { delete r.governance.milestoneAuthority; }, /milestoneAuthority: missing/],
+  ['ROADMAP declared as status owner', (r) => { r.governance.milestoneAuthority.roadmapOwnsStatus = true; }, /roadmapOwnsStatus must be false/],
+  ['a register path other than the canonical one', (r) => { r.governance.milestoneAuthority.register = 'arena-manager:docs/n8n-lego/milestones.json'; }, /register must be/],
+  ['a post-merge sequence without the README step', (r) => { r.governance.milestoneAuthority.postMergeSequence = r.governance.milestoneAuthority.postMergeSequence.filter((step) => !/README/.test(step)); }, /postMergeSequence lacks "README/],
+  ['an arena-manager-only slice claim presented as canonical', (r) => { r.programs[5].slices.find((x) => x.id === 'P5-M09').canonicalSource = 'arena-manager'; }, /P5-M09: canonicalSource "arena-manager"/],
+  // historical integrity and pointers
+  ['a changed historical P2 milestone row', (r) => { r.milestones.find((m) => m.id === 'P2.20').title += ' (rewritten)'; }, /historical P2 ladder changed/],
+  ['a changed historical P2 merge SHA', (r) => { const s = r.programs[2].slices.find((x) => x.id === 'P2.27.5'); s.mergeSha = 'f'.repeat(40); }, /historical P2 ladder changed/],
+  ['a P2.27.x row removed', (r) => { r.programs[2].slices = r.programs[2].slices.filter((x) => x.id !== 'P2.27.10'); }, /historical P2 ladder changed/],
+  ['a stale current pointer', (r) => { r.currentMilestone = 'P2.26'; }, /currentMilestone must be the last completed/],
+  ['a stale previous pointer', (r) => { r.previousCompletedMilestone = 'P2.25'; }, /previousCompletedMilestone must be P2\.26/],
+  ['the P2.17+ placeholder used as a pointer', (r) => { r.currentMilestone = 'P2.17+'; }, /historical placeholder/],
+  ['an implemented P5-M08 without a merge SHA', (r) => {
+    r.programs[5].slices.find((x) => x.id === 'P5-M08').status = 'implemented';
+    r.executionPointer.verifyingSlices = [];
+  }, /P5-M08: implemented without a 40-hex merge SHA/],
+  ['an invented P13 slice', (r) => { r.programs[11].slices.push({ ...r.programs[11].slices[0], id: 'P13-S01' }); }, /P13-S01 sits under P11/],
 ];
 for (const [name, mutate, expected] of MUTATIONS) {
   test(`the validator rejects ${name}`, () => {
@@ -221,6 +242,13 @@ test('DEC-0020 is recorded as an active decision', () => {
   const decision = JSON.parse(read('docs/engineering-operations/workforce/decisions/DEC-0020.json'));
   assert.equal(decision.state, 'ACTIVE');
   assert.equal(decision.selectedOption, 'A-main-owned');
+  assert.equal(decision.title, 'Milestone truth is Main-Owned');
+  for (let n = 1; n <= 9; n += 1) assert.match(decision.rationale, new RegExp(`\\(${n}\\) `), `DEC-0020 point ${n}`);
+  assert.match(decision.rationale, /complements DEC-0019/);
+  const rules = read('.arena/RULES.md');
+  assert.match(rules, /Milestone truth is main-owned \(DEC-0020\)/);
+  assert.match(rules, /proposal pending reconciliation until merged to `main`/);
+  assert.match(rules, /DEC-0020 complements DEC-0019/);
   assert.equal(REGISTER.governance.milestoneAuthority.decision, 'DEC-0020');
   assert.match(REGISTER.governance.milestoneAuthority.rule, /main-owned/);
   assert.match(REGISTER.governance.milestoneAuthority.rule, /arena-manager is not an alternate milestone authority/);
@@ -234,7 +262,7 @@ test('README carries the generated projection of the register, and it is current
   assert.equal(synced.changed, false, 'README milestone block is stale: run npm run lego:ai');
   const block = renderReadmeMilestoneSection(REGISTER);
   assert.match(block, /docs\/n8n-lego\/milestones\.json/);
-  assert.match(block, /`main` is authoritative/);
+  assert.match(block, /`main` owns milestone truth/);
   const pointer = REGISTER.executionPointer;
   assert.ok(block.includes(`\`${pointer.latestCompletedSlice.id}\``), 'latest completed slice');
   for (const entry of pointer.verifyingSlices) assert.ok(block.includes(`\`${entry.id}\``), `verifying ${entry.id}`);
@@ -279,3 +307,66 @@ test('the P5 maintenance ladder is P5-M01..M10, each a separate slice with evide
   else assert.equal(m08.status, 'implemented', 'P5-M08 leaves in-progress only by post-merge verification');
   for (const id of REGISTER.executionPointer.blockedSlices) assert.ok(p5.get(id)?.blockedBy || REGISTER.programs.some((p) => p.slices.some((x) => x.id === id && x.blockedBy)), id);
 });
+
+/* ------------------------------------------------------ DEC-0020 projection checks */
+
+const PROJECTION = () => ({ register: clone(), readme: read('README.md'), roadmap: read('docs/n8n-lego/ROADMAP.md') });
+
+test('DEC-0020: the register declares main-owned authority with arena-manager non-canonical', () => {
+  const authority = REGISTER.governance.milestoneAuthority;
+  for (const [key, value] of Object.entries(MILESTONE_AUTHORITY)) assert.equal(authority[key], value, key);
+  assert.equal(authority.planningMemoryIsCanonical, false);
+  assert.match(authority.pendingReconciliation, /proposal/);
+});
+
+test('DEC-0020: README and .ai point to the canonical register on main', () => {
+  const readme = read('README.md');
+  assert.match(readme, /`main` owns milestone truth \(DEC-0020\)/);
+  assert.match(readme, /Canonical register: \[`docs\/n8n-lego\/milestones\.json`\]/);
+  assert.match(readme, /`arena-manager` is Manager planning memory only \(canonical: false\)/);
+  assert.match(read('.ai/master/MILESTONE_REGISTER.md'), /docs\/n8n-lego\/milestones\.json/);
+  assert.match(read('.ai/master/CURRENT_STATUS.md'), /canonical register `docs\/n8n-lego\/milestones\.json` on `main`/);
+});
+
+test('DEC-0020: README and ROADMAP pass the projection validator', () => {
+  assert.deepEqual(validateMilestoneProjections(PROJECTION()), []);
+});
+
+test('README projection is deterministic (repeated generation gives no diff)', () => {
+  assert.equal(renderReadmeMilestoneSection(clone()), renderReadmeMilestoneSection(clone()));
+  const once = syncReadmeMilestoneSection(read('README.md'), REGISTER);
+  assert.equal(once.changed, false);
+  assert.equal(syncReadmeMilestoneSection(once.text, REGISTER).changed, false);
+});
+
+test('README projection lists current state, P5 ladder, recent slices and future programs', () => {
+  const block = renderReadmeMilestoneSection(REGISTER);
+  for (const heading of ['### Active work', '### Recently completed slices', '### P5 maintenance ladder', '### Programs', '### Future programs']) assert.ok(block.includes(heading), heading);
+  for (let n = 1; n <= 10; n += 1) assert.match(block, new RegExp(`\\| \`P5-M${String(n).padStart(2, '0')}\` \\|`));
+  assert.match(block, /Historical pointers: current `P2\.27`, previous completed `P2\.26`/);
+  assert.match(block, /`P5-M08` \| [^\n]*\| in-progress \(verifying\) \| #304 \| `600a2145` \|/);
+});
+
+test('the historical P2 fingerprint is pinned', () => {
+  assert.equal(historicalP2Fingerprint(REGISTER), HISTORICAL_P2_FINGERPRINT);
+});
+
+const PROJECTION_MUTATIONS = [
+  ['a stale README block', (p) => { p.readme = p.readme.replace('### Active work', '### Active work (edited)'); }, /block is stale/],
+  ['a README generated from a different register', (p) => { p.register.executionPointer.plannedQueue.reverse(); }, /stale or was generated from a different register/],
+  ['a README/register mismatch after a status change', (p) => { p.register.programs[5].slices.find((x) => x.id === 'P5-M09').title = 'Changed title'; }, /different register/],
+  ['a README without the generated block', (p) => { p.readme = p.readme.replace(README_MARKERS.begin, ''); }, /exactly once/],
+  ['a duplicated README block', (p) => { p.readme += `\n${renderReadmeMilestoneSection(p.register)}\n`; }, /exactly once/],
+  ['a manual milestone table outside the README block', (p) => { p.readme += '\n| P5-M09 | credentials | in-progress |\n'; }, /manual milestone status row outside/],
+  ['a competing ROADMAP status table', (p) => { p.roadmap += '\n| P2.13 | Context & Session | in-progress |\n'; }, /ROADMAP\.md: competing milestone status row/],
+  ['a ROADMAP without the register reference', (p) => { p.roadmap = p.roadmap.replaceAll('docs/n8n-lego/milestones.json', 'somewhere'); }, /must reference the canonical register/],
+  ['a ROADMAP with the strategic narrative removed', (p) => { p.roadmap = p.roadmap.split('\n## 1.')[0]; }, /strategic Phase A-F narrative must remain/],
+];
+for (const [name, mutate, expected] of PROJECTION_MUTATIONS) {
+  test(`the projection validator rejects ${name}`, () => {
+    const projection = PROJECTION();
+    mutate(projection);
+    const errors = validateMilestoneProjections(projection);
+    assert.ok(errors.some((error) => expected.test(error)), `expected ${expected} in:\n${errors.join('\n')}`);
+  });
+}
