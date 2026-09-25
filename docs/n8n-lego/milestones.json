@@ -2945,9 +2945,10 @@
               "title": "Read surface: GET /rest/service-principals (redacted list) and GET /rest/service-principals/scopes (vocabulary)",
               "purpose": "List the caller's live service principals through a DTO that can never carry a digest or a raw credential, and publish the scope vocabulary the caller may attenuate to. Both behind the apiKey:manage guard, exactly like /rest/api-keys.",
               "weight": 15,
-              "status": "in-progress",
-              "evidence": "",
-              "reference": "apps/n8n-lego/src/auth/api-key-routes.mjs"
+              "status": "completed",
+              "evidence": "apps/n8n-lego/test/service-principal-routes.test.mjs \u2014 'the service-principal surface is mounted exactly as declared': the redacted list answers with the DTO whitelist (id, kind, label, ownerId, tenantId, scopes, credential=redactApiKey(hint), createdAt, expiresAt, lastUsedAt), /scopes publishes the caller's own role vocabulary and nothing from the universe, an unknown sub-path is the explicit 501 capability answer, and a service principal is not reachable through /rest/api-keys (nor an api key through /rest/service-principals). Merged in 0845c25f.",
+              "reference": "apps/n8n-lego/src/auth/api-key-routes.mjs",
+              "completedAt": "2026-09-25T20:22:31Z"
             },
             {
               "id": "CP-02",
@@ -2996,7 +2997,7 @@
               "requires": ["Level 0 (Check & Format)","Level 1 (Affected Tests)","Level 2 Workspace Tests (linux)","Level 2 Workspace Tests (windows)","Level 2 Conformance LEGO & Node Catalog","Post-Merge Verification & Branch Cleanup"]
             }
           ],
-          "updatedAt": "2026-09-26T00:00:00Z",
+          "updatedAt": "2026-09-25T20:22:37Z",
           "latestUpdate": "P5-M07: service-principal REST surface mounted (create once, redacted list, revoke tombstone, transfer rotates the credential); DEC-0023 closes the member boundary",
           "checkpointWeightBasis": "Five declared route operations. CP-01 carries 15 for the read pair (list + scopes); CP-02 carries 25 because it is the only route that mints a credential and must enforce the whole P5.7 create policy; CP-03 carries 15 for the tombstone semantics; CP-04 carries 20 for the six transfer invariants; CP-05 carries 15 for the end-to-end proof and manifest registration; CP-06 carries 10 for the DEC-0015 runner gate. 15+25+15+20+15+10 = 100. The weights come from the scope declared in P5-M07-EVIDENCE.md §1, not from effort, commit count or lines of code.",
           "mergeSha": null,
