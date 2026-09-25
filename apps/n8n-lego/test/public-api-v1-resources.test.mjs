@@ -142,7 +142,7 @@ describe('openapi.yml', () => {
     const mounted = PUBLIC_API_OPERATIONS.map((op) => `${op.method} ${op.path.replace(/:([A-Za-z]+)/g, '{$1}')}`).sort();
     assert.deepEqual(fromSpec, mounted);
     assert.equal(SPEC['x-n8n-lego'].operations, PUBLIC_API_OPERATIONS.length);
-    for (const unmounted of ['/credentials', '/users', '/projects', '/audit', '/executions/{id}/retry', '/workflows/{id}/transfer']) {
+    for (const unmounted of ['/projects', '/audit', '/executions/{id}/retry', '/workflows/{id}/transfer', '/credentials/{id}/transfer']) {
       assert.equal(SPEC.paths[unmounted], undefined, unmounted);
     }
     const text = JSON.stringify(SPEC);

@@ -143,11 +143,15 @@ export function applyProgressEvent(register, event = {}) {
     }
   }
 
+  // `updatedAt` is stamped BEFORE validation: the register rule "a slice with
+  // checkpoints must record updatedAt" is satisfied by this very event, so
+  // validating first would reject the first checkpoint a slice ever records.
+  target.updatedAt = at;
+  if (nonEmpty(event.latestUpdate)) target.latestUpdate = nonEmpty(event.latestUpdate);
+
   const problems = [...validateSliceCheckpoints(target), ...validateGovernanceRegister(next)];
   if (problems.length) throw new Error(`record: the register would be invalid:\n- ${problems.join('\n- ')}`);
 
-  target.updatedAt = at;
-  if (nonEmpty(event.latestUpdate)) target.latestUpdate = nonEmpty(event.latestUpdate);
   return { register: next, slice: target, at };
 }
 
@@ -424,8 +428,20 @@ function readRegister() {
   return { raw, register: JSON.parse(raw) };
 }
 
+/**
+ * A key-order-insensitive canonical form. The surgical writer emits the managed
+ * keys (`checkpoints`, `updatedAt`, `latestUpdate`) immediately after `status`,
+ * while the in-memory clone carries them wherever they were appended, so a plain
+ * `JSON.stringify` comparison rejects a register whose content is identical.
+ * Array order still matters (slices, checkpoints); object key order does not.
+ */
 function canonical(value) {
-  return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
+  if (value && typeof value === 'object') {
+    const keys = Object.keys(value).sort();
+    return `{${keys.map((key) => `${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`;
+  }
+  return JSON.stringify(value) ?? 'null';
 }
 
 function liveState(register, sliceId) {

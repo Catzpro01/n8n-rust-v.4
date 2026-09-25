@@ -16,10 +16,11 @@
       "pr": 304,
       "mergeSha": "600a21456213602ebdc6193229bab8432e6d1024"
     },
-    "activeSlices": [],
+    "activeSlices": [
+      "P5-M09"
+    ],
     "verifyingSlices": [],
     "plannedQueue": [
-      "P5-M09",
       "P5-M07",
       "P9-S01",
       "P3-S01",
@@ -3017,7 +3018,46 @@
           "id": "P5-M09",
           "title": "Public /api/v1 credentials (list, create, update, delete, schema; secrets never returned, data validated against the credential type) and users (list, get, create, delete, change role), plus /api/v1/docs (needs a decision on serving Swagger UI without a runtime dependency). Split out of P5-M08",
           "kind": "maintenance",
-          "status": "planned",
+          "status": "in-progress",
+          "checkpoints": [
+            {
+              "id": "CP-01",
+              "title": "Credential collection routes: GET /credentials and POST /credentials",
+              "purpose": "List credentials with the upstream cursor envelope (secrets never included) and create one through the vault, echoing the sanitised record. Guards: credential:list and credential:create.",
+              "weight": 25,
+              "status": "planned"
+            },
+            {
+              "id": "CP-02",
+              "title": "Credential item routes: PUT /credentials/{id} and DELETE /credentials/{id}",
+              "purpose": "Update a credential (blank-sentinel merge, reseal under the current key, version bump) and delete one, both scoped to what the caller may act on. Guards: credential:update and credential:delete.",
+              "weight": 20,
+              "status": "planned"
+            },
+            {
+              "id": "CP-03",
+              "title": "GET /credentials/schema/{credentialTypeName} and data validation against the type",
+              "purpose": "Serve the credential-type JSON schema derived from the catalog, and reject create/update bodies whose data does not satisfy that schema with the upstream 400 message. An unknown type is 404.",
+              "weight": 20,
+              "status": "planned"
+            },
+            {
+              "id": "CP-04",
+              "title": "User routes: GET /users, GET /users/{id}, POST /users, DELETE /users/{id}, PATCH /users/{id}/role",
+              "purpose": "List and read users through the PublicUser whitelist (never the password hash or the MFA secret), invite a user, delete a user and change a global role. Guards: user:list, user:read, user:create, user:delete, user:changeRole.",
+              "weight": 20,
+              "status": "planned"
+            },
+            {
+              "id": "CP-05",
+              "title": "/api/v1/docs decision and the OpenAPI spec of exactly the mounted operations",
+              "purpose": "Record the decision on serving Swagger UI without a runtime dependency (DEC-0022) and extend the published openapi.yml to the credentials and users operations, keeping the spec a projection of PUBLIC_API_OPERATIONS rather than a hand-written file.",
+              "weight": 15,
+              "status": "planned"
+            }
+          ],
+          "updatedAt": "2026-09-26T10:30:00Z",
+          "latestUpdate": "P5-M09: public /api/v1 credentials + users over the editor's backing stores",
           "mergeSha": null,
           "issue": 85,
           "evidence": null,

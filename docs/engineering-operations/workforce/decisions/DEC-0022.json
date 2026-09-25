@@ -1,0 +1,76 @@
+{
+  "schemaVersion": "1.0",
+  "objectType": "Decision",
+  "objectId": "DEC-0022",
+  "revision": 1,
+  "createdAt": "2026-09-26T10:30:00Z",
+  "updatedAt": "2026-09-26T10:30:00Z",
+  "events": [],
+  "state": "ACTIVE",
+  "category": "ARCHITECTURE",
+  "title": "The public API serves its OpenAPI document, not a Swagger UI: /api/v1/docs stays unmounted",
+  "problem": "P5-M09 (public /api/v1 credentials and users) carries the remaining item of the P5.7 debt list: '/api/v1/docs (needs a decision on serving Swagger UI without a runtime dependency)'. Upstream n8n mounts `/{publicApiEndpoint}/{version}/docs` with `swagger-ui-express` plus a `swagger-theme.css` read off disk, gated behind `globalConfig.publicApi.swaggerUiDisabled` (reference/n8n/packages/cli/src/public-api/index.ts). This product has exactly one runtime dependency, `n8n-editor-ui` 2.9.4, and no bundled static-asset tree of its own: adding `swagger-ui-express` would introduce a second runtime dependency carrying a large JS/CSS payload, served by a middleware that reads a theme file from the package directory at request time.",
+  "options": [
+    {
+      "id": "A-spec-only-no-docs-route",
+      "summary": "Do not mount /api/v1/docs. Keep serving the OpenAPI 3.0 document at GET /api/v1/openapi.yml (public, no key, text/yaml), which is a projection of the mounted operation table and cannot advertise an unmounted operation. `/docs` answers 404 `not found` exactly like any other unmounted path, so the surface is honest rather than stubbed. An OpenAPI document is the contract every API client consumes (Postman, Insomnia, openapi-generator, the typed clients n8n itself publishes), so no human-facing HTML is required for the API to be usable."
+    },
+    {
+      "id": "B-add-swagger-ui-express",
+      "summary": "Add `swagger-ui-express` 5.0.1 and `@types/swagger-ui-express` as dependencies and mount `/api/v1/docs` with the upstream theme, gated by an `N8N_PUBLIC_API_SWAGGER_UI_DISABLED`-equivalent flag."
+    },
+    {
+      "id": "C-hand-written-html-viewer",
+      "summary": "Serve a small hand-written HTML page at /api/v1/docs that fetches /openapi.yml and renders it, with no dependency."
+    }
+  ],
+  "selectedOption": "A-spec-only-no-docs-route",
+  "rationale": "Option A, chosen by the Manager on the P5-M09 evidence rather than by owner instruction, because it is the only option that costs neither a dependency nor a second UI to maintain. (1) The single-dependency posture is a documented architectural property of this product (.ai/constitution.md: the stock editor UI is not redesigned and no second framework or asset tree is introduced); adding `swagger-ui-express` would break it for a page that renders a document already served in full. (2) The OpenAPI 3.0 document at /openapi.yml is machine-checkable and complete: `apps/n8n-lego/scripts/extract-public-api-spec.py` derives it from the pinned upstream spec and keeps exactly the mounted operations, and a test asserts the spec equals the operation table, so the document cannot drift from the implementation. (3) The editor UI already renders the credential and workflow surface for humans; a second read-only view of the same data would be a second place to keep in step. (4) Option C is a reimplementation of a solved problem: any consumer that wants a rendered UI can point Swagger UI, Redoc or a code generator at the published document, and that tooling will be better maintained than a hand-rolled page in this repository. (5) Leaving /docs unmounted is not a gap that hides: it answers 404 `not found`, the same as /projects or /audit, which are unmounted for want of a backing model, and this decision records why. If a rendered UI is ever wanted, option B is the upstream model and this decision can be revisited with the dependency cost stated explicitly.",
+  "scope": {
+    "programs": [
+      "GOVERNANCE"
+    ],
+    "slices": [
+      "P5-M09"
+    ],
+    "domains": [
+      "public-api"
+    ],
+    "surfaces": [
+      "/api/v1/openapi.yml",
+      "/api/v1/docs"
+    ]
+  },
+  "authority": {
+    "decidedBy": "MANAGER-01",
+    "managerOnly": true,
+    "humanEscalation": false,
+    "proposedBy": "MANAGER-01"
+  },
+  "evidence": [],
+  "evidenceRefs": [
+    "apps/n8n-lego/src/auth/public-api-routes.mjs (PUBLIC_API_SPEC_PATH, the unmounted-/docs note in the module header)",
+    "apps/n8n-lego/test/public-api-v1-credentials-users.test.mjs (the /docs 404 assertion)",
+    "reference/n8n/packages/cli/src/public-api/index.ts (the upstream swagger-ui-express mount)",
+    ".ai/constitution.md (the single-dependency, no-second-framework posture)",
+    "apps/n8n-lego/scripts/extract-public-api-spec.py (the spec is derived, not hand-written)"
+  ],
+  "sources": {
+    "issues": [
+      85
+    ],
+    "prs": [],
+    "commits": [],
+    "requests": []
+  },
+  "supersedes": null,
+  "supersededBy": null,
+  "promotion": {
+    "canonical": false,
+    "mainPath": "docs/engineering-operations/workforce/decisions/DEC-0022.json",
+    "mainCommitSha": null,
+    "promotedAt": null,
+    "promotedBy": null
+  },
+  "reason": null
+}
