@@ -58,7 +58,7 @@ Every slice that declares a checkpoint model, straight from the canonical regist
 `docs/n8n-lego/milestones.json` on `main`. Status is not progress: a verifying or blocked slice keeps its
 evidenced progress and contributes 0% to Slice Completion.
 
-- **P5-M08** (P5) — verifying · realtime 70.0% · completion contribution 0.0% · current checkpoint CP-05 (blocked, 30) · latest completed CP-04 (completed) · updated 2026-09-25T16:40:57Z — DEC-0021 live-progress mechanism merged in PR #308 (merge 41eba80502803bb2b4ea3b77a8d0d92fe9bd8046); P5-M08 checkpoint model is live on main
+- **P5-M08** (P5) — verifying · realtime 70.0% · completion contribution 0.0% · current checkpoint CP-05 (in-progress, 30) · latest completed CP-04 (completed) · updated 2026-09-25T17:20:04Z — DEC-0015 environmental retry in flight on PR #310 (head 17c88012) — the last documented retry; the earlier failure was environmental, not an implementation regression
 
 ## The 15 AI/Agent LEGO by status
 

@@ -3004,14 +3004,13 @@
               "title": "DEC-0015 self-hosted runner verification on main (Level 0, Level 1, Level 2 linux, post-merge verification)",
               "purpose": "The remaining gate before this slice can be recorded as implemented; it is not an implementation step",
               "weight": 30,
-              "status": "blocked",
-              "evidence": "docs/n8n-lego/evidence/P5-M08-EVIDENCE.md \u00a76 \u2014 Level 0/1/Level 2 linux and post-merge cleanup failed with the runner losing communication (runs 36136621119, 36136621102, 36137555071); DEC-0015 verification is not PASS",
-              "reference": "docs/n8n-lego/evidence/P5-M08-EVIDENCE.md \u00a76; one environmental retry remains and was not spent",
-              "blockedBy": "DEC-0015 runner verification is not PASS: the self-hosted WSL runners lost communication (environmental, not an implementation regression); one environmental retry remains"
+              "status": "in-progress",
+              "evidence": "DEC-0015 environmental retry started: PR #310 (head 17c88012d2ac774109d321e743b5e674d17853fc) cut from main 674546fcc85f7be8184f47accde72c5f7c464d52 runs the Level 0 / Level 1 / Level 2 linux / Level 2 windows / conformance suite on the self-hosted runners; the earlier failure (runs 36136621119, 36136621102, 36137555071) was a runner communication loss, not an implementation regression",
+              "reference": "docs/n8n-lego/evidence/P5-M08-EVIDENCE.md \u00a76; one environmental retry remains and was not spent"
             }
           ],
-          "updatedAt": "2026-09-25T16:40:57Z",
-          "latestUpdate": "DEC-0021 live-progress mechanism merged in PR #308 (merge 41eba80502803bb2b4ea3b77a8d0d92fe9bd8046); P5-M08 checkpoint model is live on main",
+          "updatedAt": "2026-09-25T17:20:04Z",
+          "latestUpdate": "DEC-0015 environmental retry in flight on PR #310 (head 17c88012) \u2014 the last documented retry; the earlier failure was environmental, not an implementation regression",
           "checkpointWeightBasis": "5 points per declared operation (tags 5, variables 4, executions list/get/delete 3 = 12 operations \u2192 60 points), 10 for GET /api/v1/openapi.yml, 30 for the DEC-0015 runner-verification gate; total 100. The weights come from the scope declared in P5-M08-EVIDENCE.md \u00a71, not from an estimate of effort.",
           "pr": 304,
           "mergeSha": null,
