@@ -14,7 +14,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | **P2** | LEGO / AI / Plugin Foundation | **COMPLETE** | 32/34 | 29 | `P2-S02` (planned) |
 | **P3** | Workflow + Execution + Unlimited Nodes | **COMPLETE** | 17/18 | 24 | `P3-S01` (planned) |
 | **P4** | Trigger / Webhook / Ingress | **COMPLETE** | 9/10 | 19 | `P4-S01` (planned) |
-| **P5** | Identity / Authentication / Authorization / Credentials (Security) | **COMPLETE** | 8/11 | 17 | `P5-M01` (planned) |
+| **P5** | Identity / Authentication / Authorization / Credentials (Security) | **COMPLETE** | 8/13 | 17 | `P5-M01` (in-progress) |
 | **P6** | Node Registry / Node Runtime | **COMPLETE** | 31/35 | 67 | `P6-S01` (planned) |
 | **P7** | Dynamic Parameters / Schema Runtime | **PLANNED** | 0/1 | 29 | `P7-S01` (planned) |
 | **P8** | Storage / Data Layer | **PLANNED** | 0/1 | 5 | `P8-S01` (planned) |
@@ -41,11 +41,11 @@ Legacy traceability: legacy issue → feature (`sourceIssue`) → program (`pare
 | Status | Features |
 | --- | --- |
 | implemented | 134 |
-| in-progress | 1 |
-| planned | 171 |
+| in-progress | 2 |
+| planned | 169 |
 | proposed | 47 |
 | blocked | 0 |
-| deferred | 0 |
+| deferred | 1 |
 | superseded | 0 |
 | retired | 0 |
 | rejected | 2 |
@@ -322,7 +322,7 @@ Identity, sessions, authorization, credential boundary, key management, account 
 
 **Source issues:** #85, #78, #214, #215, #216, #217, #218, #219, #220, #221
 
-<details><summary>Slices (11)</summary>
+<details><summary>Slices (13)</summary>
 
 | Slice | Title | Status | PR | Merge SHA | Issue |
 | --- | --- | --- | --- | --- | --- |
@@ -334,13 +334,15 @@ Identity, sessions, authorization, credential boundary, key management, account 
 | `P5.6` | password recovery, bounded abuse controls, TOTP MFA, step-up | implemented | #251 | `4e6802c8` | #219 |
 | `P5.7` | API keys (hashed), service principals, tenant policy, agent delegation | implemented | #252 | `5310bf31` | #220 |
 | `P5.8` | security plane certification, operator credential CLI, benchmark, runbook | implemented | #253 | `87099dc0` | #221 |
-| `P5-M01` | Security hardening: permission decision cache on the REST path, soft-revoke API keys (mark revoked, keep audit row), O(1)/indexed key-rotation work list, multi-host key storage, shared session + rate-limiter state | planned | — | — | #85 |
+| `P5-M01` | Security hardening: soft-revoke API keys and service principals (bounded tombstones, REVOKED verdict, audit row kept); REST decision cache deferred on measured evidence (P5.8 finding 1: warm hit 438 ns p50 is not faster than uncached authorize 384 ns p50) | in-progress | — | — | #85 |
 | `P5-M02` | Credential runtime integration: execution path resolves credentials via SecretRef over the P2.27 broker | planned | — | — | #85 |
 | `P5-M03` | Auth API compatibility: public /api/v1 surface, email-based password recovery, service-principal REST/UI | planned | — | — | #85 |
+| `P5-M04` | Key-rotation work list without an O(n) scan: measure first (per-batch scan vs the O(n) replaceAll persist), index only if the scan dominates | planned | — | — | #85 |
+| `P5-M05` | Multi-host key storage and shared session + rate-limiter state; depends on the P8 storage contract (P8-S01, not authorized) | planned | — | — | #85 |
 
 </details>
 
-<details><summary>Features (17: 8 implemented, 9 planned)</summary>
+<details><summary>Features (17: 8 implemented, 1 deferred, 1 in-progress, 7 planned)</summary>
 
 | Feature | Title | Status | Relevance | Slice | Issues | Merge SHA |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -352,11 +354,11 @@ Identity, sessions, authorization, credential boundary, key management, account 
 | `P5-F-SEC-006` | Password recovery (operator), abuse controls, TOTP MFA, step-up | implemented | active | `P5.6` | #219, #85 | `4e6802c8` |
 | `P5-F-SEC-007` | Hashed API keys, service principals, tenant policy, agent delegation | implemented | active | `P5.7` | #220, #85 | `5310bf31` |
 | `P5-F-SEC-008` | Security certification, leakage audit, operator credential CLI, benchmark, runbook | implemented | active | `P5.8` | #221, #85 | `87099dc0` |
-| `P5-F-DEBT-001` | Permission decision cache used on the REST path | planned | maintenance | `P5-M01` | #85, #221 | — |
-| `P5-F-DEBT-002` | API-key revoke marks revoked instead of deleting | planned | maintenance | `P5-M01` | #85, #221 | — |
-| `P5-F-DEBT-003` | Key-rotation work list without O(n) scan | planned | maintenance | `P5-M01` | #85, #221 | — |
-| `P5-F-DEBT-004` | Key storage beyond a single host | planned | maintenance | `P5-M01` | #85, #221 | — |
-| `P5-F-DEBT-005` | Sessions + rate limiters in shared (multi-process) state | planned | maintenance | `P5-M01` | #85, #221 | — |
+| `P5-F-DEBT-001` | Permission decision cache used on the REST path | deferred | maintenance | `P5-M01` | #85, #221 | — |
+| `P5-F-DEBT-002` | API-key revoke marks revoked instead of deleting | in-progress | maintenance | `P5-M01` | #85, #221 | — |
+| `P5-F-DEBT-003` | Key-rotation work list without O(n) scan | planned | maintenance | `P5-M04` | #85, #221 | — |
+| `P5-F-DEBT-004` | Key storage beyond a single host | planned | maintenance | `P5-M05` | #85, #221 | — |
+| `P5-F-DEBT-005` | Sessions + rate limiters in shared (multi-process) state | planned | maintenance | `P5-M05` | #85, #221 | — |
 | `P5-F-DEBT-006` | Execution resolves credentials via SecretRef | planned | maintenance | `P5-M02` | #85, #221 | — |
 | `P5-F-DEBT-007` | Public /api/v1 compatibility surface | planned | maintenance | `P5-M03` | #85, #221 | — |
 | `P5-F-DEBT-008` | Email-based password recovery | planned | maintenance | `P5-M03` | #85, #221 | — |

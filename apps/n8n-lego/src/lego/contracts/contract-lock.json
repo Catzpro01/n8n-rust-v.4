@@ -4166,7 +4166,7 @@
       "id": "auth.machine-identity",
       "owner": "agent-1",
       "domain": "auth",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "status": "stable",
       "surface": [
         "src/auth/security/api-key.mjs",
@@ -4185,7 +4185,9 @@
           "generateApiKey",
           "lastUsedIsStale",
           "parseApiKey",
-          "redactApiKey"
+          "pruneTombstones",
+          "redactApiKey",
+          "revokeWithTombstone"
         ],
         "src/auth/security/machine-identity.mjs": [
           "DEFAULT_TENANT_SECURITY_POLICY",
@@ -4205,6 +4207,9 @@
       "consumers": [],
       "tests": [
         "apps/n8n-lego/test/lego-machine-identity.test.mjs"
+      ],
+      "changelog": [
+        "1.1.0 (P5-M01): added revokeWithTombstone and pruneTombstones plus API_KEY_POLICY.maxRevokedTombstonesPerOwner; revocation keeps a bounded tombstone instead of deleting, so a revoked credential is reported REVOKED. Additive: every 1.0.0 export is unchanged."
       ],
       "notes": "P5.7 machine identity, HTTP-free and storage-free (the boundary is src/auth/api-key-routes.mjs: upstream /rest/api-keys wire contract plus authenticateMachineCredential). api-key: 256-bit keys shown once; only a SHA-256 digest and a 4-character hint are stored (pinned n8n stores the raw JWT); the owner id inside the key gives an O(1) lookup with no process-local index; lifecycle verdicts (revoked, expired in unix seconds, owner unavailable, audience mismatch); scope attenuation reports escalation instead of trimming; effective scopes are re-intersected with the owner's current grant on every use. machine-identity: service principals (worker, agent, mcp, gateway) with their own credential and audience, bound to the owner's tenant; agent delegation that is a subset of the parent, never outlives it, never crosses tenants, never exceeds the parent's auth strength and is depth-bounded; a validated tenant security policy input; the authority chain principal -> P5.3 authorize -> approval input -> ai.approval evaluate (injected port, fail closed; P5 is not the approval engine); audit events with reference and reason fields only. The API-key scope vocabulary is extracted from the pinned @n8n/permissions source into data/api-key-scopes.json (compat/api-key-scopes.mjs mirrors upstream getApiKeyScopesForRole)."
     }
