@@ -2,9 +2,9 @@
   "schemaVersion": "1.0",
   "objectType": "Decision",
   "objectId": "DEC-0005",
-  "revision": 1,
+  "revision": 2,
   "createdAt": "2026-09-25T00:00:00Z",
-  "updatedAt": "2026-09-25T00:00:00Z",
+  "updatedAt": "2026-09-25T14:00:00Z",
   "events": [],
   "state": "ACTIVE",
   "category": "ARCHITECTURE",
@@ -46,18 +46,22 @@
       264,
       265
     ],
-    "prs": [],
-    "commits": [],
+    "prs": [
+      273
+    ],
+    "commits": [
+      "9b32740591b4fb2f11463c5302b5bccd5f2a796c"
+    ],
     "requests": []
   },
   "supersedes": null,
   "supersededBy": null,
   "promotion": {
-    "canonical": false,
-    "mainPath": null,
-    "mainCommitSha": null,
-    "promotedAt": null,
-    "promotedBy": null
+    "canonical": true,
+    "mainPath": "docs/engineering-operations/workforce/decisions/DEC-0005.json",
+    "mainCommitSha": "9b32740591b4fb2f11463c5302b5bccd5f2a796c",
+    "promotedAt": "2026-09-25T14:00:00Z",
+    "promotedBy": "MANAGER-01"
   },
   "reason": null
 }

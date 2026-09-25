@@ -40,8 +40,8 @@ Legacy traceability: legacy issue → feature (`sourceIssue`) → program (`pare
 
 | Status | Features |
 | --- | --- |
-| implemented | 131 |
-| in-progress | 4 |
+| implemented | 134 |
+| in-progress | 1 |
 | planned | 171 |
 | proposed | 47 |
 | blocked | 0 |
@@ -924,10 +924,10 @@ Thematic future program. Not a P number and not authorized: a slice starts only 
 | `GOV-F-011` | Runner protocol: 5 Windows + 5 WSL self-hosted runners, polling interval <= 1s | implemented | active | — | #254, #256 | `fc54c8c2` |
 | `GOV-F-012` | Single-tenant-first, VPS-native control plane, multi-tenant ready | implemented | active | — | #78 | — |
 | `GOV-F-013` | P2.13 Agent 1/2 coordination | implemented | archived | — | #47 | — |
-| `GOV-F-014` | Workforce control plane: canonical schemas + policy, Command API engine (auth, CAS, idempotency, atomic journaled store) | in-progress | active | — | #259, #260, #261, #262, #263, #264, #265, #266, #268 | — |
-| `GOV-F-015` | Workforce scheduler, matcher and cross-program concurrency classification (SAFE_PARALLEL / CONDITIONAL_PARALLEL / SERIALIZED / HOLD) | in-progress | active | — | #264, #267, #268 | — |
-| `GOV-F-016` | Workforce recovery, reconciliation, replay verification and derived Manager memory views | in-progress | active | — | #259, #262, #264, #268 | — |
-| `GOV-F-017` | Branch policy amendment: persistent worker slots arena/agent-01..10 (DEC-0003) and arena-manager migration (DEC-0008) | in-progress | active | — | #256, #259, #263, #268 | — |
+| `GOV-F-014` | Workforce control plane: canonical schemas + policy, Command API engine (auth, CAS, idempotency, atomic journaled store) | implemented | active | — | #259, #260, #261, #262, #263, #264, #265, #266, #268 | `9b327405` |
+| `GOV-F-015` | Workforce scheduler, matcher and cross-program concurrency classification (SAFE_PARALLEL / CONDITIONAL_PARALLEL / SERIALIZED / HOLD) | implemented | active | — | #264, #267, #268 | `9b327405` |
+| `GOV-F-016` | Workforce recovery, reconciliation, replay verification and derived Manager memory views | implemented | active | — | #259, #262, #264, #268 | `9b327405` |
+| `GOV-F-017` | Branch policy amendment: persistent worker slots arena/agent-01..10 (DEC-0003) and arena-manager migration (DEC-0008) | in-progress | active | — | #256, #259, #263, #268 | `9b327405` |
 
 ## Current truth (historical P2 granular ladder)
 

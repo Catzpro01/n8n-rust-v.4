@@ -41,6 +41,15 @@ test('canonical decision records are schema-valid and consistent', () => {
   for (const id of ['DEC-0001', 'DEC-0002', 'DEC-0003', 'DEC-0004', 'DEC-0005', 'DEC-0006', 'DEC-0007', 'DEC-0008']) assert.ok(ids.includes(id), id);
   const d5 = r.records.find((d) => d.objectId === 'DEC-0005');
   assert.match(JSON.stringify(d5), /AVAILABLE/, 'DEC-0005 records the AgentState release-edge amendment');
+  assert.ok(ids.includes('DEC-0009'), 'DEC-0009 records the Manager credential mechanism');
+  for (const d of r.records.filter((x) => x.promotion.canonical)) {
+    assert.match(d.promotion.mainCommitSha, /^[0-9a-f]{40}$/, `${d.objectId}: canonical needs the main commit SHA`);
+    assert.equal(d.promotion.mainPath, `docs/engineering-operations/workforce/decisions/${d.objectId}.json`, `${d.objectId}: mainPath`);
+    assert.ok(d.sources.issues.length || d.sources.prs.length, `${d.objectId}: canonical needs provenance`);
+  }
+  for (const id of ['DEC-0001', 'DEC-0002', 'DEC-0003', 'DEC-0004', 'DEC-0005', 'DEC-0006', 'DEC-0007', 'DEC-0008']) {
+    assert.equal(r.records.find((d) => d.objectId === id).promotion.canonical, true, `${id} promoted canonical (TASK-0002)`);
+  }
 });
 
 test('cli: validate-policy and decisions-check succeed; unknown command is a usage error', () => {
