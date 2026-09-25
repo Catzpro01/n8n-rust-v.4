@@ -7,7 +7,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 
 ## Delivery progress (same two metrics as README.md)
 
-**Realtime Delivery Progress 89.0%** — 13000/14600 checkpoint-weighted points, P0–P11 only. Future programs are excluded (6 slices). 15 current-delivery slice(s) have no checkpoint model and contribute 0.
+**Realtime Delivery Progress 89.3%** — 13034/14600 checkpoint-weighted points, P0–P11 only. Future programs are excluded (6 slices). 15 current-delivery slice(s) have no checkpoint model and contribute 0.
 
 **Slice Completion 89.0%** — 130/146 implemented. Verifying and blocked contribute 0. Program status is not this percentage.
 
@@ -17,7 +17,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | P1 | 100.0% | 100.0% | 2/2 | complete |
 | P2 | 94.1% | 94.1% | 32/34 | complete |
 | P3 | 100.0% | 100.0% | 18/18 | complete |
-| P4 | 90.0% | 90.0% | 9/10 | complete |
+| P4 | 93.4% | 90.0% | 9/10 | complete |
 | P5 | 72.2% | 72.2% | 13/18 | complete |
 | P6 | 88.6% | 88.6% | 31/35 | complete |
 | P7 | 0.0% | 0.0% | 0/1 | planned |
