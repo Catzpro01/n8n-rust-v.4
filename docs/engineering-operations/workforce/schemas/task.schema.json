@@ -59,6 +59,7 @@
         "PREPARING",
         "WORKING",
         "WAITING_EXTERNAL",
+        "WAITING_RUNNER",
         "BLOCKED",
         "READY_FOR_REVIEW",
         "MERGING",
@@ -259,6 +260,17 @@
             "GITHUB",
             "EXTERNAL"
           ]
+        },
+        "runnerRequired": {
+          "type": "boolean"
+        },
+        "runnerType": {
+          "enum": [
+            "WINDOWS",
+            "WSL",
+            "ANY",
+            null
+          ]
         }
       }
     },
@@ -327,6 +339,12 @@
         },
         "hold": {
           "type": "boolean"
+        },
+        "phase": {
+          "enum": [
+            "PHASE_A_REMOTE",
+            "PHASE_B_RUNNER"
+          ]
         }
       }
     },
@@ -438,6 +456,58 @@
         "scopeCorrectionCount": {
           "type": "integer",
           "minimum": 0
+        }
+      }
+    },
+    "runnerVerification": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "checks",
+        "mainSha",
+        "evidenceId",
+        "regressionTaskIds"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "NOT_REQUIRED",
+            "WAITING_RUNNER",
+            "PASS",
+            "FAIL"
+          ]
+        },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "mainSha": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "evidenceId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^EVD-[0-9]{4,}$"
+        },
+        "regressionTaskIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^TASK-[0-9]{4,}$"
+          }
         }
       }
     }

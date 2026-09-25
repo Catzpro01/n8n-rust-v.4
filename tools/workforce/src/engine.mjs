@@ -480,6 +480,57 @@ function verifiedSliceEvidence(ctx, sliceId) {
   return ctx.tx.list('Evidence').filter((e) => e.sliceId === sliceId && e.state === 'VERIFIED');
 }
 
+// ---------------------------------------------------------------- DEC-0015: two-phase execution
+const phaseOf = (task) => task.execution?.phase ?? 'PHASE_A_REMOTE';
+
+function applyExecutionPhase(ctx, task, p) {
+  const xp = ctx.policy.executionPhases;
+  if (!xp) return;
+  const phase = p.execution?.phase ?? xp.defaultPhase;
+  if (!xp.phases.includes(phase)) fail('INVALID_SCHEMA', `execution.phase must be one of ${xp.phases.join('/')}`);
+  const runnerType = p.requirements?.runnerType ?? null;
+  if (phase === 'PHASE_B_RUNNER' && !xp.runnerTypes.includes(runnerType)) fail('INVALID_SCHEMA', `a PHASE_B_RUNNER task declares requirements.runnerType (${xp.runnerTypes.join('/')}) (DEC-0015)`);
+  if (phase === 'PHASE_A_REMOTE' && (runnerType !== null || p.requirements?.runnerRequired === true)) fail('INVALID_SCHEMA', 'a PHASE_A_REMOTE task needs no self-hosted runner; classify it PHASE_B_RUNNER instead (DEC-0015)');
+  task.execution.phase = phase;
+  task.requirements.runnerRequired = phase === 'PHASE_B_RUNNER';
+  task.requirements.runnerType = runnerType;
+  if (phase === 'PHASE_B_RUNNER' && !p.requirements?.runnerClasses) task.requirements.runnerClasses = [runnerType];
+  task.runnerVerification = null;
+}
+
+function requireRunnerPass(holder) {
+  const rv = holder.runnerVerification;
+  if (!rv || rv.status !== 'PASS') fail('EVIDENCE_INSUFFICIENT', `self-hosted checks are ${rv?.status ?? 'WAITING_RUNNER'}${rv?.checks?.length ? ` (${rv.checks.join(', ')})` : ''}; WAITING_RUNNER is not PASS (DEC-0015)`, { runnerVerification: rv?.status ?? 'WAITING_RUNNER' });
+}
+
+function runnerEvidence(ctx, belongs) {
+  const ev = ctx.mustGet('Evidence', ctx.p.evidenceId, 'runner verification evidence');
+  if (!belongs(ev)) fail('EVIDENCE_INSUFFICIENT', `${ev.objectId} does not belong to ${ctx.targetObject.objectId}`);
+  if (ev.type !== 'RUNNER_VERIFICATION' || ev.state !== 'VERIFIED') fail('EVIDENCE_INSUFFICIENT', `${ev.objectId} must be VERIFIED RUNNER_VERIFICATION evidence`);
+  if (trustRank(ctx.policy, ev.trustLevel) < trustRank(ctx.policy, 'CI_VERIFIED')) fail('EVIDENCE_INSUFFICIENT', 'runner verification must be at least CI_VERIFIED');
+  if (!['PASS', 'FAIL'].includes(ev.result.status)) fail('EVIDENCE_INSUFFICIENT', 'runner verification result must be PASS or FAIL');
+  return ev;
+}
+
+function applyRunnerResult(ctx, holder, ev) {
+  const rv = holder.runnerVerification;
+  if (!rv || !['WAITING_RUNNER', 'FAIL'].includes(rv.status)) fail('INVALID_STATE_TRANSITION', `${holder.objectId} has no deferred self-hosted checks awaiting a result`);
+  const covered = new Set(ev.result.checks ?? []);
+  const missing = rv.checks.filter((c) => !covered.has(c));
+  if (ev.result.status === 'PASS') {
+    if (missing.length) fail('EVIDENCE_INSUFFICIENT', `runner verification does not cover: ${missing.join(', ')}`);
+    const open = rv.regressionTaskIds.map((id) => ctx.mustGet('Task', id, 'regression task')).filter((t) => t.state !== 'COMPLETED');
+    if (open.length) fail('DEPENDENCY_BLOCKED', `linked regression tasks are not COMPLETED: ${open.map((t) => t.objectId).join(', ')}`);
+    holder.runnerVerification = { ...rv, status: 'PASS', mainSha: ev.subject.subjectId, evidenceId: ev.objectId };
+    return;
+  }
+  const reg = ctx.p.regressionTaskId ? ctx.mustGet('Task', ctx.p.regressionTaskId, 'regression task') : null;
+  if (!reg) fail('INVALID_SCHEMA', 'a FAIL result links the regression task created for it (payload.regressionTaskId)');
+  if (reg.objectId === holder.objectId || ['CANCELLED', 'SUPERSEDED'].includes(reg.state)) fail('POLICY_DENIED', `${reg.objectId} cannot serve as the regression task`);
+  if (holder.objectType === 'Slice' && reg.slice === holder.key) fail('POLICY_DENIED', `the regression fix cannot join ${holder.key}: its delivery PR is merged (one delivery PR per Slice); use a maintenance slice or GOVERNANCE task`);
+  holder.runnerVerification = { ...rv, status: 'FAIL', mainSha: ev.subject.subjectId, evidenceId: ev.objectId, regressionTaskIds: [...new Set([...rv.regressionTaskIds, reg.objectId])] };
+}
+
 function denySliceTask(task, what) {
   if (task.slice) fail('POLICY_DENIED', `${task.objectId} belongs to Slice ${task.slice}: ${what} (DEC-0014: one delivery PR per Slice)`);
 }
@@ -592,6 +643,7 @@ function validateAnchor(ctx, type, subject) {
     default: fail('EVIDENCE_INSUFFICIENT', `unknown anchor type ${subject.subjectType}`);
   }
   if (type === 'MAIN_VERIFICATION' && subject.subjectType !== 'MAIN') fail('EVIDENCE_INSUFFICIENT', 'MAIN_VERIFICATION evidence must be anchored to a main SHA');
+  if (type === 'RUNNER_VERIFICATION' && subject.subjectType !== 'MAIN') fail('EVIDENCE_INSUFFICIENT', 'RUNNER_VERIFICATION evidence must be anchored to the main SHA the self-hosted checks ran on (DEC-0015)');
 }
 
 const HANDLERS = {
@@ -625,6 +677,7 @@ const HANDLERS = {
       current: { headSha: null, prNumber: null, nextAction: p.nextAction ?? null, blocker: null, handoffId: null, reason: null, supersededBy: null, completedMainSha: null },
       history: { reassignedCount: 0, retryCount: 0, recoveryCount: 0, deferCount: 0, ciRetryCount: 0, reservationConflictCount: 0, scopeCorrectionCount: 0 },
     };
+    applyExecutionPhase(ctx, task, p);
     const tasks = new Map(tx.list('Task').map((t) => [t.objectId, t]));
     tasks.set(task.objectId, task);
     const cycle = findCycle(tasks, task.objectId);
@@ -694,6 +747,50 @@ const HANDLERS = {
     const task = taskOf(ctx);
     ctx.transition(task, 'WAITING_EXTERNAL', { eventType: 'TASK_WAITING_EXTERNAL' });
     ctx.coupleAgent(task, ['WORKING'], 'WAITING_EXTERNAL');
+  },
+
+  // DEC-0015: runner-required work waits for the shared self-hosted pool without holding a worker slot;
+  // merged manager-executed work whose self-hosted checks were deferred waits for runner verification.
+  TASK_WAIT_RUNNER(ctx) {
+    const task = taskOf(ctx);
+    const deferred = ctx.p.deferredRunnerChecks;
+    if (deferred !== undefined) {
+      denySliceTask(task, 'its runner verification is tracked on the Slice (SLICE_RUNNER_RESULT)');
+      if (task.state !== 'UNASSIGNED' || task.owner) fail('POLICY_DENIED', 'deferred runner verification here is for merged manager-executed work; worker deliveries carry it on their merge-queue item');
+      if (!Array.isArray(deferred) || !deferred.length) fail('INVALID_SCHEMA', 'payload.deferredRunnerChecks must name the self-hosted checks that are WAITING_RUNNER');
+      if (!/^[0-9a-f]{40}$/.test(ctx.p.mergeSha ?? '')) fail('INVALID_SCHEMA', 'payload.mergeSha (40-hex) names the merged commit whose self-hosted checks are deferred');
+      task.runnerVerification = { status: 'WAITING_RUNNER', checks: [...new Set(deferred)].sort(), mainSha: null, evidenceId: null, regressionTaskIds: [] };
+      task.current.nextAction = `self-hosted checks WAITING_RUNNER for merge ${ctx.p.mergeSha.slice(0, 12)}`;
+      ctx.transition(task, 'WAITING_RUNNER', { eventType: 'TASK_WAITING_RUNNER', reasonCode: 'RUNNER_VERIFICATION_DEFERRED', reasonRequired: false });
+      return;
+    }
+    if (phaseOf(task) !== 'PHASE_B_RUNNER') fail('POLICY_DENIED', `${task.objectId} is PHASE_A_REMOTE; only runner-required work waits for a runner (DEC-0015)`);
+    if (task.state === 'WORKING') {
+      const h = ctx.p.handoffId ? ctx.tx.get('Handoff', ctx.p.handoffId) : null;
+      if (!h || h.taskId !== task.objectId) fail('POLICY_DENIED', 'parking runner-required work in progress requires a handoff for this task, so any free slot can resume it');
+      const prev = task.owner?.agentId;
+      task.current.handoffId = h.objectId;
+      releaseTaskAuthority(ctx, task, { reasonCode: 'WAITING_RUNNER' });
+      task.owner = null;
+      task.branch.persistentBranch = null; task.branch.taskBranch = null;
+      ctx.transition(task, 'WAITING_RUNNER', { eventType: 'TASK_WAITING_RUNNER', reasonCode: 'NO_RUNNER_ONLINE', reasonRequired: false });
+      ctx.syncAgent(prev);
+      return;
+    }
+    ctx.transition(task, 'WAITING_RUNNER', { eventType: 'TASK_WAITING_RUNNER', reasonCode: 'NO_RUNNER_ONLINE', reasonRequired: false });
+  },
+
+  TASK_RUNNER_AVAILABLE(ctx) {
+    const task = taskOf(ctx);
+    if (task.runnerVerification && task.runnerVerification.status !== 'NOT_REQUIRED') fail('POLICY_DENIED', `${task.objectId} waits for runner verification of merged work; record it with TASK_RUNNER_RESULT`);
+    ctx.transition(task, 'UNASSIGNED', { eventType: 'TASK_RUNNER_AVAILABLE', reasonCode: 'RUNNER_ONLINE', reasonRequired: false });
+  },
+
+  TASK_RUNNER_RESULT(ctx) {
+    const task = taskOf(ctx);
+    denySliceTask(task, 'its runner verification is recorded on the Slice (SLICE_RUNNER_RESULT)');
+    applyRunnerResult(ctx, task, runnerEvidence(ctx, (e) => e.taskId === task.objectId));
+    ctx.touch(task, task.runnerVerification.status === 'PASS' ? 'TASK_RUNNER_VERIFIED' : 'TASK_RUNNER_REGRESSION');
   },
 
   TASK_BLOCK(ctx) {
@@ -778,6 +875,7 @@ const HANDLERS = {
     const mainEv = ev.find((e) => e.type === 'MAIN_VERIFICATION' && ctx.policy.completion.mainVerificationTrust.includes(e.trustLevel) && e.result.status === 'PASS');
     if (!mainEv) fail('EVIDENCE_INSUFFICIENT', 'fresh-main verification evidence (MAIN_VERIFICATION, trust >= MAIN_VERIFIED, PASS) is required');
     if (merged.verifiedMainSha !== mainEv.subject.subjectId) fail('EVIDENCE_INSUFFICIENT', 'main verification evidence does not match the merge item verified main SHA');
+    if ((merged.checks.deferredRunnerChecks ?? []).length) requireRunnerPass(task);
     task.current.completedMainSha = mainEv.subject.subjectId;
     releaseTaskAuthority(ctx, task, { leaseTo: 'COMPLETED', reasonCode: 'TASK_COMPLETED' });
     ctx.transition(task, 'COMPLETED', { eventType: 'TASK_COMPLETED', evidenceIds: ev.map((e) => e.objectId) });
@@ -804,6 +902,9 @@ const HANDLERS = {
     if (!ev.some((e) => e.type === 'COMMIT' && e.subject?.subjectId === mergeSha)) fail('EVIDENCE_INSUFFICIENT', 'no VERIFIED COMMIT evidence anchored to payload.mergeSha');
     const mainEv = ev.find((e) => e.type === 'MAIN_VERIFICATION' && ctx.policy.completion.mainVerificationTrust.includes(e.trustLevel) && e.result.status === 'PASS');
     if (!mainEv) fail('EVIDENCE_INSUFFICIENT', 'fresh-main verification evidence (MAIN_VERIFICATION, trust >= MAIN_VERIFIED, PASS) is required');
+    const deferredCi = ev.some((e) => e.type === 'CI' && (e.result.deferredRunnerChecks ?? []).length);
+    if (deferredCi && !task.runnerVerification) fail('EVIDENCE_INSUFFICIENT', 'CI evidence defers self-hosted checks (WAITING_RUNNER is not PASS): park the task with TASK_WAIT_RUNNER until runner verification passes (DEC-0015)');
+    if (deferredCi || task.runnerVerification) requireRunnerPass(task);
     task.current.completedMainSha = mainEv.subject.subjectId;
     if (task.execution) { task.execution.hold = false; task.execution.decisionPending = false; }
     ctx.transition(task, 'COMPLETED', { eventType: 'TASK_COMPLETED', evidenceIds: ev.map((e) => e.objectId) });
@@ -1235,6 +1336,12 @@ const HANDLERS = {
       if (!allowed.includes(k)) fail('POLICY_DENIED', `${k} is computed by the control plane, not reported`);
       item.checks[k] = v;
     }
+    if (ctx.p.deferredRunnerChecks !== undefined) {
+      const d = ctx.p.deferredRunnerChecks;
+      if (!Array.isArray(d) || d.some((n) => typeof n !== 'string' || !n)) fail('INVALID_SCHEMA', 'payload.deferredRunnerChecks lists self-hosted check names');
+      item.checks.deferredRunnerChecks = [...new Set(d)].sort();
+      item.checks.runnerChecks = d.length ? 'WAITING_RUNNER' : 'NONE';
+    }
     item.checks.checkedHeadSha = item.pr.headSha;
     if (item.state === 'READY' && allowed.some((k) => item.checks[k] !== ctx.policy.merge.passValues[k])) holdMergeItem(ctx, item, 'CHECK_FAILED');
     ctx.touch(item, 'MQ_CHECKS_UPDATED');
@@ -1332,10 +1439,17 @@ const HANDLERS = {
     if (ctx.p.verifiedMainSha && ctx.p.verifiedMainSha !== mainEv.subject.subjectId) fail('EVIDENCE_INSUFFICIENT', 'payload main SHA does not match the main verification evidence');
     item.verifiedMainSha = mainEv.subject.subjectId;
     ctx.transition(item, 'MERGED', { eventType: 'MQ_VERIFIED', reasonRequired: false, evidenceIds: [mainEv.objectId] });
+    const deferred = item.checks.deferredRunnerChecks ?? [];
+    const rv = deferred.length ? { status: 'WAITING_RUNNER', checks: [...deferred], mainSha: null, evidenceId: null, regressionTaskIds: [] } : null;
     if (item.sliceId) {
       const slice = ctx.mustGet('Slice', item.sliceId, 'slice');
       slice.delivery.verifiedMainSha = item.verifiedMainSha;
+      if (rv) slice.runnerVerification = rv;
       ctx.touch(slice, 'SLICE_MAIN_VERIFIED');
+    } else if (rv) {
+      const task = ctx.mustGet('Task', item.taskId, 'task');
+      task.runnerVerification = rv;
+      ctx.touch(task, 'TASK_RUNNER_VERIFICATION_DEFERRED');
     }
   },
 
@@ -1429,6 +1543,8 @@ const HANDLERS = {
     // 6. main re-verified
     const mainEv = ev.find((e) => e.type === 'MAIN_VERIFICATION' && policy.completion.mainVerificationTrust.includes(e.trustLevel) && e.result.status === 'PASS' && e.subject?.subjectId === item.verifiedMainSha);
     gate('MAIN_REVERIFIED', Boolean(mainEv), 'fresh-main verification evidence matching the verified main SHA is required');
+    const rv = slice.runnerVerification;
+    gate('MAIN_REVERIFIED', !rv || ['NOT_REQUIRED', 'PASS'].includes(rv.status), `self-hosted checks are ${rv?.status} (${(rv?.checks ?? []).join(', ')}); WAITING_RUNNER is not PASS (DEC-0015)`, { runnerVerification: rv?.status });
     // 7. evidence recorded
     const missing = sp.requiredEvidenceTypes.filter((type) => !ev.some((e) => e.type === type));
     gate('EVIDENCE_RECORDED', missing.length === 0, `missing VERIFIED evidence: ${missing.join(', ')}`);
@@ -1463,6 +1579,22 @@ const HANDLERS = {
     if (live.length) fail('DEPENDENCY_BLOCKED', `cancel or supersede the slice tasks first: ${live.map((t) => t.objectId).join(', ')}`);
     slice.supersededBy = by.objectId;
     ctx.transition(slice, 'SUPERSEDED', { eventType: 'SLICE_SUPERSEDED' });
+  },
+
+  SLICE_RUNNER_RESULT(ctx) {
+    const slice = ctx.targetObject;
+    applyRunnerResult(ctx, slice, runnerEvidence(ctx, (e) => e.sliceId === slice.objectId));
+    if (slice.runnerVerification.status === 'FAIL') ctx.transition(slice, 'REGRESSION', { eventType: 'SLICE_REGRESSION', reasonCode: 'RUNNER_CHECKS_FAILED', reasonRequired: false });
+    else ctx.touch(slice, 'SLICE_RUNNER_VERIFIED');
+  },
+
+  SLICE_REGRESSION_RESOLVED(ctx) {
+    const slice = ctx.targetObject;
+    const rv = slice.runnerVerification;
+    const open = (rv?.regressionTaskIds ?? []).map((id) => ctx.mustGet('Task', id, 'regression task')).filter((t) => t.state !== 'COMPLETED');
+    if (!rv?.regressionTaskIds.length || open.length) fail('DEPENDENCY_BLOCKED', `every linked regression task must be COMPLETED first: ${open.map((t) => `${t.objectId}(${t.state})`).join(', ') || 'none linked'}`);
+    slice.runnerVerification = { ...rv, status: 'WAITING_RUNNER', mainSha: null, evidenceId: null };
+    ctx.transition(slice, 'VERIFYING', { eventType: 'SLICE_REGRESSION_RESOLVED', reasonRequired: false });
   },
 
   // ---------------------------------------------------------------- records

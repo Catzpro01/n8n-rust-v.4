@@ -233,6 +233,19 @@
             "null"
           ],
           "pattern": "^[0-9a-f]{40}$"
+        },
+        "runnerChecks": {
+          "enum": [
+            "NONE",
+            "WAITING_RUNNER"
+          ]
+        },
+        "deferredRunnerChecks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       }
     },

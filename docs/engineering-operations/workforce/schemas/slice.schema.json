@@ -52,6 +52,7 @@
         "DELIVERING",
         "MERGING",
         "VERIFYING",
+        "REGRESSION",
         "COMPLETED",
         "CANCELLED",
         "SUPERSEDED"
@@ -244,6 +245,58 @@
     },
     "reason": {
       "$ref": "#/$defs/reason"
+    },
+    "runnerVerification": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "checks",
+        "mainSha",
+        "evidenceId",
+        "regressionTaskIds"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "NOT_REQUIRED",
+            "WAITING_RUNNER",
+            "PASS",
+            "FAIL"
+          ]
+        },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "mainSha": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "evidenceId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^EVD-[0-9]{4,}$"
+        },
+        "regressionTaskIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^TASK-[0-9]{4,}$"
+          }
+        }
+      }
     }
   },
   "$defs": {

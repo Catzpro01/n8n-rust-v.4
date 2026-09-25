@@ -71,6 +71,13 @@ export function verifyIntegrity(store, policy) {
     if (l && l.state !== 'ACTIVE') findings.push({ kind: 'TASK_POINTS_AT_ENDED_LEASE', object: `Task/${t.objectId}`, ref: l.objectId, leaseState: l.state });
     if (isTerminal(policy, 'Task', t.state) && t.execution.activeLeaseId) findings.push({ kind: 'TERMINAL_TASK_HOLDS_LEASE', object: `Task/${t.objectId}` });
     for (const r of t.execution.reservationIds) if (!res.has(r)) findings.push({ kind: 'DANGLING_RESERVATION', object: `Task/${t.objectId}`, ref: r });
+    // DEC-0015: WAITING_RUNNER work never holds a worker slot; completion never hides pending runner checks.
+    if (t.state === 'WAITING_RUNNER' && (t.owner || t.execution.activeLeaseId)) findings.push({ kind: 'WAITING_RUNNER_HOLDS_SLOT', object: `Task/${t.objectId}` });
+    if (t.state === 'COMPLETED' && t.runnerVerification && t.runnerVerification.status !== 'PASS' && t.runnerVerification.status !== 'NOT_REQUIRED') findings.push({ kind: 'COMPLETED_WITH_UNVERIFIED_RUNNER_CHECKS', object: `Task/${t.objectId}`, status: t.runnerVerification.status });
+  }
+  for (const sl of s.Slice ?? []) {
+    if (sl.state === 'COMPLETED' && sl.runnerVerification && !['PASS', 'NOT_REQUIRED'].includes(sl.runnerVerification.status)) findings.push({ kind: 'COMPLETED_WITH_UNVERIFIED_RUNNER_CHECKS', object: `Slice/${sl.objectId}`, status: sl.runnerVerification.status });
+    for (const id of sl.runnerVerification?.regressionTaskIds ?? []) if (!tasks.has(id)) findings.push({ kind: 'DANGLING_REGRESSION_TASK', object: `Slice/${sl.objectId}`, ref: id });
   }
   for (const r of s.Reservation) {
     if (!tasks.has(r.taskId)) findings.push({ kind: 'DANGLING_TASK', object: `Reservation/${r.objectId}`, ref: r.taskId });
