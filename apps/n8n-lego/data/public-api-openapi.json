@@ -1,0 +1,1739 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "n8n Public API",
+    "description": "n8n Public API",
+    "termsOfService": "https://n8n.io/legal/#terms",
+    "contact": {
+      "email": "hello@n8n.io"
+    },
+    "license": {
+      "name": "Sustainable Use License",
+      "url": "https://github.com/n8n-io/n8n/blob/master/LICENSE.md"
+    },
+    "version": "1.1.1"
+  },
+  "externalDocs": {
+    "description": "n8n API documentation",
+    "url": "https://docs.n8n.io/api/"
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Execution",
+      "description": "Operations about executions"
+    },
+    {
+      "name": "Workflow",
+      "description": "Operations about workflows"
+    },
+    {
+      "name": "Tags",
+      "description": "Operations about tags"
+    },
+    {
+      "name": "Variables",
+      "description": "Operations about variables"
+    }
+  ],
+  "paths": {
+    "/workflows": {
+      "get": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Retrieve all workflows",
+        "description": "Retrieve all workflows from your instance.",
+        "parameters": [
+          {
+            "name": "active",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "example": true
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "required": false,
+            "explode": false,
+            "allowReserved": true,
+            "schema": {
+              "type": "string",
+              "example": "test,production"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "explode": false,
+            "allowReserved": true,
+            "schema": {
+              "type": "string",
+              "example": "My Workflow"
+            }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "explode": false,
+            "allowReserved": true,
+            "schema": {
+              "type": "string",
+              "example": "VmwOO9HeTEj20kxM"
+            }
+          },
+          {
+            "name": "excludePinnedData",
+            "in": "query",
+            "required": false,
+            "description": "Set this to avoid retrieving pinned data",
+            "schema": {
+              "type": "boolean",
+              "example": true
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "The maximum number of items to return.",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "example": 100,
+              "default": 100,
+              "maximum": 250
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Paginate by setting the cursor parameter to the nextCursor attribute returned by the previous request's response. Default value fetches the first \"page\" of the collection. See pagination for more detail.",
+            "required": false,
+            "style": "form",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation successful.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Create a workflow",
+        "description": "Create a workflow in your instance.",
+        "requestBody": {
+          "description": "Created workflow object.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Workflow"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "A workflow object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Workflow"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is invalid or provides malformed data."
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/workflows/{id}": {
+      "get": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Retrieve a workflow",
+        "description": "Retrieve a workflow.",
+        "parameters": [
+          {
+            "name": "excludePinnedData",
+            "in": "query",
+            "required": false,
+            "description": "Set this to avoid retrieving pinned data",
+            "schema": {
+              "type": "boolean",
+              "example": true
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID of the workflow.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation successful.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Workflow"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "The specified resource was not found."
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Update a workflow",
+        "description": "Update a workflow. If the workflow is published, the updated version will be automatically re-published.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID of the workflow.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Updated workflow object.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Workflow"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Workflow object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Workflow"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is invalid or provides malformed data."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "The specified resource was not found."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Delete a workflow",
+        "description": "Delete a workflow.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID of the workflow.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation successful.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Workflow"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "The specified resource was not found."
+          }
+        }
+      }
+    },
+    "/workflows/{id}/activate": {
+      "post": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Publish a workflow",
+        "description": "Publish a workflow. In n8n v1, this action was termed activating a workflow.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID of the workflow.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Optional parameters to publish the workflow.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "versionId": {
+                    "type": "string",
+                    "description": "The specific version ID to activate or publish. If not provided, the latest version is used."
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Optional name for the workflow version during activation."
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Optional description for the workflow version during activation."
+                  }
+                }
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": "Workflow object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Workflow"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is invalid or provides malformed data."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "The specified resource was not found."
+          }
+        }
+      }
+    },
+    "/workflows/{id}/deactivate": {
+      "post": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Deactivate a workflow",
+        "description": "Deactivate a workflow.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID of the workflow.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workflow object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Workflow"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "The specified resource was not found."
+          }
+        }
+      }
+    },
+    "/workflows/{id}/tags": {
+      "get": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Get workflow tags",
+        "description": "Get workflow tags.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID of the workflow.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of tags",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowTags"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is invalid or provides malformed data."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "The specified resource was not found."
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Update tags of a workflow",
+        "description": "Update tags of a workflow.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID of the workflow.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "List of tags",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagIds"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "List of tags after add the tag",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowTags"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is invalid or provides malformed data."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "The specified resource was not found."
+          }
+        }
+      }
+    },
+    "/tags": {
+      "get": {
+        "tags": [
+          "Tags"
+        ],
+        "summary": "Retrieve all tags",
+        "description": "Retrieve all tags from your instance.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "The maximum number of items to return.",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "example": 100,
+              "default": 100,
+              "maximum": 250
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Paginate by setting the cursor parameter to the nextCursor attribute returned by the previous request's response. Default value fetches the first \"page\" of the collection. See pagination for more detail.",
+            "required": false,
+            "style": "form",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation successful.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Tags"
+        ],
+        "summary": "Create a tag",
+        "description": "Create a tag in your instance.",
+        "requestBody": {
+          "description": "Created tag object.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Tag"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "A tag object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tag"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is invalid or provides malformed data."
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/tags/{id}": {
+      "get": {
+        "tags": [
+          "Tags"
+        ],
+        "summary": "Retrieves a tag",
+        "description": "Retrieves a tag.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID of the tag.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation successful.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tag"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "The specified resource was not found."
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Tags"
+        ],
+        "summary": "Update a tag",
+        "description": "Update a tag.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID of the tag.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Updated tag object.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Tag"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Tag object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tag"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is invalid or provides malformed data."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "The specified resource was not found."
+          },
+          "409": {
+            "description": "Conflict"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Tags"
+        ],
+        "summary": "Delete a tag",
+        "description": "Deletes a tag.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID of the tag.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation successful.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tag"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "The specified resource was not found."
+          }
+        }
+      }
+    },
+    "/variables": {
+      "get": {
+        "tags": [
+          "Variables"
+        ],
+        "summary": "Retrieve variables",
+        "description": "Retrieve variables from your instance.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "The maximum number of items to return.",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "example": 100,
+              "default": 100,
+              "maximum": 250
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Paginate by setting the cursor parameter to the nextCursor attribute returned by the previous request's response. Default value fetches the first \"page\" of the collection. See pagination for more detail.",
+            "required": false,
+            "style": "form",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "explode": false,
+            "allowReserved": true,
+            "schema": {
+              "type": "string",
+              "example": "VmwOO9HeTEj20kxM"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "empty"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation successful.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VariableList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Variables"
+        ],
+        "summary": "Create a variable",
+        "description": "Create a variable in your instance.",
+        "requestBody": {
+          "description": "Payload for variable to create.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VariableCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Operation successful."
+          },
+          "400": {
+            "description": "The request is invalid or provides malformed data."
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/variables/{id}": {
+      "put": {
+        "tags": [
+          "Variables"
+        ],
+        "summary": "Update a variable",
+        "description": "Update a variable from your instance.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID of the variable.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Payload for variable to update.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VariableCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Operation successful."
+          },
+          "400": {
+            "description": "The request is invalid or provides malformed data."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "The specified resource was not found."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Variables"
+        ],
+        "summary": "Delete a variable",
+        "description": "Delete a variable from your instance.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID of the variable.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Operation successful."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "The specified resource was not found."
+          }
+        }
+      }
+    },
+    "/executions": {
+      "get": {
+        "tags": [
+          "Execution"
+        ],
+        "summary": "Retrieve all executions",
+        "description": "Retrieve all executions from your instance.",
+        "parameters": [
+          {
+            "name": "includeData",
+            "in": "query",
+            "description": "Whether or not to include the execution's detailed data.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Status to filter the executions by.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "canceled",
+                "error",
+                "running",
+                "success",
+                "waiting"
+              ]
+            }
+          },
+          {
+            "name": "workflowId",
+            "in": "query",
+            "description": "Workflow to filter the executions by.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "1000"
+            }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "explode": false,
+            "allowReserved": true,
+            "schema": {
+              "type": "string",
+              "example": "VmwOO9HeTEj20kxM"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "The maximum number of items to return.",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "example": 100,
+              "default": 100,
+              "maximum": 250
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Paginate by setting the cursor parameter to the nextCursor attribute returned by the previous request's response. Default value fetches the first \"page\" of the collection. See pagination for more detail.",
+            "required": false,
+            "style": "form",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation successful.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "The specified resource was not found."
+          }
+        }
+      }
+    },
+    "/executions/{id}": {
+      "get": {
+        "tags": [
+          "Execution"
+        ],
+        "summary": "Retrieve an execution",
+        "description": "Retrieve an execution from your instance.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID of the execution.",
+            "required": true,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "includeData",
+            "in": "query",
+            "description": "Whether or not to include the execution's detailed data.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation successful.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Execution"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "The specified resource was not found."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Execution"
+        ],
+        "summary": "Delete an execution",
+        "description": "Deletes an execution from your instance.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID of the execution.",
+            "required": true,
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation successful.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Execution"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "The specified resource was not found."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ActiveVersion": {
+        "type": "object",
+        "readOnly": true,
+        "nullable": true,
+        "additionalProperties": false,
+        "properties": {
+          "versionId": {
+            "type": "string",
+            "readOnly": true,
+            "description": "Unique identifier for this workflow version",
+            "example": "7c6b9e3f-8d4a-4b2c-9f1e-6a5d3b8c7e4f"
+          },
+          "workflowId": {
+            "type": "string",
+            "readOnly": true,
+            "description": "The workflow this version belongs to",
+            "example": "2tUt1wbLX592XDdX"
+          },
+          "nodes": {
+            "type": "array",
+            "readOnly": true,
+            "items": {
+              "$ref": "#/components/schemas/Node"
+            }
+          },
+          "connections": {
+            "type": "object",
+            "readOnly": true,
+            "example": {
+              "Jira": {
+                "main": [
+                  [
+                    {
+                      "node": "Jira",
+                      "type": "main",
+                      "index": 0
+                    }
+                  ]
+                ]
+              }
+            }
+          },
+          "authors": {
+            "type": "string",
+            "readOnly": true,
+            "description": "Comma-separated list of author IDs who contributed to this version",
+            "example": "1,2,3"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          }
+        }
+      },
+      "Execution": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "example": 1000
+          },
+          "data": {
+            "type": "object"
+          },
+          "finished": {
+            "type": "boolean",
+            "example": true
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "cli",
+              "error",
+              "integrated",
+              "internal",
+              "manual",
+              "retry",
+              "trigger",
+              "webhook",
+              "evaluation",
+              "chat"
+            ]
+          },
+          "retryOf": {
+            "type": "number",
+            "nullable": true
+          },
+          "retrySuccessId": {
+            "type": "number",
+            "nullable": true,
+            "example": "2"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "stoppedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "The time at which the execution stopped. Will only be null for executions that still have the status 'running'."
+          },
+          "workflowId": {
+            "type": "number",
+            "example": "1000"
+          },
+          "waitTill": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "customData": {
+            "type": "object"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "canceled",
+              "crashed",
+              "error",
+              "new",
+              "running",
+              "success",
+              "unknown",
+              "waiting"
+            ]
+          }
+        }
+      },
+      "ExecutionList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Execution"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "description": "Paginate through executions by setting the cursor parameter to a nextCursor attribute returned by a previous request. Default value fetches the first \"page\" of the collection.",
+            "nullable": true,
+            "example": "MTIzZTQ1NjctZTg5Yi0xMmQzLWE0NTYtNDI2NjE0MTc0MDA"
+          }
+        }
+      },
+      "Node": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "0f5532f9-36ba-4bef-86c7-30d607400b15"
+          },
+          "name": {
+            "type": "string",
+            "example": "Jira"
+          },
+          "webhookId": {
+            "type": "string"
+          },
+          "disabled": {
+            "type": "boolean"
+          },
+          "notesInFlow": {
+            "type": "boolean"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "example": "n8n-nodes-base.jira"
+          },
+          "typeVersion": {
+            "type": "number",
+            "example": 1
+          },
+          "executeOnce": {
+            "type": "boolean",
+            "example": false
+          },
+          "alwaysOutputData": {
+            "type": "boolean",
+            "example": false
+          },
+          "retryOnFail": {
+            "type": "boolean",
+            "example": false
+          },
+          "maxTries": {
+            "type": "number"
+          },
+          "waitBetweenTries": {
+            "type": "number"
+          },
+          "continueOnFail": {
+            "type": "boolean",
+            "example": false,
+            "description": "use onError instead",
+            "deprecated": true
+          },
+          "onError": {
+            "type": "string",
+            "example": "stopWorkflow"
+          },
+          "position": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "example": [
+              -100,
+              80
+            ]
+          },
+          "parameters": {
+            "type": "object",
+            "additionalProperties": true,
+            "example": {
+              "additionalProperties": {}
+            }
+          },
+          "credentials": {
+            "type": "object",
+            "example": {
+              "jiraSoftwareCloudApi": {
+                "id": "35",
+                "name": "jiraApi"
+              }
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          }
+        }
+      },
+      "Project": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "readOnly": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "readOnly": true
+          }
+        }
+      },
+      "SharedWorkflow": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "type": "string",
+            "example": "workflow:owner"
+          },
+          "workflowId": {
+            "type": "string",
+            "example": "2tUt1wbLX592XDdX"
+          },
+          "projectId": {
+            "type": "string",
+            "example": "2tUt1wbLX592XDdX"
+          },
+          "project": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "readOnly": true
+              },
+              "name": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "readOnly": true
+              }
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          }
+        }
+      },
+      "Tag": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "readOnly": true,
+            "example": "2tUt1wbLX592XDdX"
+          },
+          "name": {
+            "type": "string",
+            "example": "Production"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          }
+        }
+      },
+      "TagIds": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "example": "2tUt1wbLX592XDdX"
+            }
+          }
+        }
+      },
+      "TagList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Tag"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "description": "Paginate through tags by setting the cursor parameter to a nextCursor attribute returned by a previous request. Default value fetches the first \"page\" of the collection.",
+            "nullable": true,
+            "example": "MTIzZTQ1NjctZTg5Yi0xMmQzLWE0NTYtNDI2NjE0MTc0MDA"
+          }
+        }
+      },
+      "Variable": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "value"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "readOnly": true
+          },
+          "key": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string",
+            "example": "test"
+          },
+          "type": {
+            "type": "string",
+            "readOnly": true
+          },
+          "project": {
+            "$ref": "#/components/schemas/Project"
+          }
+        }
+      },
+      "VariableCreate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "value"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "readOnly": true
+          },
+          "key": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string",
+            "example": "test"
+          },
+          "type": {
+            "type": "string",
+            "readOnly": true
+          },
+          "projectId": {
+            "type": "string",
+            "example": "VmwOO9HeTEj20kxM",
+            "nullable": true
+          }
+        }
+      },
+      "VariableList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Variable"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "description": "Paginate through variables by setting the cursor parameter to a nextCursor attribute returned by a previous request. Default value fetches the first \"page\" of the collection.",
+            "nullable": true,
+            "example": "MTIzZTQ1NjctZTg5Yi0xMmQzLWE0NTYtNDI2NjE0MTc0MDA"
+          }
+        }
+      },
+      "Workflow": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "nodes",
+          "connections",
+          "settings"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "readOnly": true,
+            "example": "2tUt1wbLX592XDdX"
+          },
+          "name": {
+            "type": "string",
+            "example": "Workflow 1"
+          },
+          "active": {
+            "type": "boolean",
+            "readOnly": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          },
+          "nodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Node"
+            }
+          },
+          "connections": {
+            "type": "object",
+            "example": {
+              "Jira": {
+                "main": [
+                  [
+                    {
+                      "node": "Jira",
+                      "type": "main",
+                      "index": 0
+                    }
+                  ]
+                ]
+              }
+            }
+          },
+          "settings": {
+            "$ref": "#/components/schemas/WorkflowSettings"
+          },
+          "staticData": {
+            "example": {
+              "lastId": 1
+            },
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "jsonString",
+                "nullable": true
+              },
+              {
+                "type": "object",
+                "nullable": true
+              }
+            ]
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Tag"
+            },
+            "readOnly": true
+          },
+          "shared": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SharedWorkflow"
+            }
+          },
+          "activeVersion": {
+            "$ref": "#/components/schemas/ActiveVersion"
+          }
+        }
+      },
+      "WorkflowList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Workflow"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "description": "Paginate through workflows by setting the cursor parameter to a nextCursor attribute returned by a previous request. Default value fetches the first \"page\" of the collection.",
+            "nullable": true,
+            "example": "MTIzZTQ1NjctZTg5Yi0xMmQzLWE0NTYtNDI2NjE0MTc0MDA"
+          }
+        }
+      },
+      "WorkflowSettings": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "saveExecutionProgress": {
+            "type": "boolean"
+          },
+          "saveManualExecutions": {
+            "type": "boolean"
+          },
+          "saveDataErrorExecution": {
+            "type": "string",
+            "enum": [
+              "all",
+              "none"
+            ]
+          },
+          "saveDataSuccessExecution": {
+            "type": "string",
+            "enum": [
+              "all",
+              "none"
+            ]
+          },
+          "executionTimeout": {
+            "type": "number",
+            "example": 3600,
+            "maxLength": 3600
+          },
+          "errorWorkflow": {
+            "type": "string",
+            "example": "VzqKEW0ShTXA5vPj",
+            "description": "The ID of the workflow that contains the error trigger node."
+          },
+          "timezone": {
+            "type": "string",
+            "example": "America/New_York"
+          },
+          "executionOrder": {
+            "type": "string",
+            "example": "v1"
+          },
+          "callerPolicy": {
+            "type": "string",
+            "enum": [
+              "any",
+              "none",
+              "workflowsFromAList",
+              "workflowsFromSameOwner"
+            ],
+            "default": "workflowsFromSameOwner",
+            "description": "Controls which workflows are allowed to call this workflow using the Execute Workflow node.\n\nAvailable options:\n- `any`: Any workflow can call this workflow (no restrictions)\n- `none`: No other workflows can call this workflow (completely blocked)\n- `workflowsFromSameOwner` (default): Only workflows owned by the same project can call this workflow\n  * For personal projects: Only workflows created by the same user\n  * For team projects: Only workflows within the same team project\n- `workflowsFromAList`: Only specific workflows listed in the `callerIds` field can call this workflow\n  * Requires the `callerIds` field to specify which workflow IDs are allowed\n  * See `callerIds` field documentation for usage\n",
+            "example": "workflowsFromSameOwner"
+          },
+          "callerIds": {
+            "type": "string",
+            "description": "Comma-separated list of workflow IDs allowed to call this workflow (only used with workflowsFromAList policy)",
+            "example": "14, 18, 23"
+          },
+          "timeSavedPerExecution": {
+            "type": "number",
+            "description": "Estimated time saved per execution in minutes"
+          },
+          "availableInMCP": {
+            "type": "boolean",
+            "default": false,
+            "description": "Controls whether this workflow is accessible via the Model Context Protocol (MCP).\n\nWhen enabled, this workflow can be called by MCP clients (AI assistants and other tools\nthat support MCP). This allows external AI tools to discover and execute this workflow\nas part of their capabilities.\n\nRequirements for enabling MCP access:\n- The workflow must be active (not deactivated)\n- The workflow must contain at least one active Webhook node\n- Only webhook-triggered workflows can be exposed via MCP\n\nSecurity note: When a workflow is available in MCP, it can be discovered and executed\nby any MCP client that has the appropriate API credentials for your n8n instance.\n",
+            "example": false
+          }
+        }
+      },
+      "WorkflowTags": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Tag"
+        }
+      }
+    },
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-N8N-API-KEY"
+      }
+    }
+  },
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "x-n8n-lego": {
+    "source": "reference/n8n/packages/cli/src/public-api/v1/openapi.yml (n8n 2.9.4)",
+    "note": "Only the operations this build mounts; shared schemas under components.schemas, other relative $refs inlined.",
+    "operations": 21
+  }
+}

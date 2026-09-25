@@ -14,7 +14,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | **P2** | LEGO / AI / Plugin Foundation | **COMPLETE** | 32/34 | 29 | `P2-S02` (planned) |
 | **P3** | Workflow + Execution + Unlimited Nodes | **COMPLETE** | 17/18 | 24 | `P3-S01` (planned) |
 | **P4** | Trigger / Webhook / Ingress | **COMPLETE** | 9/10 | 19 | `P4-S01` (planned) |
-| **P5** | Identity / Authentication / Authorization / Credentials (Security) | **COMPLETE** | 10/16 | 18 | `P5-M02` (planned) |
+| **P5** | Identity / Authentication / Authorization / Credentials (Security) | **COMPLETE** | 10/18 | 20 | `P5-M08` (in-progress) |
 | **P6** | Node Registry / Node Runtime | **COMPLETE** | 31/35 | 67 | `P6-S01` (planned) |
 | **P7** | Dynamic Parameters / Schema Runtime | **PLANNED** | 0/1 | 29 | `P7-S01` (planned) |
 | **P8** | Storage / Data Layer | **PLANNED** | 0/1 | 5 | `P8-S01` (planned) |
@@ -22,7 +22,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | **P10** | Multi-Tenant / Isolation / Quota | **PLANNED** | 0/1 | 5 | `P10-S01` (planned) |
 | **P11** | Worker / Distributed Scaling / HA | **PLANNED** | 0/1 | 3 | `P11-S01` (planned) |
 
-> P0-P11 are the complete top-level set. No P12+ is created for features, optimization, hardening or debt; legacy P12-P23 are consolidated into futurePrograms[] with traceability; P24+ is forbidden. There is no P5.9: P5 debt is maintenance slices P5-Mnn (P5-M01..M08).
+> P0-P11 are the complete top-level set. No P12+ is created for features, optimization, hardening or debt; legacy P12-P23 are consolidated into futurePrograms[] with traceability; P24+ is forbidden. There is no P5.9: P5 debt is maintenance slices P5-Mnn (P5-M01..M10).
 
 ## Future programs (legacy P12–P23, consolidated)
 
@@ -41,17 +41,17 @@ Legacy traceability: legacy issue → feature (`sourceIssue`) → program (`pare
 | Status | Features |
 | --- | --- |
 | implemented | 136 |
-| in-progress | 1 |
-| planned | 169 |
+| in-progress | 2 |
+| planned | 170 |
 | proposed | 47 |
 | blocked | 0 |
 | deferred | 1 |
 | superseded | 0 |
 | retired | 0 |
 | rejected | 2 |
-| **total** | **356** |
+| **total** | **358** |
 
-Relevance: active 339, maintenance 14, archived 3.
+Relevance: active 339, maintenance 16, archived 3.
 
 ## Governance rules
 
@@ -322,7 +322,7 @@ Identity, sessions, authorization, credential boundary, key management, account 
 
 **Source issues:** #85, #78, #214, #215, #216, #217, #218, #219, #220, #221
 
-<details><summary>Slices (16)</summary>
+<details><summary>Slices (18)</summary>
 
 | Slice | Title | Status | PR | Merge SHA | Issue |
 | --- | --- | --- | --- | --- | --- |
@@ -341,11 +341,13 @@ Identity, sessions, authorization, credential boundary, key management, account 
 | `P5-M05` | Multi-host key storage and shared session + rate-limiter state; depends on the P8 storage contract (P8-S01, not authorized) | planned | — | — | #85 |
 | `P5-M06` | Email-based password recovery: needs a mail transport decision first (Node has no built-in SMTP: a dependency or an injected transport contract), then upstream /rest/forgot-password delivery over the P5 reset-token primitive (split out of P5-M03) | planned | — | — | #85 |
 | `P5-M07` | Service-principal REST + UI management over the P5.7 programmatic lifecycle (create shown once, redacted list, revoke with tombstone) (split out of P5-M03) | planned | — | — | #85 |
-| `P5-M08` | Public /api/v1 remaining resources: executions, credentials, tags, users, variables, projects, audit, source-control, data-tables, plus /api/v1/openapi.yml and /api/v1/docs (split out of P5-M03; builds on the P5-M03 boundary) | planned | — | — | #85 |
+| `P5-M08` | Public /api/v1 second surface: tags (5 operations), variables (4, licence-gated 403 like the community edition), executions list/get/delete (lastId cursor), GET /api/v1/openapi.yml of exactly the mounted operations. Re-planned by the Manager: credentials, users and /docs to P5-M09; resources without a backing model to P5-M10 (one delivery PR per slice) | in-progress | — | — | #85 |
+| `P5-M09` | Public /api/v1 credentials (list, create, update, delete, schema; secrets never returned, data validated against the credential type) and users (list, get, create, delete, change role), plus /api/v1/docs (needs a decision on serving Swagger UI without a runtime dependency). Split out of P5-M08 | planned | — | — | #85 |
+| `P5-M10` | Public /api/v1 resources that need a backing model this product does not have yet: projects, audit, source-control, data-tables, workflow and credential transfer, workflow versions, execution retry, execution tags (upstream AnnotationTag). Blocked until those models exist; split out of P5-M08 | planned | — | — | #85 |
 
 </details>
 
-<details><summary>Features (18: 10 implemented, 1 deferred, 7 planned)</summary>
+<details><summary>Features (20: 10 implemented, 1 deferred, 8 planned, 1 in-progress)</summary>
 
 | Feature | Title | Status | Relevance | Slice | Issues | Merge SHA |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -366,7 +368,9 @@ Identity, sessions, authorization, credential boundary, key management, account 
 | `P5-F-DEBT-007` | Public /api/v1 compatibility surface: API-key boundary + workflows resource | implemented | maintenance | `P5-M03` | #85, #221 | `cf52701c` |
 | `P5-F-DEBT-008` | Email-based password recovery | planned | maintenance | `P5-M06` | #85, #221 | — |
 | `P5-F-DEBT-009` | Service-principal REST + UI management | planned | maintenance | `P5-M07` | #85, #221 | — |
-| `P5-F-DEBT-010` | Public /api/v1 remaining resources and OpenAPI/docs endpoints | planned | maintenance | `P5-M08` | #85, #221 | — |
+| `P5-F-DEBT-010` | Public /api/v1 tags, variables, executions (list/get/delete) and openapi.yml | in-progress | maintenance | `P5-M08` | #85, #221 | — |
+| `P5-F-DEBT-011` | Public /api/v1 credentials and users resources, plus /api/v1/docs | planned | maintenance | `P5-M09` | #85, #221 | — |
+| `P5-F-DEBT-012` | Public /api/v1 resources blocked on missing models: projects, audit, source-control, data-tables, transfers, workflow versions, execution retry and tags | planned | maintenance | `P5-M10` | #85, #221 | — |
 
 </details>
 

@@ -34,10 +34,16 @@
  *     current version (`activeVersionId = versionId`); there is no trigger
  *     registration service to consult, so no trigger-node check is claimed.
  *
- * Not mounted yet (later slices): executions, credentials, tags, users,
- * variables, projects, audit, source-control, data-tables, openapi.yml/docs.
+ * P5-M08 adds tags, variables (licence-gated like the community edition),
+ * executions list/get/delete and `GET /api/v1/openapi.yml`, a spec of exactly
+ * the mounted operations (see scripts/extract-public-api-spec.py).
+ *
+ * Not mounted yet: credentials, users and `/docs` (P5-M09); projects, audit,
+ * source-control, data-tables, workflow/credential transfer, workflow
+ * versions, execution retry and execution tags (P5-M10, no backing model).
  */
 import { randomUUID } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 
 import { HttpError } from '../compat/error.mjs';
 import { sendJson } from '../compat/response.mjs';
@@ -57,6 +63,8 @@ export const PUBLIC_API_MESSAGES = Object.freeze({
   INVALID_JSON: 'Invalid JSON in request body',
   INVALID_CURSOR: 'An invalid cursor was provided',
   TAGS_NOT_FOUND: 'Some tags not found',
+  TAG_EXISTS: 'Tag already exists',
+  RUNNING_EXECUTION: 'Cannot delete a running execution',
 });
 
 export const PUBLIC_API_LIMITS = Object.freeze({ DEFAULT_LIMIT: 100, MAX_LIMIT: 250 });
@@ -212,6 +220,44 @@ export function decodeOffsetCursor(cursor) {
     throw invalid(PUBLIC_API_MESSAGES.INVALID_CURSOR);
   }
   return { offset, limit };
+}
+
+/** Upstream `encodeNextCursor` (lastId flavour, used by executions). */
+export function encodeLastIdCursor({ lastId, limit, numberOfNextRecords }) {
+  if (numberOfNextRecords) return Buffer.from(JSON.stringify({ lastId, limit })).toString('base64');
+  return null;
+}
+
+/**
+ * Upstream `validCursor` + `decodeCursor`: a cursor is either the offset or the
+ * lastId flavour (`'offset' in decoded` decides). Garbage is a 400.
+ */
+export function decodeCursor(cursor) {
+  let decoded;
+  try {
+    decoded = JSON.parse(Buffer.from(String(cursor), 'base64').toString());
+  } catch {
+    throw invalid(PUBLIC_API_MESSAGES.INVALID_CURSOR);
+  }
+  if (jsonType(decoded) !== 'object') throw invalid(PUBLIC_API_MESSAGES.INVALID_CURSOR);
+  if ('offset' in decoded) return decodeOffsetCursor(cursor);
+  const limit = Number(decoded.limit);
+  const lastId = decoded.lastId;
+  if ((typeof lastId !== 'string' && typeof lastId !== 'number') || !/^\d+$/.test(String(lastId))
+    || !Number.isInteger(limit) || limit < 1 || limit > PUBLIC_API_LIMITS.MAX_LIMIT) {
+    throw invalid(PUBLIC_API_MESSAGES.INVALID_CURSOR);
+  }
+  return { lastId: String(lastId), limit };
+}
+
+/** Offset pagination window from `limit`/`cursor` (tags, variables). */
+function offsetWindow(query) {
+  if (query.cursor) {
+    // Upstream: a lastId-flavour cursor only sets `limit`; offset stays 0.
+    const decoded = decodeCursor(query.cursor);
+    return 'offset' in decoded ? decoded : { offset: 0, limit: decoded.limit };
+  }
+  return { offset: 0, limit: queryLimit(query) };
 }
 
 /* ---------------------------------------------------------- DTOs */
@@ -383,6 +429,265 @@ function updateWorkflowTags(ctx) {
   sendJson(ctx.res, 200, tags.map(tagDto));
 }
 
+/* ---------------------------------------------------------- tags (P5-M08) */
+
+const TAG_READ_ONLY = Object.freeze(['id', 'createdAt', 'updatedAt']);
+const TAG_NAME_MAX = 24;
+
+/** `tag.yml`: additionalProperties false, required name, readOnly id/dates. */
+export function validateTagBody(body) {
+  if (jsonType(body) !== 'object') throw invalid('request/body must be object');
+  for (const key of Object.keys(body)) {
+    if (TAG_READ_ONLY.includes(key)) throw invalid(`request/body/${key} is read-only`);
+    if (key !== 'name') throw invalid('request/body must NOT have additional properties');
+  }
+  if (!('name' in body)) throw invalid("request/body must have required property 'name'");
+  if (typeof body.name !== 'string') throw invalid('request/body/name must be string');
+  return body;
+}
+
+function loadTag(ctx) {
+  const tag = ctx.store.tags.get(ctx.params.id);
+  if (!tag) throw new HttpError(404, PUBLIC_API_MESSAGES.NOT_FOUND);
+  return tag;
+}
+
+/**
+ * Upstream `TagService.save`: entity validation (`@Length(1, 24)`) and the
+ * unique index both reject inside the handler's try/catch, which answers
+ * EVERY save failure with 409 `Tag already exists` — mirrored verbatim.
+ */
+function assertTagSavable(ctx, name, selfId = null) {
+  const duplicate = ctx.store.tags.find((tag) => tag.name === name && tag.id !== selfId);
+  if (name.length < 1 || name.length > TAG_NAME_MAX || duplicate) {
+    throw new HttpError(409, PUBLIC_API_MESSAGES.TAG_EXISTS);
+  }
+}
+
+/** Workflows embed tag copies; keep them in step with the tag table. */
+function syncWorkflowTags(ctx, tagId, replacement) {
+  for (const workflow of ctx.store.workflows.filter((candidate) => (candidate.tags ?? []).some((tag) => tag.id === tagId))) {
+    const tags = replacement
+      ? workflow.tags.map((tag) => (tag.id === tagId ? replacement : tag))
+      : workflow.tags.filter((tag) => tag.id !== tagId);
+    ctx.store.workflows.update(workflow.id, { tags });
+  }
+}
+
+function listTags(ctx) {
+  const { offset, limit } = offsetWindow(ctx.query);
+  const all = ctx.store.tags.all();
+  sendJson(ctx.res, 200, {
+    data: all.slice(offset, offset + limit).map(tagDto),
+    nextCursor: encodeNextCursor({ offset, limit, numberOfTotalRecords: all.length }),
+  });
+}
+
+function createTag(ctx) {
+  const name = ctx.body.name.trim();
+  assertTagSavable(ctx, name);
+  const now = new Date().toISOString();
+  const tag = ctx.store.tags.insert({ name, createdAt: now, updatedAt: now });
+  ctx.logger?.info?.('tag created', { tagId: tag.id, via: 'public-api' });
+  sendJson(ctx.res, 201, tagDto(tag));
+}
+
+function getTag(ctx) {
+  sendJson(ctx.res, 200, tagDto(loadTag(ctx)));
+}
+
+function updateTag(ctx) {
+  const existing = loadTag(ctx);
+  const name = ctx.body.name.trim();
+  assertTagSavable(ctx, name, existing.id);
+  const updated = ctx.store.tags.update(existing.id, { name, updatedAt: new Date().toISOString() });
+  syncWorkflowTags(ctx, existing.id, updated);
+  sendJson(ctx.res, 200, tagDto(updated));
+}
+
+function deleteTag(ctx) {
+  const existing = loadTag(ctx);
+  ctx.store.tags.remove(existing.id);
+  syncWorkflowTags(ctx, existing.id, null);
+  ctx.logger?.info?.('tag deleted', { tagId: existing.id, via: 'public-api' });
+  sendJson(ctx.res, 200, tagDto(existing));
+}
+
+/* ----------------------------------------------------- variables (P5-M08) */
+
+/**
+ * Licensed features of this build. It is the community edition (see
+ * `/rest/license`): no enterprise feature is licensed, so upstream's
+ * `isLicensed(feature)` middleware answers 403 before the scope check.
+ */
+export const PUBLIC_API_LICENSED_FEATURES = Object.freeze([]);
+
+export function featureNotLicensedMessage(feature) {
+  return `Your license does not allow for ${feature}. To enable ${feature}, please upgrade to a license that supports this feature.`;
+}
+
+const VARIABLE_READ_ONLY = Object.freeze(['id', 'type']);
+const VARIABLE_WRITABLE = Object.freeze(['key', 'value', 'projectId']);
+
+/** `variable.create.yml` (create and update share it). */
+export function validateVariableBody(body) {
+  if (jsonType(body) !== 'object') throw invalid('request/body must be object');
+  for (const key of Object.keys(body)) {
+    if (VARIABLE_READ_ONLY.includes(key)) throw invalid(`request/body/${key} is read-only`);
+    if (!VARIABLE_WRITABLE.includes(key)) throw invalid('request/body must NOT have additional properties');
+  }
+  for (const key of ['key', 'value']) {
+    if (!(key in body)) throw invalid(`request/body must have required property '${key}'`);
+    if (typeof body[key] !== 'string') throw invalid(`request/body/${key} must be string`);
+  }
+  if ('projectId' in body && body.projectId !== null && typeof body.projectId !== 'string') {
+    throw invalid('request/body/projectId must be string');
+  }
+  return body;
+}
+
+function validateVariableQuery(ctx) {
+  queryLimit(ctx.query);
+  if (ctx.query.state !== undefined && ctx.query.state !== 'empty') {
+    throw invalid('request/query/state must be equal to one of the allowed values: empty');
+  }
+}
+
+/**
+ * Unreachable while `feat:variables` is unlicensed: the licence gate answers
+ * first. Kept fail-closed so a future licence flag cannot silently expose an
+ * unimplemented store.
+ */
+function variablesNotImplemented() {
+  throw new HttpError(403, featureNotLicensedMessage('feat:variables'));
+}
+
+/* ---------------------------------------------------- executions (P5-M08) */
+
+const EXECUTION_STATUS_FILTER = Object.freeze(['canceled', 'error', 'running', 'success', 'waiting']);
+
+function validateExecutionId(ctx) {
+  if (!/^\d+$/.test(ctx.params.id)) throw invalid('request/params/id must be number');
+}
+
+function validateExecutionListQuery(ctx) {
+  queryBoolean(ctx.query, 'includeData');
+  queryLimit(ctx.query);
+  const { status } = ctx.query;
+  if (status !== undefined && !EXECUTION_STATUS_FILTER.includes(status)) {
+    throw invalid(`request/query/status must be equal to one of the allowed values: ${EXECUTION_STATUS_FILTER.join(', ')}`);
+  }
+}
+
+/**
+ * The executions a key owner may see: those of workflows that exist
+ * (upstream `getSharedWorkflowIds`; this product has one workspace, so every
+ * stored workflow is shared). Executions without a saved workflow are not
+ * listed, exactly like upstream's `workflowId IN (...)` condition.
+ */
+function accessibleExecutions(ctx) {
+  const workflowIds = new Set(ctx.store.workflows.all().map((workflow) => workflow.id));
+  return ctx.store.executions.filter((execution) => execution.workflowId != null && workflowIds.has(execution.workflowId));
+}
+
+/** `ExecutionRepository.getExecutionsForPublicApi` select list. */
+function executionListDto(execution, includeData) {
+  const dto = {
+    id: String(execution.id),
+    finished: Boolean(execution.finished),
+    mode: execution.mode ?? 'manual',
+    retryOf: execution.retryOf ?? null,
+    retrySuccessId: execution.retrySuccessId ?? null,
+    status: execution.status,
+    startedAt: execution.startedAt ?? null,
+    stoppedAt: execution.stoppedAt ?? null,
+    workflowId: execution.workflowId,
+    waitTill: execution.waitTill ?? null,
+  };
+  return includeData ? withExecutionData(dto, execution) : dto;
+}
+
+/** `findSingleExecution`: every ExecutionEntity column. */
+function executionEntityDto(execution, includeData) {
+  const dto = {
+    id: String(execution.id),
+    finished: Boolean(execution.finished),
+    mode: execution.mode ?? 'manual',
+    retryOf: execution.retryOf ?? null,
+    retrySuccessId: execution.retrySuccessId ?? null,
+    status: execution.status,
+    createdAt: execution.createdAt ?? null,
+    startedAt: execution.startedAt ?? null,
+    stoppedAt: execution.stoppedAt ?? null,
+    deletedAt: null,
+    workflowId: execution.workflowId,
+    waitTill: execution.waitTill ?? null,
+    storedAt: 'db',
+  };
+  return includeData ? withExecutionData(dto, execution) : dto;
+}
+
+function withExecutionData(dto, execution) {
+  return { ...dto, data: execution.data ?? {}, workflowData: execution.workflowData ?? null, customData: execution.customData ?? {} };
+}
+
+function loadExecution(ctx) {
+  const execution = accessibleExecutions(ctx).find((candidate) => String(candidate.id) === ctx.params.id);
+  if (!execution) throw new HttpError(404, PUBLIC_API_MESSAGES.NOT_FOUND);
+  return execution;
+}
+
+function listExecutions(ctx) {
+  let limit = queryLimit(ctx.query);
+  let lastId;
+  if (ctx.query.cursor) {
+    const decoded = decodeCursor(ctx.query.cursor);
+    limit = decoded.limit;
+    // Upstream: an offset-flavour cursor carries no lastId -> first page.
+    if ('lastId' in decoded) lastId = decoded.lastId;
+  }
+  const includeData = queryBoolean(ctx.query, 'includeData') ?? false;
+  const { status, workflowId } = ctx.query;
+
+  const workflowIds = new Set(ctx.store.workflows.all().map((workflow) => workflow.id));
+  if (workflowIds.size === 0 || (typeof workflowId === 'string' && workflowId !== '' && !workflowIds.has(workflowId))) {
+    sendJson(ctx.res, 200, { data: [], nextCursor: null });
+    return;
+  }
+
+  const matches = (execution, below) => {
+    if (typeof workflowId === 'string' && workflowId !== '' && execution.workflowId !== workflowId) return false;
+    if (below !== undefined && !(Number(execution.id) < Number(below))) return false;
+    // Running executions are excluded unless explicitly asked for.
+    if (status !== 'running' && execution.status === 'running') return false;
+    if (status === 'error') return execution.status === 'error' || execution.status === 'crashed';
+    if (status !== undefined) return execution.status === status;
+    return true;
+  };
+  const candidates = accessibleExecutions(ctx).slice().sort((a, b) => Number(b.id) - Number(a.id));
+  const page = candidates.filter((execution) => matches(execution, lastId)).slice(0, limit);
+  const newLastId = page.length === 0 ? '0' : String(page[page.length - 1].id);
+  const numberOfNextRecords = Math.min(limit, candidates.filter((execution) => matches(execution, newLastId)).length);
+
+  sendJson(ctx.res, 200, {
+    data: page.map((execution) => executionListDto(execution, includeData)),
+    nextCursor: encodeLastIdCursor({ lastId: newLastId, limit, numberOfNextRecords }),
+  });
+}
+
+function getExecution(ctx) {
+  const includeData = queryBoolean(ctx.query, 'includeData') ?? false;
+  sendJson(ctx.res, 200, executionEntityDto(loadExecution(ctx), includeData));
+}
+
+function deleteExecution(ctx) {
+  const execution = loadExecution(ctx);
+  if (execution.status === 'running') throw invalid(PUBLIC_API_MESSAGES.RUNNING_EXECUTION);
+  ctx.store.executions.remove(execution.id);
+  ctx.logger?.info?.('execution deleted', { executionId: String(execution.id), via: 'public-api' });
+  sendJson(ctx.res, 200, executionEntityDto(execution, false));
+}
+
 /* ---------------------------------------------------------- routes */
 
 /**
@@ -399,6 +704,20 @@ export const PUBLIC_API_OPERATIONS = Object.freeze([
   { method: 'POST', path: '/workflows/:id/deactivate', scope: 'workflow:deactivate', handler: deactivateWorkflow },
   { method: 'GET', path: '/workflows/:id/tags', scope: 'workflowTags:list', handler: getWorkflowTags },
   { method: 'PUT', path: '/workflows/:id/tags', scope: 'workflowTags:update', handler: updateWorkflowTags, body: true },
+  // P5-M08. `validate` runs before the licence and scope gates, like
+  // express-openapi-validator runs before upstream's handler middlewares.
+  { method: 'GET', path: '/tags', scope: 'tag:list', handler: listTags, validate: (ctx) => offsetWindow(ctx.query) },
+  { method: 'POST', path: '/tags', scope: 'tag:create', handler: createTag, body: true, validate: (ctx) => validateTagBody(ctx.body) },
+  { method: 'GET', path: '/tags/:id', scope: 'tag:read', handler: getTag },
+  { method: 'PUT', path: '/tags/:id', scope: 'tag:update', handler: updateTag, body: true, validate: (ctx) => validateTagBody(ctx.body) },
+  { method: 'DELETE', path: '/tags/:id', scope: 'tag:delete', handler: deleteTag },
+  { method: 'GET', path: '/variables', scope: 'variable:list', licensed: 'feat:variables', handler: variablesNotImplemented, validate: validateVariableQuery },
+  { method: 'POST', path: '/variables', scope: 'variable:create', licensed: 'feat:variables', handler: variablesNotImplemented, body: true, validate: (ctx) => validateVariableBody(ctx.body) },
+  { method: 'PUT', path: '/variables/:id', scope: 'variable:update', licensed: 'feat:variables', handler: variablesNotImplemented, body: true, validate: (ctx) => validateVariableBody(ctx.body) },
+  { method: 'DELETE', path: '/variables/:id', scope: 'variable:delete', licensed: 'feat:variables', handler: variablesNotImplemented },
+  { method: 'GET', path: '/executions', scope: 'execution:list', handler: listExecutions, validate: validateExecutionListQuery },
+  { method: 'GET', path: '/executions/:id', scope: 'execution:read', handler: getExecution, validate: (ctx) => { validateExecutionId(ctx); queryBoolean(ctx.query, 'includeData'); } },
+  { method: 'DELETE', path: '/executions/:id', scope: 'execution:delete', handler: deleteExecution, validate: validateExecutionId },
 ].map((operation) => Object.freeze(operation)));
 
 function compile(template) {
@@ -453,6 +772,48 @@ async function readJsonBody(req, limit) {
   }
 }
 
+/* ---------------------------------------------------------- openapi.yml */
+
+export const PUBLIC_API_SPEC_PATH = '/openapi.yml';
+// @scale-out-safe: immutable memoization of a static JSON file that ships with
+// the package (data/public-api-openapi.json). Every process renders the same
+// string and nothing mutates it; no state crosses a process boundary.
+let specCache = null;
+
+/**
+ * Minimal YAML emitter: block mappings/sequences, every string and key as a
+ * JSON double-quoted scalar (valid YAML 1.2), so no dependency is needed and
+ * no value can change meaning.
+ */
+export function toYaml(value, indent = '') {
+  const scalar = (item) => (typeof item === 'string' ? JSON.stringify(item) : item === null ? 'null' : String(item));
+  const isEmpty = (item) => (Array.isArray(item) ? item.length === 0 : jsonType(item) === 'object' && Object.keys(item).length === 0);
+  const nested = (item) => (Array.isArray(item) || jsonType(item) === 'object') && !isEmpty(item);
+  const inlineValue = (item) => (Array.isArray(item) ? '[]' : jsonType(item) === 'object' ? '{}' : scalar(item));
+  const lines = [];
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      if (nested(item)) lines.push(`${indent}-\n${toYaml(item, `${indent}  `)}`);
+      else lines.push(`${indent}- ${inlineValue(item)}`);
+    }
+  } else {
+    for (const [key, item] of Object.entries(value)) {
+      if (nested(item)) lines.push(`${indent}${JSON.stringify(key)}:\n${toYaml(item, `${indent}  `)}`);
+      else lines.push(`${indent}${JSON.stringify(key)}: ${inlineValue(item)}`);
+    }
+  }
+  return lines.join('\n');
+}
+
+/** The mounted-operations spec (data/public-api-openapi.json) as YAML. */
+export function publicApiSpecYaml() {
+  if (specCache === null) {
+    const spec = JSON.parse(readFileSync(new URL('../../data/public-api-openapi.json', import.meta.url), 'utf8'));
+    specCache = `---\n${toYaml(spec)}\n`;
+  }
+  return specCache;
+}
+
 /**
  * Serves one `/api/v1/*` request end to end. Never throws: every failure
  * becomes an upstream-shaped `{ message }` body. Returns the authenticated
@@ -463,6 +824,12 @@ export async function handlePublicApiRequest(ctx) {
   let ownerEmail = null;
   try {
     const relative = ctx.path.slice(PUBLIC_API_PREFIX.length) || '/';
+    // Upstream registers this route ahead of the validator and auth: public.
+    if (ctx.method === 'GET' && relative === PUBLIC_API_SPEC_PATH) {
+      res.writeHead(200, { 'content-type': 'text/yaml; charset=UTF-8' });
+      res.end(publicApiSpecYaml());
+      return ownerEmail;
+    }
     const { operation, params } = matchPublicApiRoute(ctx.method, relative);
 
     const presented = req.headers[PUBLIC_API_KEY_HEADER];
@@ -479,10 +846,15 @@ export async function handlePublicApiRequest(ctx) {
       if (ctx.body === undefined) throw invalid('request/body must be object');
     }
 
+    if (operation.validate) operation.validate(ctx);
+    if (operation.licensed && !PUBLIC_API_LICENSED_FEATURES.includes(operation.licensed)) {
+      throw new HttpError(403, featureNotLicensedMessage(operation.licensed));
+    }
+
     // Key scope through the P5.3 kernel: unknown permission fails closed,
     // expiry and permission are re-checked here, not trusted from issuance.
     const decision = authorize(
-      { principal: verified.principal, action: operation.scope, resourceType: 'workflow', resourceId: params.id },
+      { principal: verified.principal, action: operation.scope, resourceType: operation.scope.startsWith('workflow') ? 'workflow' : operation.scope.split(':')[0], resourceId: params.id },
       { registry: apiKeyPermissionRegistry(config) },
     );
     if (!decision.allowed) throw new HttpError(403, PUBLIC_API_MESSAGES.FORBIDDEN);

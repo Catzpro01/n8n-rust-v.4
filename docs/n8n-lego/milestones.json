@@ -68,7 +68,7 @@
       "maintenance": "Pn-Mnn \u2014 hardening / debt / maintenance inside an existing P",
       "futureProgram": "<FUTURE-PROGRAM>-Snn \u2014 a slice of a thematic future program"
     },
-    "noNewTopLevelMilestones": "P0-P11 are the complete top-level set. No P12+ is created for features, optimization, hardening or debt; legacy P12-P23 are consolidated into futurePrograms[] with traceability; P24+ is forbidden. There is no P5.9: P5 debt is maintenance slices P5-Mnn (P5-M01..M08).",
+    "noNewTopLevelMilestones": "P0-P11 are the complete top-level set. No P12+ is created for features, optimization, hardening or debt; legacy P12-P23 are consolidated into futurePrograms[] with traceability; P24+ is forbidden. There is no P5.9: P5 debt is maintenance slices P5-Mnn (P5-M01..M10).",
     "featureIdFormat": "<PARENT>-F-<AREA>-<NNN>, e.g. P4-F-INGRESS-001; governance items are GOV-F-<NNN>",
     "intakeFlow": [
       "issue",
@@ -2854,7 +2854,29 @@
         },
         {
           "id": "P5-M08",
-          "title": "Public /api/v1 remaining resources: executions, credentials, tags, users, variables, projects, audit, source-control, data-tables, plus /api/v1/openapi.yml and /api/v1/docs (split out of P5-M03; builds on the P5-M03 boundary)",
+          "title": "Public /api/v1 second surface: tags (5 operations), variables (4, licence-gated 403 like the community edition), executions list/get/delete (lastId cursor), GET /api/v1/openapi.yml of exactly the mounted operations. Re-planned by the Manager: credentials, users and /docs to P5-M09; resources without a backing model to P5-M10 (one delivery PR per slice)",
+          "kind": "maintenance",
+          "status": "in-progress",
+          "mergeSha": null,
+          "issue": 85,
+          "evidence": "docs/n8n-lego/evidence/P5-M08-EVIDENCE.md",
+          "owner": "manager (unassigned)",
+          "debtSource": "docs/n8n-lego/evidence/P5.8-CERTIFICATION-EVIDENCE.md \u00a77"
+        },
+        {
+          "id": "P5-M09",
+          "title": "Public /api/v1 credentials (list, create, update, delete, schema; secrets never returned, data validated against the credential type) and users (list, get, create, delete, change role), plus /api/v1/docs (needs a decision on serving Swagger UI without a runtime dependency). Split out of P5-M08",
+          "kind": "maintenance",
+          "status": "planned",
+          "mergeSha": null,
+          "issue": 85,
+          "evidence": null,
+          "owner": "manager (unassigned)",
+          "debtSource": "docs/n8n-lego/evidence/P5.8-CERTIFICATION-EVIDENCE.md \u00a77"
+        },
+        {
+          "id": "P5-M10",
+          "title": "Public /api/v1 resources that need a backing model this product does not have yet: projects, audit, source-control, data-tables, workflow and credential transfer, workflow versions, execution retry, execution tags (upstream AnnotationTag). Blocked until those models exist; split out of P5-M08",
           "kind": "maintenance",
           "status": "planned",
           "mergeSha": null,
@@ -5739,7 +5761,7 @@
     },
     {
       "id": "P5-F-DEBT-010",
-      "title": "Public /api/v1 remaining resources and OpenAPI/docs endpoints",
+      "title": "Public /api/v1 tags, variables, executions (list/get/delete) and openapi.yml",
       "type": "debt",
       "sourceIssue": [
         85,
@@ -5748,16 +5770,68 @@
       "parent": "P5",
       "slice": "P5-M08",
       "owner": "manager (unassigned)",
-      "status": "planned",
+      "status": "in-progress",
       "relevance": "maintenance",
       "dependencies": [
         "P5-F-DEBT-007"
+      ],
+      "evidence": "docs/n8n-lego/evidence/P5-M08-EVIDENCE.md",
+      "pr": null,
+      "mergeSha": null,
+      "relatedEvidence": [
+        "docs/n8n-lego/evidence/P5.8-CERTIFICATION-EVIDENCE.md \u00a77"
+      ],
+      "supersededBy": null,
+      "replacement": null
+    },
+    {
+      "id": "P5-F-DEBT-011",
+      "title": "Public /api/v1 credentials and users resources, plus /api/v1/docs",
+      "type": "debt",
+      "sourceIssue": [
+        85,
+        221
+      ],
+      "parent": "P5",
+      "slice": "P5-M09",
+      "owner": "manager (unassigned)",
+      "status": "planned",
+      "relevance": "maintenance",
+      "dependencies": [
+        "P5-F-DEBT-010"
       ],
       "evidence": null,
       "pr": null,
       "mergeSha": null,
       "relatedEvidence": [
-        "docs/n8n-lego/evidence/P5.8-CERTIFICATION-EVIDENCE.md \u00a77"
+        "docs/n8n-lego/evidence/P5.8-CERTIFICATION-EVIDENCE.md \u00a77",
+        "docs/n8n-lego/evidence/P5-M08-EVIDENCE.md"
+      ],
+      "supersededBy": null,
+      "replacement": null
+    },
+    {
+      "id": "P5-F-DEBT-012",
+      "title": "Public /api/v1 resources blocked on missing models: projects, audit, source-control, data-tables, transfers, workflow versions, execution retry and tags",
+      "type": "debt",
+      "sourceIssue": [
+        85,
+        221
+      ],
+      "parent": "P5",
+      "slice": "P5-M10",
+      "owner": "manager (unassigned)",
+      "status": "planned",
+      "relevance": "maintenance",
+      "dependencies": [
+        "P5-F-DEBT-010"
+      ],
+      "evidence": null,
+      "pr": null,
+      "mergeSha": null,
+      "relatedEvidence": [
+        "docs/n8n-lego/evidence/P5.8-CERTIFICATION-EVIDENCE.md \u00a77",
+        "docs/n8n-lego/evidence/P5-M08-EVIDENCE.md"
       ],
       "supersededBy": null,
       "replacement": null

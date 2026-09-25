@@ -336,7 +336,7 @@ describe('pure pieces', () => {
   test('every mounted operation is guarded by a scope from the pinned API-key vocabulary', () => {
     const vocabulary = new Set(loadApiKeyScopes({}).all);
     for (const op of PUBLIC_API_OPERATIONS) assert.ok(vocabulary.has(op.scope), `${op.method} ${op.path} -> ${op.scope}`);
-    assert.equal(PUBLIC_API_OPERATIONS.length, 9);
+    assert.equal(PUBLIC_API_OPERATIONS.length, 21, 'P5-M03 workflows (9) + P5-M08 tags (5), variables (4), executions (3)');
   });
 
   test('cursor encoding matches upstream encodeNextCursor', () => {
