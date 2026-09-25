@@ -3004,14 +3004,15 @@
               "title": "DEC-0015 self-hosted runner verification on main (Level 0, Level 1, Level 2 linux, post-merge verification)",
               "purpose": "The remaining gate before this slice can be recorded as implemented; it is not an implementation step",
               "weight": 30,
-              "status": "in-progress",
-              "evidence": "DEC-0015 environmental retry started: PR #310 (head 17c88012d2ac774109d321e743b5e674d17853fc) cut from main 674546fcc85f7be8184f47accde72c5f7c464d52 runs the Level 0 / Level 1 / Level 2 linux / Level 2 windows / conformance suite on the self-hosted runners; the earlier failure (runs 36136621119, 36136621102, 36137555071) was a runner communication loss, not an implementation regression",
+              "status": "completed",
+              "evidence": "DEC-0015 verification PASS on d520a7401c792bda9e49f5b4503cdc2b414d5887: Level 0 (Check & Format) on MDMTEST-n8n-wsl-2 (run 36166949165); Level 1 (Affected Tests) on MDMTEST-n8n-wsl (run 36166949165); Level 2 Workspace Tests (linux) on MDMTEST-n8n-wsl-3 (run 36166949086); Level 2 Workspace Tests (windows) on laptop-build-worker-3 (run 36166949086); Level 2 Conformance LEGO & Node Catalog on MDMTEST-n8n-wsl-4 (run 36166949086); Post-Merge Verification & Branch Cleanup on MDMTEST-n8n-wsl-3 (run 36167178324). Verdict ALL_GREEN (GitHub-hosted 3 pass, self-hosted 7 pass / 0 fail / 0 waiting).",
               "reference": "docs/n8n-lego/evidence/P5-M08-EVIDENCE.md \u00a76; one environmental retry remains and was not spent",
-              "requires": ["Level 0 (Check & Format)","Level 1 (Affected Tests)","Level 2 Workspace Tests (linux)","Level 2 Workspace Tests (windows)","Level 2 Conformance LEGO & Node Catalog","Post-Merge Verification & Branch Cleanup"]
+              "requires": ["Level 0 (Check & Format)","Level 1 (Affected Tests)","Level 2 Workspace Tests (linux)","Level 2 Workspace Tests (windows)","Level 2 Conformance LEGO & Node Catalog","Post-Merge Verification & Branch Cleanup"],
+              "completedAt": "2026-09-25T17:28:30Z"
             }
           ],
-          "updatedAt": "2026-09-25T17:20:04Z",
-          "latestUpdate": "DEC-0015 environmental retry in flight on PR #310 (head 17c88012) \u2014 the last documented retry; the earlier failure was environmental, not an implementation regression",
+          "updatedAt": "2026-09-25T17:28:30Z",
+          "latestUpdate": "CP-05 DEC-0015 verification PASS on head d520a740 (PR #310, merge b528a19): Level 0 on MDMTEST-n8n-wsl-2, Level 1 on MDMTEST-n8n-wsl, Level 2 linux on MDMTEST-n8n-wsl-3, Level 2 windows on laptop-build-worker-3, conformance on MDMTEST-n8n-wsl-4, post-merge verification on MDMTEST-n8n-wsl-3 (run 36167178324). This was the last documented environmental retry; the earlier failure was a runner communication loss, not an implementation regression, and the P5-M08 implementation on this head is byte-identical to delivery merge 600a2145",
           "checkpointWeightBasis": "5 points per declared operation (tags 5, variables 4, executions list/get/delete 3 = 12 operations \u2192 60 points), 10 for GET /api/v1/openapi.yml, 30 for the DEC-0015 runner-verification gate; total 100. The weights come from the scope declared in P5-M08-EVIDENCE.md \u00a71, not from an estimate of effort.",
           "pr": 304,
           "mergeSha": null,

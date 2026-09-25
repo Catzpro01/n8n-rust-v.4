@@ -35,11 +35,11 @@ Status is not progress. Both percentages below are generated from [`docs/n8n-leg
 
 ### Realtime Delivery Progress
 
-**86.1%**
+**86.3%**
 
-`█████████████████░░░ 86.1%`
+`█████████████████░░░ 86.3%`
 
-Checkpoint-weighted earned points / current-delivery points: 12570 / 14600. Denominator: programs P0–P11 only (146 active slices). Future programs are excluded. 1 slice(s) declare checkpoints. 125 implemented slice(s) have no checkpoint list and contribute 100 each. 20 slice(s) have no checkpoint model and contribute 0. A 0 from a missing model is not a measured fraction of that slice.
+Checkpoint-weighted earned points / current-delivery points: 12600 / 14600. Denominator: programs P0–P11 only (146 active slices). Future programs are excluded. 1 slice(s) declare checkpoints. 125 implemented slice(s) have no checkpoint list and contribute 100 each. 20 slice(s) have no checkpoint model and contribute 0. A 0 from a missing model is not a measured fraction of that slice.
 
 ### Slice Completion
 
@@ -67,7 +67,7 @@ P1   realtime ████████████████████ 100.0
 P2   realtime ███████████████████░  94.1%  completion  94.1%  32/34  status complete
 P3   realtime ███████████████████░  94.4%  completion  94.4%  17/18  status complete
 P4   realtime ██████████████████░░  90.0%  completion  90.0%  9/10  status complete
-P5   realtime ████████████░░░░░░░░  59.4%  completion  55.6%  10/18  status complete
+P5   realtime ████████████░░░░░░░░  61.1%  completion  55.6%  10/18  status complete
 P6   realtime ██████████████████░░  88.6%  completion  88.6%  31/35  status complete
 P7   realtime ░░░░░░░░░░░░░░░░░░░░   0.0%  completion   0.0%  0/1  status planned
 P8   realtime ░░░░░░░░░░░░░░░░░░░░   0.0%  completion   0.0%  0/1  status planned
@@ -85,7 +85,7 @@ P11  realtime ░░░░░░░░░░░░░░░░░░░░   0.0
 | P2 | LEGO / AI / Plugin Foundation | 94.1% | 94.1% | 32/34 | complete |
 | P3 | Workflow + Execution + Unlimited Nodes | 94.4% | 94.4% | 17/18 | complete |
 | P4 | Trigger / Webhook / Ingress | 90.0% | 90.0% | 9/10 | complete |
-| P5 | Identity / Authentication / Authorization / Credentials (Security) | 59.4% | 55.6% | 10/18 | complete |
+| P5 | Identity / Authentication / Authorization / Credentials (Security) | 61.1% | 55.6% | 10/18 | complete |
 | P6 | Node Registry / Node Runtime | 88.6% | 88.6% | 31/35 | complete |
 | P7 | Dynamic Parameters / Schema Runtime | 0.0% | 0.0% | 0/1 | planned |
 | P8 | Storage / Data Layer | 0.0% | 0.0% | 0/1 | planned |
@@ -102,7 +102,7 @@ A program state of `complete` is not numeric 100%. Read the two percentage colum
 The queue is `executionPointer` only. Historical `P2.27` is not the next slice, and there is no `P2.28`.
 
 ```text
- 1. `P5-M08` verifying; realtime 70.0%; completion contribution 0.0%; updated 2026-09-25T17:20:04Z
+ 1. `P5-M08` verifying; realtime 100.0%; completion contribution 0.0%; updated 2026-09-25T17:28:30Z
  2. `P5-M09` planned; realtime 0.0%; completion contribution 0.0%
  3. `P5-M07` planned; realtime 0.0%; completion contribution 0.0%
  4. `P9-S01` planned; realtime 0.0%; completion contribution 0.0%
@@ -117,12 +117,12 @@ The queue is `executionPointer` only. Historical `P2.27` is not the next slice, 
 ### 🟠 P5-M08 — Public /api/v1 second surface
 
 - **Status:** VERIFYING. Status is not progress. Merged work is not implemented. Completion contribution: **0%**.
-- **Realtime Delivery Progress:** 70.0%. Checkpoint-weighted from declared slice.checkpoints. Incomplete checkpoints contribute 0.
+- **Realtime Delivery Progress:** 100.0%. Checkpoint-weighted from declared slice.checkpoints. Incomplete checkpoints contribute 0.
 - **Completion contribution:** **0%**.
-- **Current checkpoint:** CP-05 DEC-0015 self-hosted runner verification on main (Level 0, Level 1, Level 2 linux, post-merge verification) (in-progress, 30)
-- **Latest checkpoint:** CP-04 GET /api/v1/openapi.yml of exactly the mounted operations (completed, 10)
-- **Checkpoint evidence:** CP-01: docs/n8n-lego/evidence/P5-M08-EVIDENCE.md §2.1 and §3 (tags: 400 before 403, 201 with trimming, 409 for duplicate / whitespace-only / 25 characters, 404, offset-cursor walk) [PR #304, merge 600a21456213602ebdc6193229bab8432e6d1024]; CP-02: docs/n8n-lego/evidence/P5-M08-EVIDENCE.md §2.2 and §3 (variables: exact licence 403 for a fully scoped and an unscoped key, schema 400 before the gate, security 401 first) [PR #304, merge 600a21456213602ebdc6193229bab8432e6d1024]; CP-03: docs/n8n-lego/evidence/P5-M08-EVIDENCE.md §2.3 and §3 (executions: one real engine run, seeded records in every status, scope separation, full cursor walk, orphan and deleted-workflow 404s) [PR #304, merge 600a21456213602ebdc6193229bab8432e6d1024]; CP-04: docs/n8n-lego/evidence/P5-M08-EVIDENCE.md §2.4 and §3 (openapi.yml public, GET only, advertised equals mounted, emitter unit cases) [PR #304, merge 600a21456213602ebdc6193229bab8432e6d1024]
-- **Last progress update:** 2026-09-25T17:20:04Z — DEC-0015 environmental retry in flight on PR #310 (head 17c88012) — the last documented retry; the earlier failure was environmental, not an implementation regression
+- **Current checkpoint:** —
+- **Latest checkpoint:** CP-05 DEC-0015 self-hosted runner verification on main (Level 0, Level 1, Level 2 linux, post-merge verification) (completed, 30)
+- **Checkpoint evidence:** CP-01: docs/n8n-lego/evidence/P5-M08-EVIDENCE.md §2.1 and §3 (tags: 400 before 403, 201 with trimming, 409 for duplicate / whitespace-only / 25 characters, 404, offset-cursor walk) [PR #304, merge 600a21456213602ebdc6193229bab8432e6d1024]; CP-02: docs/n8n-lego/evidence/P5-M08-EVIDENCE.md §2.2 and §3 (variables: exact licence 403 for a fully scoped and an unscoped key, schema 400 before the gate, security 401 first) [PR #304, merge 600a21456213602ebdc6193229bab8432e6d1024]; CP-03: docs/n8n-lego/evidence/P5-M08-EVIDENCE.md §2.3 and §3 (executions: one real engine run, seeded records in every status, scope separation, full cursor walk, orphan and deleted-workflow 404s) [PR #304, merge 600a21456213602ebdc6193229bab8432e6d1024]; CP-04: docs/n8n-lego/evidence/P5-M08-EVIDENCE.md §2.4 and §3 (openapi.yml public, GET only, advertised equals mounted, emitter unit cases) [PR #304, merge 600a21456213602ebdc6193229bab8432e6d1024]; CP-05: DEC-0015 verification PASS on d520a7401c792bda9e49f5b4503cdc2b414d5887: Level 0 (Check & Format) on MDMTEST-n8n-wsl-2 (run 36166949165); Level 1 (Affected Tests) on MDMTEST-n8n-wsl (run 36166949165); Level 2 Workspace Tests (linux) on MDMTEST-n8n-wsl-3 (run 36166949086); Level 2 Workspace Tests (windows) on laptop-build-worker-3 (run 36166949086); Level 2 Conformance LEGO & Node Catalog on MDMTEST-n8n-wsl-4 (run 36166949086); Post-Merge Verification & Branch Cleanup on MDMTEST-n8n-wsl-3 (run 36167178324). Verdict ALL_GREEN (GitHub-hosted 3 pass, self-hosted 7 pass / 0 fail / 0 waiting). [docs/n8n-lego/evidence/P5-M08-EVIDENCE.md §6; one environmental retry remains and was not spent]
+- **Last progress update:** 2026-09-25T17:28:30Z — CP-05 DEC-0015 verification PASS on head d520a740 (PR #310, merge b528a19): Level 0 on MDMTEST-n8n-wsl-2, Level 1 on MDMTEST-n8n-wsl, Level 2 linux on MDMTEST-n8n-wsl-3, Level 2 windows on laptop-build-worker-3, conformance on MDMTEST-n8n-wsl-4, post-merge verification on MDMTEST-n8n-wsl-3 (run 36167178324). This was the last documented environmental retry; the earlier failure was a runner communication loss, not an implementation regression, and the P5-M08 implementation on this head is byte-identical to delivery merge 600a2145
 - **Purpose:** tags (5 operations), variables (4, licence-gated 403 like the community edition), executions list/get/delete (lastId cursor), GET /api/v1/openapi.yml of exactly the mounted operations. Re-planned by the Manager: credentials, users and /docs to P5-M09; resources without a backing model to P5-M10 (one delivery PR per slice)
 - **Evidence:** docs/n8n-lego/evidence/P5-M08-EVIDENCE.md
 - **PR:** #304 · **Merge:** `600a2145` · **Head:** `c102cff9`
@@ -295,7 +295,7 @@ Not authorized: planned is not authorized: the Manager starts a queued slice by 
 
 ## P5 — Identity / Authentication / Authorization / Credentials (Security)
 
-- **Realtime Delivery Progress:** **59.4%** `████████████░░░░░░░░ 59.4%`
+- **Realtime Delivery Progress:** **61.1%** `████████████░░░░░░░░ 61.1%`
 - **Slice Completion:** **55.6%** (10 / 18 implemented). Remaining 8. 10 implemented, 1 verifying, 3 planned, 4 blocked.
 - **Program status:** complete. Program status is not a percentage and is not 100% just because the word is complete.
 - **Purpose:** Identity, sessions, authorization, credential boundary, key management, account security, API keys/service identity, certification (#85, #90).
@@ -320,7 +320,7 @@ Not authorized: planned is not authorized: the Manager starts a queued slice by 
 | `P5-M05` | Multi-host key storage and shared session + rate-limiter state | Multi-host key storage and shared session + rate-limiter state; depends on the P8 storage contract (P8-S01, not authorized) | 🔴 Blocked | 0.0% | 0.0% | none declared | none declared | P8-S01 (planned, not authorized): the P8 storage contract that shared key/session/rate-limiter state needs |
 | `P5-M06` | Email-based password recovery | needs a mail transport decision first (Node has no built-in SMTP: a dependency or an injected transport contract), then upstream /rest/forgot-password delivery over the P5 reset-token primitive (split out of P5-M03) | 🔴 Blocked | 0.0% | 0.0% | none declared | none declared | a mail-transport architecture decision (a dependency, or an injected transport contract); Node has no built-in SMTP |
 | `P5-M07` | Service-principal REST + UI management over the P5.7 programmatic lifecycle | Service-principal REST + UI management over the P5.7 programmatic lifecycle (create shown once, redacted list, revoke with tombstone) (split out of P5-M03) | 🟡 Planned | 0.0% | 0.0% | none declared | none declared | — |
-| `P5-M08` | Public /api/v1 second surface | tags (5 operations), variables (4, licence-gated 403 like the community edition), executions list/get/delete (lastId cursor), GET /api/v1/openapi.yml of exactly the mounted operations. Re-planned by the Manager: credentials, users and /docs to P5-M09; resources without a backing model to P5-M10 (one delivery PR per slice) | 🟠 Verifying | 70.0% | 0.0% | CP-05 DEC-0015 self-hosted runner verification on main (Level 0, Level 1, Level 2 linux, post-merge verification) (in-progress, 30) | CP-04 GET /api/v1/openapi.yml of exactly the mounted operations (completed, 10) | — |
+| `P5-M08` | Public /api/v1 second surface | tags (5 operations), variables (4, licence-gated 403 like the community edition), executions list/get/delete (lastId cursor), GET /api/v1/openapi.yml of exactly the mounted operations. Re-planned by the Manager: credentials, users and /docs to P5-M09; resources without a backing model to P5-M10 (one delivery PR per slice) | 🟠 Verifying | 100.0% | 0.0% | — | CP-05 DEC-0015 self-hosted runner verification on main (Level 0, Level 1, Level 2 linux, post-merge verification) (completed, 30) | — |
 | `P5-M09` | Public /api/v1 credentials | Public /api/v1 credentials (list, create, update, delete, schema; secrets never returned, data validated against the credential type) and users (list, get, create, delete, change role), plus /api/v1/docs (needs a decision on serving Swagger UI without a runtime dependency). Split out of P5-M08 | 🟡 Planned | 0.0% | 0.0% | none declared | none declared | — |
 | `P5-M10` | Public /api/v1 resources that need a backing model this product does not have yet | projects, audit, source-control, data-tables, workflow and credential transfer, workflow versions, execution retry, execution tags (upstream AnnotationTag). Blocked until those models exist; split out of P5-M08 | 🔴 Blocked | 0.0% | 0.0% | none declared | none declared | backing models this product does not have: projects/sharing, security audit, source control, data tables, workflow versions, a retry execution path, execution annotation tags (see P5-M08-EVIDENCE.md §1) |
 
@@ -561,7 +561,7 @@ Excluded from the current-delivery denominator. Realtime **0.0%**. Slice complet
 - **Live progress (DEC-0021, LIVE-MILESTONE EXCEPTION):** checkpoint progress, checkpoint status, checkpoint evidence, current checkpoint, slice / program / overall progress and the milestone evidence of a slice still in flight are operational telemetry. The Manager may reconcile them straight to `main` in a `governance(progress):` commit, without a governance PR, with `node tools/lego/progress-event.mjs record --slice <id> --checkpoint <CP-nn> --status <status> --evidence <reference>`. The tool runs the whole atomic chain: validate evidence and weights → write the register → regenerate `README.md` and `.ai` → run `npm run lego:ai:check` → commit → push → verify `main`. One measurable event is one commit; live progress is never batched and a partial state is never published. The Manager never types a percentage: `resolve` derives the state from evidence — `--fetch` reads the DEC-0015 jobs and the runner availability from the GitHub API, `--jobs <file.json>` reads an export, and `verify --cmd` derives completed / blocked from a verification command's exit code. A checkpoint that declares `requires` is earned only when every named check has passed; an absent self-hosted check is never PASS and `WAITING_RUNNER` is never PASS, so a head that never ran the suite cannot look green. Two paths, never mixed: delivery state is implementation → delivery PR → merge → post-merge verification → one governance PR reconciling status, merge SHA, evidence and projections; telemetry is evidence → checkpoint update → register → README → .ai → a `governance(progress):` commit → main. A slice status becoming `implemented` is delivery state and is never telemetry. The exception never covers source code, tests, runtime behaviour, API / frontend / backend / contract / schema implementation, dependencies, packages, Rust code, CI workflows, security policy, permissions, infrastructure, database schema or production configuration — those still go through a delivery PR. Live telemetry never bypasses a completion gate: 100% realtime progress with a completion contribution of 0% is a legitimate state, and only `implemented` (DEC-0014 + DEC-0015) moves Slice Completion.
 - **Rule:** Milestone truth is main-owned. A milestone design found or developed in Manager memory becomes authoritative only when reconciled into main through a PR. arena-manager is not an alternate milestone authority, and its docs/ tree is a stale snapshot that is never copied over main.
 - **Pending reconciliation:** A milestone change that exists only on arena-manager, a local worktree, a handoff, an issue, a PR body or chat is a proposal (pending reconciliation), never authoritative truth. A PR proposes a milestone state; only the merged state on main is authoritative.
-- **Freshness:** generated by `npm run lego:ai` from register 2.3.0 (fingerprint `6f80a5e7a861b42f`); `npm run lego:ai:check` fails when this section, the `.ai` pack or the register disagree.
+- **Freshness:** generated by `npm run lego:ai` from register 2.3.0 (fingerprint `3d122aa9dce9acd4`); `npm run lego:ai:check` fails when this section, the `.ai` pack or the register disagree.
 - **Progress model (Issue #307):** Realtime Delivery Progress is checkpoint-weighted across P0-P11. Slice Completion is implemented / active in that same denominator. Future programs stay visible and are excluded from the current-delivery denominator. Illustrations of the status/progress split are not register measurements and must not be copied into slice checkpoints. The generator counts only weights declared on slice.checkpoints. It does not invent weights. A completed checkpoint requires evidence. Weights on a slice must sum to 100. A slice with no checkpoint model stays at 0 unless it is implemented, in which case the legacy rule contributes 100. This projection is not canonical until the change is on main.
 - **Completion KPI:** Slice Completion is implemented slices / active slices in P0–P11. A verifying or blocked slice never increases that numerator. Realtime Delivery Progress is a separate checkpoint-weighted figure and can move while Slice Completion stays still.
 - **Purpose field:** a slice purpose is `slice.purpose` when present, otherwise the text after the first `: ` in the canonical title, otherwise the title. No purpose is invented.
