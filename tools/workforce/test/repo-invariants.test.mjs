@@ -56,6 +56,8 @@ test('canonical decision records are schema-valid and consistent', () => {
   assert.ok(d16 && d16.state === 'ACTIVE' && d16.selectedOption === 'A-manager-executes-slice-tasks', 'DEC-0016 records the Manager-executed Slice task path');
   const d17 = r.records.find((d) => d.objectId === 'DEC-0017');
   assert.ok(d17 && d17.state === 'ACTIVE' && d17.authority.decidedBy === 'OWNER' && d17.selectedOption === 'A-git-native' && d17.supersedes === 'DEC-0010', 'DEC-0017 records the owner git-native task model');
+  const d18 = r.records.find((d) => d.objectId === 'DEC-0018');
+  assert.ok(d18 && d18.state === 'ACTIVE' && d18.authority.decidedBy === 'OWNER' && d18.selectedOption === 'A-pipeline-agents-02-10', 'DEC-0018 records the owner pipeline model');
   const d10 = r.records.find((d) => d.objectId === 'DEC-0010');
   assert.ok(d10.state === 'SUPERSEDED' && d10.supersededBy === 'DEC-0017' && d10.selectedOption === 'open-shared', 'DEC-0010 is superseded, its record otherwise kept');
   for (const d of r.records) assert.ok(Date.parse(d.createdAt) <= Date.parse(d.updatedAt), `${d.objectId}: createdAt <= updatedAt`);

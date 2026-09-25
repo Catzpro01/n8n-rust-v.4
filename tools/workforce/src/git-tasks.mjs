@@ -21,12 +21,12 @@ export const PROGRESS_PATH = '.arena/progress.md';
 export const EVIDENCE_DIR = '.arena/evidence';
 export const RULE_PATHS = ['.arena/RULES.md', '.arena/AGENT_RULES.md', '.arena/MANAGER_RULES.md', '.arena/WORKFLOW.md', '.arena/templates'];
 // Per-agent working files never travel to main: integration excludes them.
-export const AGENT_LOCAL_PATHS = [TASK_PATH, PROGRESS_PATH];
+export const AGENT_LOCAL_PATHS = [TASK_PATH, PROGRESS_PATH, '.arena/task-pool', '.arena/current-task.md', '.arena/result-pool'];
 
 export const STATUSES = ['UNASSIGNED', 'ASSIGNED', 'WORKING', 'BLOCKED', 'READY_FOR_REVIEW', 'COMPLETED'];
 export const ACTIVE = new Set(['ASSIGNED', 'WORKING', 'BLOCKED', 'READY_FOR_REVIEW']);
 
-const RE = {
+export const RE = {
   id: /^(P\d{1,2}-[SM]\d{2}-\d{2}|TASK-\d{4})$/,
   slice: /^(P\d{1,2}-[SM]\d{2}|GOVERNANCE)$/,
   agent: /^AGENT-(0[1-9]|10)$/,
@@ -41,7 +41,7 @@ const FIELD_ORDER = ['id', 'title', 'slice', 'owner', 'branch', 'status', 'depen
   'completed_by', 'merge_sha'];
 
 // Credential-shaped values never belong in task, progress or evidence files.
-const SECRET_RE = /(gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,})/;
+export const SECRET_RE = /(gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,})/;
 
 export class TaskError extends Error {
   constructor(code, message) { super(`${code}: ${message}`); this.code = code; }
@@ -59,7 +59,7 @@ function unquote(v) {
 }
 
 /** Parse a task file: `---` YAML-subset front matter (scalars, inline and block lists) plus a Markdown body. */
-export function parseTask(text) {
+export function parseTask(text, listFields = LIST_FIELDS) {
   const src = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n');
   const m = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/.exec(src);
   if (!m) throw new TaskError('INVALID_TASK', 'missing --- front matter');
@@ -84,8 +84,8 @@ export function parseTask(text) {
     }
   }
   // An empty scalar written as `key:` becomes [] above; keep scalars scalar.
-  for (const [k, v] of Object.entries(fields)) if (Array.isArray(v) && !LIST_FIELDS.has(k) && v.length === 0) fields[k] = '';
-  for (const k of LIST_FIELDS) if (!(k in fields)) fields[k] = [];
+  for (const [k, v] of Object.entries(fields)) if (Array.isArray(v) && !listFields.has(k) && v.length === 0) fields[k] = '';
+  for (const k of listFields) if (!(k in fields)) fields[k] = [];
   return { fields, body: m[2] };
 }
 
@@ -111,7 +111,7 @@ export function serializeTask({ fields, body = '' }) {
 // ----------------------------------------------------------------- validation
 
 /** Structural validation of one task file. Returns a list of problems (empty = valid). */
-export function validateTask(task, { branch } = {}) {
+export function validateTask(task, { branch, statuses = STATUSES } = {}) {
   const f = task.fields;
   const p = [];
   const req = (k) => { if (!f[k] || (Array.isArray(f[k]) && !f[k].length)) p.push(`${k} is required`); };
@@ -119,14 +119,14 @@ export function validateTask(task, { branch } = {}) {
   if (f.id && !RE.id.test(f.id)) p.push(`id ${f.id} must look like Pn-Snn-NN, Pn-Mnn-NN or TASK-NNNN (no new milestone numbers)`);
   if (f.slice && !RE.slice.test(f.slice)) p.push(`slice ${f.slice} must look like Pn-Snn, Pn-Mnn or GOVERNANCE`);
   if (f.id && f.slice && RE.id.test(f.id) && f.id.startsWith('P') && !f.id.startsWith(`${f.slice}-`)) p.push(`id ${f.id} is not part of slice ${f.slice}`);
-  if (f.status && !STATUSES.includes(f.status)) p.push(`status ${f.status} is not one of ${STATUSES.join(', ')}`);
+  if (f.status && !statuses.includes(f.status)) p.push(`status ${f.status} is not one of ${statuses.join(', ')}`);
   if (f.status && f.status !== 'UNASSIGNED') { req('owner'); req('branch'); }
   if (f.owner && !RE.agent.test(f.owner)) p.push(`owner ${f.owner} must be AGENT-01..AGENT-10`);
   if (f.owner && f.branch && RE.agent.test(f.owner) && f.branch !== agentBranch(f.owner)) p.push(`branch ${f.branch} does not belong to ${f.owner} (expected ${agentBranch(f.owner)})`);
   if (branch && f.branch && branch !== f.branch) p.push(`task belongs to ${f.branch} but is on ${branch}`);
   for (const d of f.depends_on) { if (!RE.id.test(d)) p.push(`depends_on ${d} is not a task id`); if (d === f.id) p.push('a task cannot depend on itself'); }
   for (const k of ['assigned_at', 'updated_at']) if (f[k] && !RE.iso.test(f[k])) p.push(`${k} must be an ISO-8601 UTC timestamp`);
-  if (ACTIVE.has(f.status) && f.assigned_by !== 'MANAGER') p.push('assigned_by must be MANAGER');
+  if ((ACTIVE.has(f.status) || f.status === 'READY') && f.assigned_by !== 'MANAGER') p.push('assigned_by must be MANAGER');
   if (f.status === 'BLOCKED' && !f.blocked_reason) p.push('BLOCKED needs blocked_reason');
   if (f.status === 'COMPLETED') {
     if (f.completed_by !== 'MANAGER') p.push('COMPLETED needs completed_by: MANAGER');
@@ -179,11 +179,11 @@ export function git(cwd, args, { allowFail = false, input } = {}) {
   if (r.status !== 0 && !allowFail) throw new TaskError('GIT_FAILED', `git ${args.join(' ')}: ${(r.stderr || r.stdout).trim()}`);
   return allowFail ? { ok: r.status === 0, out: (r.stdout ?? '').trim(), err: (r.stderr ?? '').trim() } : r.stdout.trim();
 }
-const showFile = (cwd, ref, path) => { const r = git(cwd, ['show', `${ref}:${path}`], { allowFail: true }); return r.ok ? r.out + '\n' : null; };
-const refExists = (cwd, ref) => git(cwd, ['rev-parse', '--verify', '--quiet', `${ref}^{commit}`], { allowFail: true }).ok;
+export const showFile = (cwd, ref, path) => { const r = git(cwd, ['show', `${ref}:${path}`], { allowFail: true }); return r.ok ? r.out + '\n' : null; };
+export const refExists = (cwd, ref) => git(cwd, ['rev-parse', '--verify', '--quiet', `${ref}^{commit}`], { allowFail: true }).ok;
 export const readTaskAt = (cwd, ref) => { const t = showFile(cwd, ref, TASK_PATH); return t ? parseTask(t) : null; };
 
-function identityArgs(identity) {
+export function identityArgs(identity) {
   return ['-c', `user.name=${identity?.name ?? 'arena-manager'}`, '-c', `user.email=${identity?.email ?? 'arena-manager@arena.local'}`];
 }
 
@@ -243,7 +243,7 @@ export function lint({ cwd, role = 'agent', base, mainRef = 'origin/main' }) {
 
 // --------------------------------------------------------------------- status
 
-function agentRefs(cwd, remote) {
+export function agentRefs(cwd, remote) {
   const out = git(cwd, ['for-each-ref', '--format=%(refname:short)', `refs/remotes/${remote}/arena/`]);
   return out.split('\n').filter(Boolean).map((r) => ({ ref: r, branch: r.slice(remote.length + 1) }))
     .filter((x) => agentFromBranch(x.branch)).sort((x, y) => x.branch.localeCompare(y.branch));
@@ -301,20 +301,23 @@ export function formatStatus(s) {
 // --------------------------------------------------- Manager write operations
 
 /** Run fn inside a temporary worktree of `ref` (or of mainRef when ref is missing); commit and optionally push to `branch`. */
-function onBranch(cwd, { remote, branch, mainRef, identity, push }, fn) {
+export function onBranch(cwd, { remote, branch, mainRef, identity, push }, fn) {
   const remoteRef = `${remote}/${branch}`;
   const exists = refExists(cwd, remoteRef);
   const dir = mkdtempSync(join(tmpdir(), 'arena-task-'));
   git(cwd, ['worktree', 'add', '--quiet', '--detach', dir, exists ? remoteRef : mainRef]);
   try {
+    const start = git(dir, ['rev-parse', 'HEAD']);
     const message = fn(dir, { created: !exists });
-    if (!message) return { branch, pushed: false, changed: false };
-    git(dir, ['add', '-A', '.arena']);
-    if (!git(dir, ['status', '--porcelain']).length) return { branch, pushed: false, changed: false };
-    git(dir, [...identityArgs(identity), 'commit', '--quiet', '-m', message]);
+    git(dir, ['add', '-A']);
+    if (message && git(dir, ['status', '--porcelain']).length) git(dir, [...identityArgs(identity), 'commit', '--quiet', '-m', message]);
     const head = git(dir, ['rev-parse', 'HEAD']);
-    // A plain fast-forward push; never forced.
-    if (push) git(dir, ['push', '--quiet', remote, `HEAD:refs/heads/${branch}`]);
+    if (head === start) return { branch, head, pushed: false, changed: false };
+    // A plain fast-forward push; never forced. A rejected push means the branch moved: re-run.
+    if (push) {
+      const r = git(dir, ['push', '--quiet', remote, `HEAD:refs/heads/${branch}`], { allowFail: true });
+      if (!r.ok) throw new TaskError('PUSH_REJECTED', `${branch} moved on ${remote} (nothing was forced); fetch and re-run`);
+    }
     git(cwd, ['update-ref', `refs/remotes/${remote}/${branch}`, head]);
     return { branch, head, pushed: Boolean(push), changed: true, created: !exists };
   } finally {

@@ -1,4 +1,4 @@
-# RULES — every agent, every session (DEC-0017)
+# RULES — every agent, every session (DEC-0017, DEC-0018)
 
 Arena is the agent runtime. Your git branch is your workspace. This repository
 is the shared memory and control plane. GitHub is the code authority.
@@ -12,7 +12,8 @@ if an agent branch touches it).
    `.arena/MANAGER_RULES.md`, `.arena/WORKFLOW.md`, `.arena/templates/`,
    decision records or the milestone register.
 5. Never change the Manager role or your own role.
-6. Work only on the task written in `.arena/task.md` on your own branch.
+6. Work only on tasks the Manager wrote on your own branch: `.arena/task.md`
+   (AGENT-01) or `.arena/task-pool/` (pipeline agents AGENT-02..10).
 7. Commit and push every change; uncommitted work does not exist.
 8. Every task needs evidence (`.arena/evidence/<task-id>.md`): commits, tests,
    files changed, remaining work.

@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "1.0",
+  "objectType": "Decision",
+  "objectId": "DEC-0018",
+  "revision": 1,
+  "createdAt": "2026-09-25T11:30:43Z",
+  "updatedAt": "2026-09-25T11:30:43Z",
+  "events": [],
+  "state": "ACTIVE",
+  "category": "WORKFORCE",
+  "title": "Pipeline workforce for AGENT-02..10: per-agent task pool, result pool and batch Slice integration",
+  "problem": "Under DEC-0017 each agent holds one task file; after delivering, an agent waits until the Manager reviews and assigns the next task, and the Manager handles every task one by one. The Manager becomes the throughput bottleneck.",
+  "options": [
+    {
+      "id": "A-pipeline-agents-02-10",
+      "summary": "AGENT-02..10: the agent branch holds .arena/task-pool/ (tasks queued ahead by the Manager, READY or ASSIGNED-waiting by depends_on), .arena/current-task.md (pointer) and .arena/result-pool/ (delivered results with exact commit ranges). Agents run next → work → result → next without a Manager round trip; the Manager keeps pools filled, reads the integration queue per Slice, batch-integrates results onto the one Slice branch, opens one PR per Slice and marks tasks COMPLETED after the merge. AGENT-01 stays on the DEC-0017 single-task workflow until a separate MIGRATE-AGENT-01. Rollout in stages: AGENT-02 pilot, then AGENT-03..04, then AGENT-05..10."
+    },
+    {
+      "id": "B-all-agents-now",
+      "summary": "Move all ten agents, including AGENT-01, to the pipeline at once."
+    },
+    {
+      "id": "C-keep-single-task",
+      "summary": "Keep the DEC-0017 single task per agent for everyone."
+    }
+  ],
+  "selectedOption": "A-pipeline-agents-02-10",
+  "rationale": "Owner master prompt 2026-09-25 (PARALLEL WORKFORCE MODEL: TASK POOL → RESULT POOL): agents must not wait for the Manager between tasks, the Manager prepares work ahead and integrates in batches, AGENT-01 must not be disturbed while it finishes its milestone, and no new runtime (server, daemon, heartbeat, transport, enrollment) may be introduced. A satisfies all of it with files and git only. B would disturb AGENT-01. C keeps the bottleneck. Unchanged: DEC-0014 (one PR per Slice, 8 gates; READY_FOR_REVIEW is never COMPLETED), DEC-0015, DEC-0016, DEC-0017 (task authority on the agent branch; hybrid reassignment, now recorded with previous_owner / new owner / reason / timestamp), no new milestone numbers. Task authority for pipeline agents is .arena/task-pool/*, .arena/current-task.md and .arena/result-pool/* on the agent branch; the queue index on arena-manager is not authority.",
+  "scope": {
+    "programs": [
+      "GOVERNANCE"
+    ],
+    "slices": [],
+    "domains": [],
+    "surfaces": []
+  },
+  "authority": {
+    "decidedBy": "OWNER",
+    "managerOnly": false,
+    "humanEscalation": true,
+    "proposedBy": "MANAGER-01"
+  },
+  "evidence": [],
+  "evidenceRefs": [],
+  "sources": {
+    "issues": [
+      256
+    ],
+    "prs": [
+      297
+    ],
+    "commits": [],
+    "requests": []
+  },
+  "supersedes": null,
+  "supersededBy": null,
+  "promotion": {
+    "canonical": false,
+    "mainPath": null,
+    "mainCommitSha": null,
+    "promotedAt": null,
+    "promotedBy": null
+  },
+  "reason": null
+}

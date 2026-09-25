@@ -7,6 +7,10 @@
 > (`tools/workforce/src/git-tasks.mjs`). No session runtime, server, heartbeat or daemon is required (PR #296 closed
 > unmerged). The event store described below is no longer the task authority; the engine code remains as a library
 > until a follow-up task reduces it. DEC-0014, DEC-0015 and DEC-0016 still apply.
+>
+> **DEC-0018 (owner): pipeline mode for AGENT-02..10.** Per-agent task pool + result pool on the agent branch
+> (`tools/workforce/src/git-pool.mjs`; `arena:task next|result|block|queue|pool-init`), batch Slice integration from
+> per-task commit ranges. AGENT-01 stays on the DEC-0017 single-task workflow until MIGRATE-AGENT-01.
 
 
 Implementation of the Manager workforce specification #259–#267, authorized by #268 (DEC-0001).

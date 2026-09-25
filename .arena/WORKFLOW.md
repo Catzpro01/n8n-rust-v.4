@@ -1,4 +1,4 @@
-# WORKFLOW — git-native task model (DEC-0017)
+# WORKFLOW — git-native task model (DEC-0017) + pipeline (DEC-0018)
 
 ```text
                     GitHub repository (code authority)
@@ -83,3 +83,39 @@ both are completed. A and B run in parallel on two agents; C waits for both.
 
 The tools only use git. No server, session registration, heartbeat, daemon or
 database is needed — and none of the commands handles credentials.
+
+## Pipeline mode (DEC-0018) — AGENT-02..10
+
+```text
+Milestone → Slice → TASK POOL (per agent branch) → work → RESULT POOL (per agent branch)
+          → Manager integration queue → batch Slice integration → ONE Slice PR → main
+```
+
+| Path on `arena/agent-NN` | Content |
+|---|---|
+| `.arena/task-pool/<ID>.md` | task file (same front matter as above) — the task authority |
+| `.arena/current-task.md` | pointer: `task_id`, `status` (IDLE / WORKING / BLOCKED), `started_at`, `base_commit` |
+| `.arena/result-pool/RESULT-<n>.md` | result: `task_id`, `agent`, `slice`, `status` (READY_FOR_REVIEW / REWORK / COMPLETED), `commit`, `ranges`, `files_changed`, `tests`, Summary / Limitations / Next |
+| `.arena/progress.md`, `.arena/evidence/<ID>.md` | as above |
+| `arena-manager:.arena/integration/QUEUE.md` | Manager's queue snapshot (index only) |
+
+Pool task statuses: `UNASSIGNED`, `ASSIGNED` (queued, dependencies not met),
+`READY` (can start), `WORKING`, `BLOCKED`, `READY_FOR_REVIEW` (result
+delivered), `COMPLETED` (integrated and merged; Manager only).
+`READY_FOR_REVIEW` is never `COMPLETED`.
+
+| Command | Who | Effect |
+|---|---|---|
+| `next --push` | agent | merge main, start the highest-priority READY task (rework first, then `order`, then id) |
+| `result --summary … --push` | agent | result record with the task's exact commit ranges; task READY_FOR_REVIEW; current IDLE |
+| `block --reason … / unblock` | agent | BLOCKED with a reason, and back |
+| `pool-init --agent AGENT-NN --push` | Manager | make the branch a pipeline workspace (AGENT-01 refused) |
+| `assign --agent … --task draft.md --push` | Manager | queue in the pool: READY if dependencies are met, else ASSIGNED |
+| `queue [--write]` | Manager | results per Slice + what each Slice waits for |
+| `integrate --slice S [--tasks …] --push` | Manager | batch-apply results onto `arena/manager/S`; already-applied ranges skipped |
+| `rework --agent A --task ID --note …` | Manager | result REWORK, task READY with rework_note |
+| `reassign --from A --to B --task ID --reason …` | Manager | history on both sides, work carried |
+| `complete --agent A --task ID --merge-sha … --push` | Manager | task and result COMPLETED |
+
+Dependency rule: a dependency is met when its evidence is on `main`, or when
+the same agent already delivered it on its own branch.
