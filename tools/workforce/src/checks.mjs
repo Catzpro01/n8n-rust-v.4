@@ -11,7 +11,7 @@
 // WAITING_RUNNER is never PASS: it is reported separately and becomes runner verification debt that
 // the Slice (or manager-executed task) must clear before it can be COMPLETE.
 
-const OK = new Set(['success', 'skipped', 'neutral']);
+export const OK = new Set(['success', 'skipped', 'neutral']);
 const QUEUED = new Set(['queued', 'waiting', 'pending', 'requested']);
 
 export const isSelfHosted = (job) => (job.labels ?? []).includes('self-hosted');

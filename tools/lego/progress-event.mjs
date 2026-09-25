@@ -34,7 +34,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { classifyChecks } from '../workforce/src/checks.mjs';
+import { classifyChecks, OK } from '../workforce/src/checks.mjs';
 import {
   CHECKPOINT_STATUSES,
   LIVE_PROGRESS_MODEL,
@@ -161,6 +161,47 @@ function normalizeCheckpoint(checkpoint, sliceId) {
   return normalized;
 }
 
+/* ----------------------------------- DEC-0015 evidence from the GitHub API */
+
+const API = 'https://api.github.com';
+
+/**
+ * Pull the jobs of every workflow run on a head SHA, straight from the GitHub
+ * Actions jobs API. The Manager never exports anything by hand: `resolve --fetch`
+ * asks for the evidence and classifies it. Returns job objects in the shape
+ * `classifyChecks` expects ({ name, status, conclusion, labels, runner_name, run_id }).
+ */
+export async function fetchJobs({ repo, head, token, fetchImpl = globalThis.fetch } = {}) {
+  if (!repo || !head) throw new Error('fetchJobs needs a repo and a head SHA');
+  const auth = token ? { Authorization: `token ${token}` } : {};
+  const runs = await get(`${API}/repos/${repo}/actions/runs?head_sha=${head}&per_page=100`, fetchImpl, auth);
+  const jobs = [];
+  for (const run of runs.workflow_runs ?? []) {
+    const page = await get(`${API}/repos/${repo}/actions/runs/${run.id}/jobs?per_page=100`, fetchImpl, auth);
+    for (const job of page.jobs ?? []) {
+      jobs.push({
+        name: job.name, status: job.status, conclusion: job.conclusion,
+        labels: job.labels ?? [], runner_name: job.runner_name ?? null, run_id: run.id,
+      });
+    }
+  }
+  return jobs;
+}
+
+/** Self-hosted runner availability, for the DEC-0015 WAITING_RUNNER test. */
+export async function fetchOnlineRunners({ repo, token, fetchImpl = globalThis.fetch } = {}) {
+  if (!repo) throw new Error('fetchOnlineRunners needs a repo');
+  const auth = token ? { Authorization: `token ${token}` } : {};
+  const page = await get(`${API}/repos/${repo}/actions/runners?per_page=100`, fetchImpl, auth);
+  return (page.runners ?? []).map((r) => ({ name: r.name, busy: r.busy, labels: r.labels ?? [] }));
+}
+
+async function get(url, fetchImpl, headers) {
+  const response = await fetchImpl(url, { headers: { Accept: 'application/vnd.github+json', ...headers } });
+  if (!response.ok) throw new Error(`${response.status} ${response.statusText} for ${url}`);
+  return response.json();
+}
+
 /* --------------------------------------------- evidence -> checkpoint state */
 
 /**
@@ -176,10 +217,46 @@ function normalizeCheckpoint(checkpoint, sliceId) {
  * PURE: jobs come from the GitHub Actions jobs API ({ name, status, conclusion,
  * labels, runner_name, run_id }).
  */
-export function deriveCheckpointState(jobs = [], { onlineRunners, head } = {}) {
+export function deriveCheckpointState(jobs = [], { onlineRunners, head, required = [] } = {}) {
   const verdict = classifyChecks(jobs, { onlineRunners });
   const where = head ? ` on ${head}` : '';
   const selfHosted = verdict.selfHosted;
+  // DEC-0015 needs named checks, not "everything that ran is green": a head that
+  // never ran the Level 0/1/2 suite is ALL_GREEN and still unverified. When the
+  // checkpoint declares the checks it requires, only those can earn it.
+  const wanted = [...new Set(required)].filter(Boolean);
+  if (wanted.length) {
+    const missing = wanted.filter((name) => !jobs.some((job) => job.name === name));
+    const unfinished = wanted.filter((name) => jobs.some((job) => job.name === name && job.status !== 'completed'));
+    const failed = wanted.filter((name) => jobs.some((job) => job.name === name && job.status === 'completed' && !OK.has(job.conclusion)));
+    if (missing.length) {
+      return {
+        status: 'in-progress',
+        evidence: `DEC-0015 verification is incomplete${where}: required check(s) have not run: ${missing.join(', ')}. An absent self-hosted check is never success.`,
+        verdict, required: wanted,
+      };
+    }
+    if (failed.length) {
+      return {
+        status: 'blocked',
+        evidence: `DEC-0015 self-hosted verification FAILED${where}: ${failed.join(', ')} completed without success (${verdict.reasons.join('; ')}).`,
+        blockedBy: `self-hosted verification failed${where}: ${failed.join(', ')} — classify the failure before recording it as environmental or an implementation regression`,
+        verdict, required: wanted,
+      };
+    }
+    if (unfinished.length) {
+      return {
+        status: 'in-progress',
+        evidence: `DEC-0015 verification not finished${where}: ${unfinished.join(', ')} still running. WAITING_RUNNER is never PASS, so the checkpoint is not earned.`,
+        verdict, required: wanted,
+      };
+    }
+    return {
+      status: 'completed',
+      evidence: `DEC-0015 verification PASS${where}: ${wanted.map((name) => jobLabel(jobs, name)).filter(Boolean).join('; ')}. Verdict ${verdict.verdict} (${formatChecksSummary(verdict)}).`,
+      verdict, required: wanted,
+    };
+  }
   const passed = selfHosted.pass.map((name) => jobLabel(jobs, name)).filter(Boolean);
   if (verdict.verdict === 'BLOCKED' && selfHosted.fail.length) {
     return {
@@ -202,6 +279,12 @@ export function deriveCheckpointState(jobs = [], { onlineRunners, head } = {}) {
     evidence: `DEC-0015 self-hosted verification PASS${where}: ${passed.join('; ')}. Verdict ${verdict.verdict} (${formatChecksSummary(verdict)}).`,
     verdict,
   };
+}
+
+/** The DEC-0015 checks a checkpoint declares it needs (register `checkpoints[].requires`). */
+export function checkpointRequires(register, sliceId, checkpointId) {
+  const checkpoint = findSlice(register, sliceId)?.slice.checkpoints?.find((item) => item.id === checkpointId);
+  return [...(checkpoint?.requires ?? [])];
 }
 
 function jobLabel(jobs, name) {
@@ -504,7 +587,7 @@ function defaultMessage(event) {
  * (the GitHub Actions jobs API for the runs that matter) and, optionally, the
  * head SHA they ran on; the DEC-0015 classifier decides the state.
  */
-function resolveCommand(argv) {
+async function resolveCommand(argv, { fetchImpl = globalThis.fetch } = {}) {
   const flags = parseFlags(argv);
   const sliceId = nonEmpty(flags.slice);
   const checkpointId = nonEmpty(flags.checkpoint);
@@ -512,17 +595,39 @@ function resolveCommand(argv) {
     process.stderr.write('resolve: --slice and --checkpoint are required\n');
     return 2;
   }
-  let jobs = [];
-  try {
-    const raw = readFileSync(resolve(REPO_ROOT, flags.jobs), 'utf8');
-    const parsed = JSON.parse(raw);
-    jobs = Array.isArray(parsed) ? parsed : parsed.jobs ?? [];
-  } catch (error) {
-    process.stderr.write(`resolve: cannot read --jobs: ${error.message}\n`);
-    return 2;
-  }
   let onlineRunners;
-  if (flags.runners) {
+  let jobs = [];
+  if (!flags.fetch) {
+    if (!nonEmpty(flags.jobs)) {
+      process.stderr.write('resolve: --jobs <file.json> or --fetch --head <sha> is required\n');
+      return 2;
+    }
+    try {
+      const raw = readFileSync(resolve(REPO_ROOT, flags.jobs), 'utf8');
+      const parsed = JSON.parse(raw);
+      jobs = Array.isArray(parsed) ? parsed : parsed.jobs ?? [];
+    } catch (error) {
+      process.stderr.write(`resolve: cannot read --jobs: ${error.message}\n`);
+      return 2;
+    }
+  }
+  if (flags.fetch) {
+    const repo = nonEmpty(flags.repo) || 'Catzpro01/n8n-rust-v.4';
+    const head = nonEmpty(flags.head);
+    if (!head) {
+      process.stderr.write('resolve: --fetch needs --head <sha>\n');
+      return 2;
+    }
+    const token = process.env[nonEmpty(flags.tokenEnv) || 'GITHUB_TOKEN'] || process.env.GH_TOKEN || '';
+    try {
+      jobs = await fetchJobs({ repo, head, token, fetchImpl });
+      onlineRunners = await fetchOnlineRunners({ repo, token, fetchImpl });
+      process.stdout.write(`fetched ${jobs.length} job(s) on ${head} from ${repo}; ${onlineRunners.length} runner(s) reported\n`);
+    } catch (error) {
+      process.stderr.write(`resolve: --fetch failed: ${error.message}\n`);
+      return 2;
+    }
+  } else if (flags.runners) {
     try {
       const parsed = JSON.parse(readFileSync(resolve(REPO_ROOT, flags.runners), 'utf8'));
       onlineRunners = parsed.runners ?? parsed;
@@ -531,8 +636,18 @@ function resolveCommand(argv) {
       return 2;
     }
   }
-  const derived = deriveCheckpointState(jobs, { onlineRunners, head: flags.head });
+  const required = nonEmpty(flags.require)
+    ? nonEmpty(flags.require).split(',').map((name) => name.trim()).filter(Boolean)
+    : checkpointRequires(readRegister().register, sliceId, checkpointId);
+  const derived = deriveCheckpointState(jobs, { onlineRunners, head: flags.head, required });
+  if (flags.fetch) {
+    const sh = derived.verdict.selfHosted;
+    const idle = (onlineRunners ?? []).filter((r) => !r.busy).length;
+    process.stdout.write(`runners: ${idle}/${(onlineRunners ?? []).length} online and idle\n`);
+    process.stdout.write(`DEC-0015: hosted ${derived.verdict.hosted.pass.length} pass | self-hosted ${sh.pass.length} pass, ${sh.fail.length} fail, ${sh.running.length} running, ${sh.waitingRunner.length} waiting\n`);
+  }
   process.stdout.write([
+    `required checks: ${required.length ? required.join(', ') : '(none declared)'}`,
     `DEC-0015 verdict: ${derived.verdict.verdict} — ${formatChecksSummary(derived.verdict)}`,
     `derived state for ${sliceId} ${checkpointId}: ${derived.status}`,
     `  evidence: ${derived.evidence}`,
@@ -661,9 +776,12 @@ const USAGE = `usage: progress-event.mjs <command>
          [--title <text>] [--purpose <text>] [--completed-at <iso>] [--latest-update <text>]
          [--message <text>] [--commit] [--push] [--dry-run]
          (--init-file <checkpoints.json> installs a whole checkpoint model)
-  resolve --slice <id> --checkpoint <CP-nn> --jobs <file.json> [--head <sha>]
-         [--runners <file.json>] [--commit] [--push] [--dry-run]
-         derives the checkpoint state from DEC-0015 check results; no percentage is typed
+  resolve --slice <id> --checkpoint <CP-nn> [--jobs <file.json>] [--head <sha>]
+         [--runners <file.json> | --fetch] [--repo <owner/name>] [--token-env <VAR>]
+         [--commit] [--push] [--dry-run]
+         [--require "Check A,Check B"]   default: the checkpoint's own DEC-0015 requires
+         derives the checkpoint state from DEC-0015 check results; no percentage is typed.
+         --fetch reads the jobs and the runners from the GitHub API itself
   verify --slice <id> --checkpoint <CP-nn> --cmd "<command>" [--on-fail blocked|keep]
          [--commit] [--push] [--dry-run]
          runs the command and derives completed / blocked from its exit code
@@ -671,10 +789,10 @@ const USAGE = `usage: progress-event.mjs <command>
   classify [-- <path> ...]        exit 1 when a path is not pure progress telemetry
 `;
 
-function main(argv = process.argv.slice(2)) {
+async function main(argv = process.argv.slice(2), { fetchImpl = globalThis.fetch } = {}) {
   const [command, ...rest] = argv;
   if (command === 'record') return record(rest);
-  if (command === 'resolve') return resolveCommand(rest);
+  if (command === 'resolve') return resolveCommand(rest, { fetchImpl });
   if (command === 'verify') return verify(rest);
   if (command === 'show') return show(rest);
   if (command === 'classify') return classify(rest);
@@ -682,4 +800,6 @@ function main(argv = process.argv.slice(2)) {
   return 2;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) process.exitCode = main();
+if (import.meta.url === `file://${process.argv[1]}`) main().then((code) => { process.exitCode = code; });
+
+export { main };

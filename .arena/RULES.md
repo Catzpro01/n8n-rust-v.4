@@ -81,8 +81,10 @@ repository is the shared memory; GitHub is the code authority.
     percentage is computed, never typed — `resolve` derives a checkpoint state
     from operational evidence (self-hosted check results through the DEC-0015
     classifier, or a verification command's exit code) and `verify` runs that
-    command and derives completed / blocked from its result. The exception never
-    covers source,
+    command and derives completed / blocked from its result. A checkpoint that
+    declares `requires` is earned only when every named check passed: an absent
+    self-hosted check is never PASS, and WAITING_RUNNER is never PASS, so a head
+    that never ran the suite cannot look green. The exception never covers source,
     tests, runtime, API, frontend, backend, contracts, schemas, dependencies,
     Rust, CI workflows, security policy, permissions, infrastructure, database
     schema or production configuration — `node tools/lego/progress-event.mjs

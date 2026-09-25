@@ -3006,7 +3006,8 @@
               "weight": 30,
               "status": "in-progress",
               "evidence": "DEC-0015 environmental retry started: PR #310 (head 17c88012d2ac774109d321e743b5e674d17853fc) cut from main 674546fcc85f7be8184f47accde72c5f7c464d52 runs the Level 0 / Level 1 / Level 2 linux / Level 2 windows / conformance suite on the self-hosted runners; the earlier failure (runs 36136621119, 36136621102, 36137555071) was a runner communication loss, not an implementation regression",
-              "reference": "docs/n8n-lego/evidence/P5-M08-EVIDENCE.md \u00a76; one environmental retry remains and was not spent"
+              "reference": "docs/n8n-lego/evidence/P5-M08-EVIDENCE.md \u00a76; one environmental retry remains and was not spent",
+              "requires": ["Level 0 (Check & Format)","Level 1 (Affected Tests)","Level 2 Workspace Tests (linux)","Level 2 Workspace Tests (windows)","Level 2 Conformance LEGO & Node Catalog","Post-Merge Verification & Branch Cleanup"]
             }
           ],
           "updatedAt": "2026-09-25T17:20:04Z",
