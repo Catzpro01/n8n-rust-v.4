@@ -38,7 +38,6 @@
     "lego:impact": "node tools/lego/impact-graph.mjs",
     "lego:plan": "node tools/lego/impact-graph.mjs --plan",
     "lego:ai": "node tools/lego/ai-pack.mjs",
-    "arena:task": "node tools/workforce/src/tasks-cli.mjs",
     "lego:ai:check": "node tools/lego/ai-pack.mjs --check"
   }
 }

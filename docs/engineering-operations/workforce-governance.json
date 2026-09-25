@@ -394,7 +394,7 @@
       "temporary files under the runner temp directory",
       "clean temp files, patches, logs, duplicate clones and stale worktrees; keep dependency/build caches",
       "never commit runtime artifacts (.arena/gateway_tokens.json is gitignored)",
-      "persistent branches: main, arena-manager and arena/agent-01..arena/agent-10 (DEC-0003); task branches arena/agent-XX/TASK-nnnn and arena/manager/<slug> are temporary and deleted after merge"
+      "persistent branches: main and arena-manager only (DEC-0019); Manager PR branches are temporary and deleted after merge"
     ],
     "observed": "governance reset #256: GET /actions/runners returned 10 runners, all online, none busy, labels as listed"
   }

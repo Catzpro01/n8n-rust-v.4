@@ -1,0 +1,70 @@
+{
+  "schemaVersion": "1.0",
+  "objectType": "Decision",
+  "objectId": "DEC-0019",
+  "revision": 1,
+  "createdAt": "2026-09-25T11:44:07Z",
+  "updatedAt": "2026-09-25T11:44:07Z",
+  "events": [],
+  "state": "ACTIVE",
+  "category": "WORKFORCE",
+  "title": "The Manager executes every task itself; no agent branches, only main and arena-manager persist",
+  "problem": "DEC-0017 made each Arena agent session a worker with a permanent arena/agent-NN branch and a task file on it. A proposed follow-up (DEC-0018, PR #299) added a task pool and a result pool on top of it. In practice the model created 15 extra branches and more than a dozen distribution issues, and required agent sessions the owner has to start and supervise. Only one task (TASK-0018) was ever worked on by an agent. The overhead outweighed the benefit.",
+  "options": [
+    {
+      "id": "A-manager-executes",
+      "summary": "Remove the agent-branch / task-distribution concept entirely. The Manager executes every task directly and delivers each Slice as one PR from a short-lived branch that is deleted after merge. Persistent branches: main and arena-manager only. Task-distribution tooling (git-tasks, arena:task, AGENT_RULES, WORKFLOW, templates) is removed from main."
+    },
+    {
+      "id": "B-keep-git-native",
+      "summary": "Keep DEC-0017 agent branches and task files."
+    },
+    {
+      "id": "C-task-pool",
+      "summary": "Adopt the DEC-0018 task pool / result pool pipeline (PR #299)."
+    }
+  ],
+  "selectedOption": "A-manager-executes",
+  "rationale": "Owner decision in chat on 2026-09-25. The owner asked to remove the whole agent-branch concept, to delete all branches except main and arena-manager ('branch selain main dan manager-arena boleh dihapus'), to mark the task-distribution issues as no longer valid, and said the Manager itself does the agents' tasks from now on.\n\nExecuted so far:\n- the 15 other branches were archived as archive/* tags and deleted;\n- PR #299 (DEC-0018) was closed unmerged;\n- issues #92, #94, #259-#265, #267-#270, #277, #294 and #295 were closed as not planned.\n\nThe agent work for TASK-0018 is preserved (tag archive/arena-01a0d83c-n8n-rust-v-4-ff929203) and delivered by the Manager with attribution (DEC-0016 principle).\n\nThis also revokes the persistent worker-slot branches of DEC-0003. Its other content stays as history.\n\nStill in force:\n- DEC-0014 (one PR per Slice, 8 gates);\n- DEC-0015 (runner verification);\n- DEC-0009 (Manager credential);\n- the milestone register and slice numbering (no new milestone numbers);\n- evidence;\n- main protection;\n- the shared 5 Windows + 5 WSL runner pool.\n\nThe legacy workforce engine library under tools/workforce/src (worker-slot model) is no longer used for task distribution. Its removal is a separate follow-up; decisions-check stays.",
+  "scope": {
+    "programs": [
+      "GOVERNANCE"
+    ],
+    "slices": [],
+    "domains": [],
+    "surfaces": []
+  },
+  "authority": {
+    "decidedBy": "OWNER",
+    "managerOnly": false,
+    "humanEscalation": true,
+    "proposedBy": "MANAGER-01"
+  },
+  "evidence": [],
+  "evidenceRefs": [],
+  "sources": {
+    "issues": [
+      256,
+      295,
+      294
+    ],
+    "prs": [
+      299,
+      297
+    ],
+    "commits": [
+      "947cd39511e0f936d8807335c80d910a894f354b"
+    ],
+    "requests": []
+  },
+  "supersedes": "DEC-0017",
+  "supersededBy": null,
+  "promotion": {
+    "canonical": false,
+    "mainPath": null,
+    "mainCommitSha": null,
+    "promotedAt": null,
+    "promotedBy": null
+  },
+  "reason": null
+}

@@ -145,7 +145,7 @@
       "main",
       "arena-manager"
     ],
-    "branchPolicy": "Persistent branches: main, arena-manager and the ten worker slots arena/agent-01..arena/agent-10 (DEC-0003, docs/engineering-operations/workforce/decisions/DEC-0003.json, supersedes the #256 two-branch rule for worker slots only; worker branches are created only after this change is merged and fresh-main verified). Task branches arena/agent-XX/TASK-nnnn and Manager branches arena/manager/<slug> are temporary. Every other branch is: A) merged -> deleted; B) important unmerged work -> PR, merge, delete; C) obsolete -> deleted after comparison with main (unique content preserved under an archive/<branch> tag).",
+    "branchPolicy": "Persistent branches: main and arena-manager only (DEC-0019, docs/engineering-operations/workforce/decisions/DEC-0019.json; supersedes the worker-slot branches of DEC-0003 and the agent-branch model of DEC-0017). The Manager executes every task itself; each Slice is delivered by one PR from a short-lived Manager branch that is deleted after merge. Every other branch is: A) merged -> deleted; B) important unmerged work -> PR, merge, delete; C) obsolete -> deleted after comparison with main (unique content preserved under an archive/<branch> tag).",
     "runnerProtocol": "docs/engineering-operations/RUNNER-PROTOCOL.md (machine-readable: docs/engineering-operations/workforce-governance.json#runnerProtocol)",
     "reconciliation": {
       "mergedPRs": [

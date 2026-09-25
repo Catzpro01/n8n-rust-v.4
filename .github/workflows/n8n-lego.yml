@@ -37,7 +37,6 @@ on:
       - 'tools/workforce/**'
       - 'docs/engineering-operations/workforce/**'
       - '.arena/*.md'
-      - '.arena/templates/**'
       # Inputs the gate reads outside the paths above (TASK-0022): register and
       # decisions, ADRs, governance JSON, generated .ai, contracts, recorded
       # upstream goldens, and the engine + frontend packages the runtime loads.
@@ -62,7 +61,6 @@ on:
       - 'tools/workforce/**'
       - 'docs/engineering-operations/workforce/**'
       - '.arena/*.md'
-      - '.arena/templates/**'
       # Inputs the gate reads outside the paths above (TASK-0022): register and
       # decisions, ADRs, governance JSON, generated .ai, contracts, recorded
       # upstream goldens, and the engine + frontend packages the runtime loads.
