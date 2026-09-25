@@ -144,7 +144,9 @@ export function buildFrontendSettings(config, { hasOwner = false, requestOrigin 
       enabled: true,
       latestVersion: 1,
       path: `${config.basePath}api/v1`,
-      swaggerUi: { enabled: true },
+      // P5-M03 serves /api/v1 but not yet /api/v1/docs; advertising the
+      // playground would hand the editor a dead link.
+      swaggerUi: { enabled: false },
     },
     workflowTagsDisabled: false,
     logLevel: config.logLevel,

@@ -97,3 +97,13 @@ Golden (live 2.9.4): `/healthz` 200 `{"status":"ok"}`; owner setup `role:'global
 - `GET /rest/executions/:id` for missing id returns `200 {}`, not 404 — keep (editor handles it).
 - Cookie name `n8n-auth`, `sameSite` per `N8N_SAMESITE_COOKIE`, `secure` per protocol.
 - Public API must keep OpenAPI-validated JSON errors with `message` only.
+
+## 12. n8n lego implementation status — public API (P5-M03)
+
+Served by `apps/n8n-lego/src/auth/public-api-routes.mjs` (auth domain; wired in `src/server.mjs` ahead of the editor SPA fallback).
+
+- **Mounted:** `GET|POST /api/v1/workflows`, `GET|PUT|DELETE /api/v1/workflows/{id}`, `POST /api/v1/workflows/{id}/activate|deactivate`, `GET|PUT /api/v1/workflows/{id}/tags`.
+- **Pipeline (upstream order):** route match (404 `not found` / 405 `<METHOD> method not allowed`) → `X-N8N-API-KEY` (401 goldens above, verbatim) → JSON body (400 `Invalid JSON in request body`) → schema validation (400, ajv-style `request/...` messages; not golden-recorded) → key scope via the P5.3 `authorize()` kernel (403 `Forbidden`) → handler (`{message}` errors, 404 `Not Found`).
+- **Pagination:** offset cursor = base64 JSON `{limit, offset}`, `limit` default 100, max 250; invalid cursor → 400 `An invalid cursor was provided`.
+- **Deliberate differences (fail-closed):** key scopes are always enforced (upstream only with the enterprise `apiKeyScopes` licence); a session cookie is never an `/api/v1` credential; effective scopes are the key's scopes ∩ the owner's current grant.
+- **Not yet served (P5-M08):** executions, credentials, tags, users, variables, projects, audit, source-control, data-tables, `/api/v1/openapi.yml`, `/api/v1/docs` (the settings flag `publicApi.swaggerUi.enabled` is therefore `false`); `/workflows/{id}/transfer` and `projectId` filtering need a project model; `N8N_PUBLIC_API_DISABLED` is not honoured yet.

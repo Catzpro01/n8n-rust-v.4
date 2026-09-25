@@ -10,9 +10,9 @@
  *   all behind global scope `apiKey:manage`, exactly like upstream.
  *
  *   authenticateMachineCredential()  the verifier a key-accepting surface calls.
- *     This product has no `/api/v1` public-API endpoints yet, so nothing mounts
- *     it today; it is the boundary those endpoints (and worker/agent transports)
- *     must use. `/rest/*` keeps accepting session cookies only, as upstream does.
+ *     `/api/v1` (src/auth/public-api-routes.mjs, P5-M03) mounts it; worker and
+ *     agent transports must use it too. `/rest/*` keeps accepting session
+ *     cookies only, as upstream does.
  *
  *   service principals (workers / agents / MCP / gateway) — programmatic
  *     lifecycle: create (credential shown once), list (redacted), revoke.

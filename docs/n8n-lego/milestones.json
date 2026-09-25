@@ -68,7 +68,7 @@
       "maintenance": "Pn-Mnn \u2014 hardening / debt / maintenance inside an existing P",
       "futureProgram": "<FUTURE-PROGRAM>-Snn \u2014 a slice of a thematic future program"
     },
-    "noNewTopLevelMilestones": "P0-P11 are the complete top-level set. No P12+ is created for features, optimization, hardening or debt; legacy P12-P23 are consolidated into futurePrograms[] with traceability; P24+ is forbidden. There is no P5.9: P5 debt is P5-M01..M03.",
+    "noNewTopLevelMilestones": "P0-P11 are the complete top-level set. No P12+ is created for features, optimization, hardening or debt; legacy P12-P23 are consolidated into futurePrograms[] with traceability; P24+ is forbidden. There is no P5.9: P5 debt is maintenance slices P5-Mnn (P5-M01..M08).",
     "featureIdFormat": "<PARENT>-F-<AREA>-<NNN>, e.g. P4-F-INGRESS-001; governance items are GOV-F-<NNN>",
     "intakeFlow": [
       "issue",
@@ -2799,12 +2799,12 @@
         },
         {
           "id": "P5-M03",
-          "title": "Auth API compatibility: public /api/v1 surface, email-based password recovery, service-principal REST/UI",
+          "title": "Public /api/v1 first surface: API-key boundary in upstream order (recorded 401 goldens), key scopes always enforced through the P5.3 kernel, offset-cursor pagination, workflows resource (9 operations). Re-planned by the Manager: email recovery moved to P5-M06, service-principal REST/UI to P5-M07, remaining /api/v1 resources to P5-M08 (one delivery PR per slice)",
           "kind": "maintenance",
-          "status": "planned",
+          "status": "in-progress",
           "mergeSha": null,
           "issue": 85,
-          "evidence": null,
+          "evidence": "docs/n8n-lego/evidence/P5-M03-EVIDENCE.md",
           "owner": "manager (unassigned)",
           "debtSource": "docs/n8n-lego/evidence/P5.8-CERTIFICATION-EVIDENCE.md \u00a77"
         },
@@ -2822,6 +2822,39 @@
         {
           "id": "P5-M05",
           "title": "Multi-host key storage and shared session + rate-limiter state; depends on the P8 storage contract (P8-S01, not authorized)",
+          "kind": "maintenance",
+          "status": "planned",
+          "mergeSha": null,
+          "issue": 85,
+          "evidence": null,
+          "owner": "manager (unassigned)",
+          "debtSource": "docs/n8n-lego/evidence/P5.8-CERTIFICATION-EVIDENCE.md \u00a77"
+        },
+        {
+          "id": "P5-M06",
+          "title": "Email-based password recovery: needs a mail transport decision first (Node has no built-in SMTP: a dependency or an injected transport contract), then upstream /rest/forgot-password delivery over the P5 reset-token primitive (split out of P5-M03)",
+          "kind": "maintenance",
+          "status": "planned",
+          "mergeSha": null,
+          "issue": 85,
+          "evidence": null,
+          "owner": "manager (unassigned)",
+          "debtSource": "docs/n8n-lego/evidence/P5.8-CERTIFICATION-EVIDENCE.md \u00a77"
+        },
+        {
+          "id": "P5-M07",
+          "title": "Service-principal REST + UI management over the P5.7 programmatic lifecycle (create shown once, redacted list, revoke with tombstone) (split out of P5-M03)",
+          "kind": "maintenance",
+          "status": "planned",
+          "mergeSha": null,
+          "issue": 85,
+          "evidence": null,
+          "owner": "manager (unassigned)",
+          "debtSource": "docs/n8n-lego/evidence/P5.8-CERTIFICATION-EVIDENCE.md \u00a77"
+        },
+        {
+          "id": "P5-M08",
+          "title": "Public /api/v1 remaining resources: executions, credentials, tags, users, variables, projects, audit, source-control, data-tables, plus /api/v1/openapi.yml and /api/v1/docs (split out of P5-M03; builds on the P5-M03 boundary)",
           "kind": "maintenance",
           "status": "planned",
           "mergeSha": null,
@@ -5637,7 +5670,7 @@
     },
     {
       "id": "P5-F-DEBT-007",
-      "title": "Public /api/v1 compatibility surface",
+      "title": "Public /api/v1 compatibility surface: API-key boundary + workflows resource",
       "type": "debt",
       "sourceIssue": [
         85,
@@ -5646,7 +5679,7 @@
       "parent": "P5",
       "slice": "P5-M03",
       "owner": "manager (unassigned)",
-      "status": "planned",
+      "status": "in-progress",
       "relevance": "maintenance",
       "dependencies": [],
       "evidence": null,
@@ -5667,7 +5700,7 @@
         221
       ],
       "parent": "P5",
-      "slice": "P5-M03",
+      "slice": "P5-M06",
       "owner": "manager (unassigned)",
       "status": "planned",
       "relevance": "maintenance",
@@ -5690,11 +5723,36 @@
         221
       ],
       "parent": "P5",
-      "slice": "P5-M03",
+      "slice": "P5-M07",
       "owner": "manager (unassigned)",
       "status": "planned",
       "relevance": "maintenance",
       "dependencies": [],
+      "evidence": null,
+      "pr": null,
+      "mergeSha": null,
+      "relatedEvidence": [
+        "docs/n8n-lego/evidence/P5.8-CERTIFICATION-EVIDENCE.md \u00a77"
+      ],
+      "supersededBy": null,
+      "replacement": null
+    },
+    {
+      "id": "P5-F-DEBT-010",
+      "title": "Public /api/v1 remaining resources and OpenAPI/docs endpoints",
+      "type": "debt",
+      "sourceIssue": [
+        85,
+        221
+      ],
+      "parent": "P5",
+      "slice": "P5-M08",
+      "owner": "manager (unassigned)",
+      "status": "planned",
+      "relevance": "maintenance",
+      "dependencies": [
+        "P5-F-DEBT-007"
+      ],
       "evidence": null,
       "pr": null,
       "mergeSha": null,

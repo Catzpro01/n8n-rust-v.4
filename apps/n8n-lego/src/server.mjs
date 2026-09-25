@@ -24,6 +24,7 @@ import { HttpError } from './compat/error.mjs';
 import { readBody, sendError, sendJson } from './compat/response.mjs';
 import { createUnsupportedHandler } from './compat/capability.mjs';
 import { authRoutes } from './auth/routes.mjs';
+import { handlePublicApiRequest, isPublicApiPath } from './auth/public-api-routes.mjs';
 import { settingsRoutes } from './settings/routes.mjs';
 import { buildRoutes } from './rest/routes.mjs';
 import { bootCredentialVault } from './auth/security/credential-vault.mjs';
@@ -155,6 +156,16 @@ export async function startServer({ env = process.env } = {}) {
         return;
       }
       pathname = pathname.slice(config.basePath.length - 1);
+    }
+
+    // P5-M03 — the public API. API-key authenticated (never the session
+    // cookie), upstream `{ message }` error bodies; must win over the editor
+    // SPA fallback, which would otherwise answer API clients with HTML.
+    if (isPublicApiPath(pathname)) {
+      const ctx = { req, res, config, logger, store, engine, method: req.method ?? 'GET', path: pathname, query: Object.fromEntries(url.searchParams), params: {}, body: undefined, user: null };
+      const user = await handlePublicApiRequest(ctx);
+      logAccess(req, res, pathname, started, user ?? undefined);
+      return;
     }
 
     if (!pathname.startsWith('/rest/')) {
