@@ -20,6 +20,11 @@
  *  - feature ids are unique and every slice reference resolves inside its own parent.
  *  - DEC-0020: milestone truth is main-owned (governance.milestoneAuthority), the historical P2
  *    ladder is fingerprinted, and README.md / ROADMAP.md are checked as projections, never registers.
+ *  - DEC-0021 (LIVE-MILESTONE EXCEPTION): checkpoint / milestone progress telemetry may be
+ *    reconciled straight to `main` by the Manager in a `governance(progress):` commit, using
+ *    `tools/lego/progress-event.mjs`. Only LIVE_PROGRESS_PATHS may change in such a commit
+ *    (`classifyProgressCommit`); implementation, contracts, CI, Cargo and runner configuration
+ *    are outside the exception and still need a delivery PR.
  */
 
 import { createHash } from 'node:crypto';
@@ -142,6 +147,7 @@ export function validateGovernanceRegister(register) {
   }
   errors.push(...validateExecutionPointer(register, sliceOwner));
   errors.push(...validateMilestoneAuthority(register));
+  errors.push(...validateLiveProgressModel(register));
   const model = gov.progressModel;
   if (model) {
     if (model.legacyImplementedWithoutCheckpoints !== LEGACY_IMPLEMENTED_POINTS) fail(`progressModel.legacyImplementedWithoutCheckpoints must be ${LEGACY_IMPLEMENTED_POINTS}`);
@@ -429,9 +435,79 @@ export function statusLabel(status) {
   return STATUS_LABEL[status] ?? status;
 }
 
-export const CHECKPOINT_STATUSES = Object.freeze(['completed', 'in-progress', 'blocked', 'planned']);
+export const CHECKPOINT_STATUSES = Object.freeze(['planned', 'in-progress', 'completed', 'blocked', 'skipped']);
 export const LEGACY_IMPLEMENTED_POINTS = 100;
 export const NO_CHECKPOINT_MODEL_POINTS = 0;
+
+const ISO_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/;
+
+/**
+ * DEC-0021 (LIVE-MILESTONE EXCEPTION). Progress telemetry — and only progress
+ * telemetry — may be reconciled straight to `main` by the Manager, without a
+ * governance PR. Everything a progress-only commit is allowed to touch is
+ * listed here; anything else is implementation and still needs a delivery PR.
+ */
+export const LIVE_PROGRESS_MODEL = Object.freeze({
+  decision: 'DEC-0021',
+  name: 'LIVE-MILESTONE EXCEPTION',
+  commitPrefix: 'governance(progress):',
+  tool: 'tools/lego/progress-event.mjs',
+  register: 'docs/n8n-lego/milestones.json',
+  publicProjection: 'README.md',
+  generatedProjections: Object.freeze(['.ai/master/MILESTONE_REGISTER.md', '.ai/master/CURRENT_STATUS.md']),
+  evidenceRoot: 'docs/n8n-lego/evidence/',
+});
+
+/** Paths a `governance(progress):` commit may touch (DEC-0021). Nothing else. */
+export const LIVE_PROGRESS_PATHS = Object.freeze([
+  LIVE_PROGRESS_MODEL.register,
+  LIVE_PROGRESS_MODEL.publicProjection,
+  ...LIVE_PROGRESS_MODEL.generatedProjections,
+  LIVE_PROGRESS_MODEL.evidenceRoot,
+]);
+
+/**
+ * Classify a set of changed paths for a direct-main progress commit. Returns the
+ * allowed paths and the violations; `ok` is false when any path is not pure
+ * telemetry, which is how a progress commit is stopped from smuggling in
+ * implementation, contracts, CI, Cargo or runner configuration (DEC-0021 §20).
+ */
+export function classifyProgressCommit(paths = []) {
+  const allowed = [];
+  const violations = [];
+  for (const raw of paths) {
+    const path = String(raw ?? '').trim().replace(/^\.\//, '');
+    if (!path) continue;
+    const permitted = LIVE_PROGRESS_PATHS.some((entry) => (entry.endsWith('/') ? path.startsWith(entry) : path === entry));
+    (permitted ? allowed : violations).push(path);
+  }
+  return { ok: violations.length === 0, allowed, violations, decision: LIVE_PROGRESS_MODEL.decision };
+}
+
+/** DEC-0021: the register's own declaration of the live-progress path must stay truthful. */
+export function validateLiveProgressModel(register) {
+  const errors = [];
+  const model = register?.governance?.progressModel?.liveException;
+  if (!model) return errors;
+  const fail = (message) => errors.push(`progressModel.liveException: ${message}`);
+  if (model.decision !== LIVE_PROGRESS_MODEL.decision) fail(`decision must be ${LIVE_PROGRESS_MODEL.decision}`);
+  if (model.commitPrefix !== LIVE_PROGRESS_MODEL.commitPrefix) fail(`commitPrefix must be ${LIVE_PROGRESS_MODEL.commitPrefix}`);
+  if (model.tool !== LIVE_PROGRESS_MODEL.tool) fail(`tool must be ${LIVE_PROGRESS_MODEL.tool}`);
+  if (!Array.isArray(model.directMainPaths) || model.directMainPaths.length === 0) fail('directMainPaths must be a non-empty array');
+  else {
+    const classified = classifyProgressCommit(model.directMainPaths);
+    if (!classified.ok) fail(`directMainPaths contains non-telemetry paths: ${classified.violations.join(', ')}`);
+    for (const required of [LIVE_PROGRESS_MODEL.register, LIVE_PROGRESS_MODEL.publicProjection, ...LIVE_PROGRESS_MODEL.generatedProjections]) {
+      if (!model.directMainPaths.includes(required)) fail(`directMainPaths must include ${required}`);
+    }
+  }
+  if (!model.noBatching) fail('noBatching must be recorded');
+  if (!model.forbidden) fail('forbidden must record what the exception never covers');
+  if (Array.isArray(model.checkpointStatuses) && JSON.stringify(model.checkpointStatuses) !== JSON.stringify(CHECKPOINT_STATUSES)) {
+    fail(`checkpointStatuses must be ${JSON.stringify(CHECKPOINT_STATUSES)}`);
+  }
+  return errors;
+}
 
 /**
  * Issue #307. Weights are never invented here. A slice contributes checkpoint
@@ -464,10 +540,18 @@ export function validateSliceCheckpoints(slice) {
     if (checkpoint?.status === 'blocked' && !String(checkpoint.blockedBy ?? slice.blockedBy ?? '').trim()) {
       errors.push(`${slice.id}: blocked checkpoint ${id ?? '?'} has no blocker`);
     }
+    if (checkpoint?.status === 'skipped' && !String(checkpoint.reason ?? '').trim()) {
+      errors.push(`${slice.id}: skipped checkpoint ${id ?? '?'} has no reason`);
+    }
   }
   if (weight !== 100) errors.push(`${slice.id}: checkpoint weights sum to ${weight}, not 100`);
   if (slice.status === 'implemented' && checkpoints.some((checkpoint) => checkpoint?.status !== 'completed')) {
     errors.push(`${slice.id}: an implemented slice cannot carry an incomplete checkpoint`);
+  }
+  // DEC-0021: live progress is always timestamped, so a reader of the register alone
+  // knows how fresh the state is without opening chat.
+  if (!ISO_TIMESTAMP.test(slice.updatedAt ?? '')) {
+    errors.push(`${slice.id}: a slice with checkpoints must record updatedAt (ISO-8601 Z)`);
   }
   return errors;
 }
@@ -570,6 +654,19 @@ function checkpointColumns(slice) {
   return { current: 'none declared', latest: 'none declared' };
 }
 
+/** DEC-0021: every completed checkpoint with the evidence that completed it. */
+function checkpointEvidenceLine(slice) {
+  const completed = (slice?.checkpoints ?? []).filter((checkpoint) => checkpoint.status === 'completed');
+  if (!completed.length) return '— (no completed checkpoint)';
+  return completed.map((checkpoint) => `${checkpoint.id}: ${checkpoint.evidence ?? '—'}${checkpoint.reference ? ` [${checkpoint.reference}]` : ''}`).join('; ');
+}
+
+/** DEC-0021: when the live state was last moved, and by which reference. */
+function updateLine(slice) {
+  if (!slice?.updatedAt) return '—';
+  return `${slice.updatedAt}${slice.latestUpdate ? ` — ${slice.latestUpdate}` : ''}`;
+}
+
 function progressNote(slice) {
   const progress = sliceDeliveryProgress(slice);
   if (progress.source === 'checkpoints') return 'Checkpoint-weighted from declared slice.checkpoints. Incomplete checkpoints contribute 0.';
@@ -611,7 +708,8 @@ export function renderReadmeMilestoneSection(register) {
     const shown = slice ? displayStatus(slice, verifying) : 'unknown';
     const progress = slice ? sliceDeliveryProgress(slice) : { percent: 0 };
     const contribution = slice ? completionContribution(slice) : 0;
-    return `${String(index + 1).padStart(2, ' ')}. \`${id}\` ${shown}; realtime ${formatPercent(progress.percent)}; completion contribution ${formatPercent(contribution)}`;
+    const updated = slice?.updatedAt ? `; updated ${slice.updatedAt}` : '';
+    return `${String(index + 1).padStart(2, ' ')}. \`${id}\` ${shown}; realtime ${formatPercent(progress.percent)}; completion contribution ${formatPercent(contribution)}${updated}`;
   });
   const verifyingBlocks = (pointer.verifyingSlices ?? []).map((entry) => {
     const slice = byId.get(entry.id)?.slice;
@@ -625,6 +723,8 @@ export function renderReadmeMilestoneSection(register) {
       `- **Completion contribution:** **0%**.`,
       `- **Current checkpoint:** ${cell(columns.current)}`,
       `- **Latest checkpoint:** ${cell(columns.latest)}`,
+      `- **Checkpoint evidence:** ${cell(checkpointEvidenceLine(slice))}`,
+      `- **Last progress update:** ${cell(updateLine(slice))}`,
       `- **Purpose:** ${cell(slice ? slicePurpose(slice) : '—')}`,
       `- **Evidence:** ${cell(slice?.evidence)}`,
       `- **PR:** #${entry.pr} · **Merge:** ${short(entry.mergeSha)} · **Head:** ${entry.headSha ? short(entry.headSha) : '—'}`,
@@ -636,7 +736,7 @@ export function renderReadmeMilestoneSection(register) {
     const slice = byId.get(id)?.slice;
     const progress = slice ? sliceDeliveryProgress(slice) : { percent: 0 };
     const columns = slice ? checkpointColumns(slice) : { current: 'none declared', latest: 'none declared' };
-    return `- 🔴 **${id}** — ${cell(sliceTitle(slice))}. Status: BLOCKED. Realtime ${formatPercent(progress.percent)}. ${progressNote(slice)} Current checkpoint: ${cell(columns.current)}. Latest checkpoint: ${cell(columns.latest)}. Blocker: ${cell(slice?.blockedBy)}. Completion contribution: 0%.`;
+    return `- 🔴 **${id}** — ${cell(sliceTitle(slice))}. Status: BLOCKED. Realtime ${formatPercent(progress.percent)}. ${progressNote(slice)} Current checkpoint: ${cell(columns.current)}. Latest checkpoint: ${cell(columns.latest)}. Checkpoint evidence: ${cell(checkpointEvidenceLine(slice))}. Blocker: ${cell(slice?.blockedBy)}. Last progress update: ${cell(updateLine(slice))}. Completion contribution: 0%.`;
   });
   const ladder = (register.milestones ?? []).filter((milestone) => milestone.status === 'complete').map((milestone) => milestone.id);
   const generic = (register.milestones ?? []).filter((milestone) => milestone.status !== 'complete').map((milestone) => `\`${milestone.id}\` (${milestone.status})`);
@@ -783,6 +883,7 @@ ${ladder.length} completed milestones (\`${ladder[0]}\` … \`${ladder.at(-1)}\`
 ## Milestone Governance
 
 - **Milestone authority:** \`main\` owns milestone truth (DEC-0020). Canonical register: [\`docs/n8n-lego/milestones.json\`](docs/n8n-lego/milestones.json); generated projections: this section of \`README.md\`, \`.ai/master/MILESTONE_REGISTER.md\` and \`.ai/master/CURRENT_STATUS.md\`. \`arena-manager\` is Manager planning memory only (canonical: false); \`docs/n8n-lego/ROADMAP.md\` is strategy narrative and owns no status.
+- **Live progress (DEC-0021, LIVE-MILESTONE EXCEPTION):** checkpoint progress, checkpoint status, checkpoint evidence, current checkpoint, slice / program / overall progress, milestone status and milestone evidence are operational telemetry. The Manager may reconcile them straight to \`main\` in a \`governance(progress):\` commit, without a governance PR, with \`node tools/lego/progress-event.mjs record --slice <id> --checkpoint <CP-nn> --status <status> --evidence <reference>\`. The tool runs the whole atomic chain: validate evidence and weights → write the register → regenerate \`README.md\` and \`.ai\` → run \`npm run lego:ai:check\` → commit → push → verify \`main\`. One measurable event is one commit; live progress is never batched and a partial state is never published. The exception never covers source code, tests, runtime behaviour, API / frontend / backend / contract / schema implementation, dependencies, packages, Rust code, CI workflows, security policy, permissions, infrastructure, database schema or production configuration — those still go through a delivery PR. Live telemetry never bypasses a completion gate: 100% realtime progress with a completion contribution of 0% is a legitimate state, and only \`implemented\` (DEC-0014 + DEC-0015) moves Slice Completion.
 - **Rule:** ${authority.rule}
 - **Pending reconciliation:** ${authority.pendingReconciliation}
 - **Freshness:** generated by \`npm run lego:ai\` from register ${register.registerVersion} (fingerprint \`${registerFingerprint(register)}\`); \`npm run lego:ai:check\` fails when this section, the \`.ai\` pack or the register disagree.

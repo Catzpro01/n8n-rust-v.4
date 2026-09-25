@@ -1,0 +1,498 @@
+#!/usr/bin/env node
+/**
+ * Live progress telemetry — DEC-0021 (LIVE-MILESTONE EXCEPTION).
+ *
+ *   node tools/lego/progress-event.mjs record --slice P5-M08 --checkpoint CP-03 \
+ *          --status in-progress --evidence "<what proves it>" [--commit] [--push]
+ *   node tools/lego/progress-event.mjs record --slice P5-M08 --init-file <checkpoints.json> [--commit] [--push]
+ *   node tools/lego/progress-event.mjs show [--slice P5-M08]
+ *   node tools/lego/progress-event.mjs classify [-- <path> ...]
+ *
+ * ONE measurable event is ONE commit (DEC-0021 no-batching rule). The tool never
+ * publishes a partial state: it validates first, writes the canonical register
+ * `docs/n8n-lego/milestones.json`, regenerates `README.md` and `.ai`, runs the
+ * freshness gate, and only then commits and pushes. Any failure restores the
+ * register exactly as it was and exits non-zero.
+ *
+ * The exception is telemetry only. `classify` refuses a direct-main progress commit
+ * that touches anything outside LIVE_PROGRESS_PATHS: source, tests, runtime, API,
+ * frontend, backend, contracts, schemas, dependencies, Rust, CI workflows, security
+ * policy, permissions, infrastructure, database schema or production configuration.
+ *
+ * Progress never bypasses a completion gate. A checkpoint can reach 100% realtime
+ * while the slice still contributes 0% to Slice Completion, because only
+ * `implemented` (DEC-0014 + DEC-0015) moves completion.
+ *
+ * Owner: manager. Pure Node, no dependencies.
+ */
+import { execFileSync } from 'node:child_process';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import {
+  CHECKPOINT_STATUSES,
+  LIVE_PROGRESS_MODEL,
+  classifyProgressCommit,
+  completionContribution,
+  displayStatus,
+  formatPercent,
+  headlineMetrics,
+  programTally,
+  sliceDeliveryProgress,
+  sliceRecords,
+  validateGovernanceRegister,
+  validateSliceCheckpoints,
+  verifyingIndex,
+} from './governance-register.mjs';
+
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const REGISTER_PATH = join(REPO_ROOT, LIVE_PROGRESS_MODEL.register);
+const AI_PACK = join(REPO_ROOT, 'tools/lego/ai-pack.mjs');
+
+const SLICE_INDENT = ' '.repeat(10);
+const SLICE_END = /^ {8}\},?$/;
+const CHECKPOINT_ID = /^CP-\d{2,}$/;
+
+const nowIso = () => `${new Date().toISOString().replace(/\.\d+Z$/, 'Z')}`;
+
+/* ------------------------------------------------------------------ pure model */
+
+/** Every slice of programs + future programs, with its parent, by id. */
+export function findSlice(register, sliceId) {
+  for (const record of sliceRecords(register)) {
+    if (record.slice.id === sliceId) return record;
+  }
+  return null;
+}
+
+const nonEmpty = (value) => String(value ?? '').trim();
+
+/**
+ * Apply one progress event to a *clone* of the register. Throws on any rule
+ * violation, so the caller never writes an invalid register.
+ */
+export function applyProgressEvent(register, event = {}) {
+  const sliceId = nonEmpty(event.slice);
+  if (!sliceId) throw new Error('record: --slice is required');
+  const found = findSlice(register, sliceId);
+  if (!found) throw new Error(`record: slice ${sliceId} is not in the register`);
+
+  const next = structuredClone(register);
+  const target = findSlice(next, sliceId).slice;
+  const at = nonEmpty(event.at) || nowIso();
+
+  if (event.initFile) {
+    const declared = JSON.parse(readFileSync(resolve(REPO_ROOT, event.initFile), 'utf8'));
+    if (!Array.isArray(declared) || declared.length === 0) throw new Error('record: --init-file must hold a non-empty checkpoint array');
+    target.checkpoints = declared.map((checkpoint) => normalizeCheckpoint(checkpoint, sliceId));
+  } else {
+    const checkpointId = nonEmpty(event.checkpoint);
+    if (!CHECKPOINT_ID.test(checkpointId)) throw new Error(`record: --checkpoint must look like CP-01 (got "${checkpointId}")`);
+    const checkpoints = Array.isArray(target.checkpoints) ? target.checkpoints : null;
+    if (!checkpoints) {
+      throw new Error(`record: ${sliceId} declares no checkpoint model. Install one first with --init-file (weights must sum to 100).`);
+    }
+    const checkpoint = checkpoints.find((item) => item.id === checkpointId);
+    if (!checkpoint) throw new Error(`record: ${sliceId} has no checkpoint ${checkpointId} (declared: ${checkpoints.map((item) => item.id).join(', ')})`);
+    if (nonEmpty(event.title)) checkpoint.title = nonEmpty(event.title);
+    if (nonEmpty(event.purpose)) checkpoint.purpose = nonEmpty(event.purpose);
+    if (event.weight !== undefined) {
+      if (!Number.isInteger(event.weight) || event.weight <= 0) throw new Error(`record: --weight must be a positive integer (got ${event.weight})`);
+      checkpoint.weight = event.weight;
+    }
+    if (nonEmpty(event.status)) {
+      if (!CHECKPOINT_STATUSES.includes(event.status)) {
+        throw new Error(`record: --status must be one of ${CHECKPOINT_STATUSES.join(', ')} (got ${event.status})`);
+      }
+      checkpoint.status = event.status;
+    }
+    if (nonEmpty(event.evidence)) checkpoint.evidence = nonEmpty(event.evidence);
+    if (nonEmpty(event.reference)) checkpoint.reference = nonEmpty(event.reference);
+    if (nonEmpty(event.blockedBy)) checkpoint.blockedBy = nonEmpty(event.blockedBy);
+    if (nonEmpty(event.reason)) checkpoint.reason = nonEmpty(event.reason);
+    if (nonEmpty(event.completedAt)) checkpoint.completedAt = nonEmpty(event.completedAt);
+    // A transition into a state must carry that state's own proof for THIS event:
+    // an old evidence string is not evidence that the work happened now.
+    if (checkpoint.status === 'completed') {
+      if (!nonEmpty(event.evidence)) {
+        throw new Error(`record: ${sliceId} ${checkpointId} cannot be completed without --evidence for this event`);
+      }
+      if (!nonEmpty(checkpoint.completedAt)) checkpoint.completedAt = at;
+    } else {
+      delete checkpoint.completedAt;
+    }
+    if (checkpoint.status === 'blocked') {
+      if (!nonEmpty(event.blockedBy ?? checkpoint.blockedBy ?? target.blockedBy)) {
+        throw new Error(`record: ${sliceId} ${checkpointId} cannot be blocked without --blocked-by`);
+      }
+    } else {
+      delete checkpoint.blockedBy;
+    }
+    if (checkpoint.status === 'skipped') {
+      if (!nonEmpty(event.reason ?? checkpoint.reason)) {
+        throw new Error(`record: ${sliceId} ${checkpointId} cannot be skipped without --reason`);
+      }
+    } else {
+      delete checkpoint.reason;
+    }
+  }
+
+  const problems = [...validateSliceCheckpoints(target), ...validateGovernanceRegister(next)];
+  if (problems.length) throw new Error(`record: the register would be invalid:\n- ${problems.join('\n- ')}`);
+
+  target.updatedAt = at;
+  if (nonEmpty(event.latestUpdate)) target.latestUpdate = nonEmpty(event.latestUpdate);
+  else if (target.latestUpdate === undefined) target.latestUpdate = null;
+  return { register: next, slice: target, at };
+}
+
+function normalizeCheckpoint(checkpoint, sliceId) {
+  const normalized = {};
+  for (const key of ['id', 'title', 'purpose', 'weight', 'status', 'evidence', 'reference', 'completedAt', 'blockedBy', 'reason']) {
+    if (checkpoint[key] !== undefined && checkpoint[key] !== null) normalized[key] = checkpoint[key];
+  }
+  if (!CHECKPOINT_ID.test(nonEmpty(normalized.id))) throw new Error(`record: ${sliceId} checkpoint id "${normalized.id}" must look like CP-01`);
+  return normalized;
+}
+
+/* ------------------------------------------------- register text (surgical) */
+
+/**
+ * Rewrite the managed keys (`status`, `checkpoints`, `updatedAt`, `latestUpdate`)
+ * of one slice inside the raw register text, leaving every other byte of the file
+ * untouched. The register is hand-formatted; re-serialising it would rewrite
+ * thousands of unrelated lines in a progress commit.
+ */
+export function syncSliceText(raw, sliceId, slice) {
+  const lines = raw.split('\n');
+  const start = lines.findIndex((line, index) => line === `${SLICE_INDENT}"id": "${sliceId}",`
+    && (lines[index + 1] ?? '').startsWith(`${SLICE_INDENT}"title":`));
+  if (start === -1) return { ok: false, reason: `slice ${sliceId} was not found in ${LIVE_PROGRESS_MODEL.register}` };
+  let end = start + 1;
+  while (end < lines.length && !SLICE_END.test(lines[end])) end += 1;
+  if (end >= lines.length) return { ok: false, reason: `slice ${sliceId} block is not terminated` };
+  if (!lines.slice(start, end).some((line) => /^ {10}"status": ".+",?$/.test(line))) {
+    return { ok: false, reason: `slice ${sliceId} has no status line` };
+  }
+
+  const out = lines.slice(0, start + 1);
+  const rest = lines.slice(start + 1, end);
+  let inserted = false;
+  const insertManaged = () => {
+    if (inserted) return;
+    out.push(...renderCheckpointBlock(slice), ...renderKeyLines(slice, ['updatedAt', 'latestUpdate']));
+    inserted = true;
+  };
+
+  for (let index = 0; index < rest.length;) {
+    const line = rest[index];
+    const match = line.match(/^ {10}"([a-zA-Z]+)":/);
+    const key = match ? match[1] : null;
+    if (key === 'status') {
+      out.push(`${SLICE_INDENT}${jsonString('status')}: ${jsonString(slice.status)},`);
+      insertManaged();
+      index += 1;
+    } else if (key === 'checkpoints') {
+      index += 1;
+      if (!/^ {10}"checkpoints": \[\],?$/.test(line)) {
+        while (index < rest.length && !/^ {10}\],?$/.test(rest[index])) index += 1;
+        index += 1; // the closing bracket of the old block
+      }
+    } else if (key === 'updatedAt' || key === 'latestUpdate') {
+      index += 1;
+    } else {
+      out.push(line);
+      index += 1;
+    }
+  }
+  if (!inserted) {
+    const statusAt = out.findIndex((line, index) => index > start && /^ {10}"status": ".+",?$/.test(line));
+    out.splice(statusAt + 1, 0, ...renderCheckpointBlock(slice), ...renderKeyLines(slice, ['updatedAt', 'latestUpdate']));
+    inserted = true;
+  }
+  // The slice's last key must not carry a trailing comma: an inserted key may now be last.
+  for (let index = out.length - 1; index > start; index -= 1) {
+    if (!out[index].trim()) continue;
+    if (out[index].endsWith(',')) out[index] = out[index].slice(0, -1);
+    break;
+  }
+  out.push(...lines.slice(end));
+  return { ok: true, text: out.join('\n') };
+}
+
+function renderKeyLines(slice, keys) {
+  const lines = [];
+  for (const key of keys) {
+    if (slice[key] === undefined) continue;
+    lines.push(`${SLICE_INDENT}${jsonString(key)}: ${jsonString(slice[key])},`);
+  }
+  return lines;
+}
+
+function renderCheckpointBlock(slice) {
+  if (slice.checkpoints === undefined) return [];
+  if (slice.checkpoints.length === 0) return [`${SLICE_INDENT}${jsonString('checkpoints')}: [],`];
+  const lines = [`${SLICE_INDENT}${jsonString('checkpoints')}: [`];
+  slice.checkpoints.forEach((checkpoint, index) => {
+    lines.push(' '.repeat(12) + '{');
+    const entries = Object.entries(checkpoint);
+    entries.forEach(([key, value], position) => {
+      const comma = position === entries.length - 1 ? '' : ',';
+      lines.push(`${' '.repeat(14)}${jsonString(key)}: ${jsonString(value)}${comma}`);
+    });
+    lines.push(' '.repeat(12) + `}${index === slice.checkpoints.length - 1 ? '' : ','}`);
+  });
+  lines.push(`${SLICE_INDENT}],`);
+  return lines;
+}
+
+/**
+ * The register escapes non-ASCII (`\u00a7` for §), so a re-rendered line must
+ * too — otherwise rewriting one checkpoint would rewrite every accented character
+ * in the slice and a progress commit would carry a thousand unrelated diff lines.
+ */
+function jsonString(value) {
+  return JSON.stringify(value).replace(/[\u007f-\uffff]/g, (char) => `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`);
+}
+
+/* ------------------------------------------------------------------- commands */
+
+function readRegister() {
+  const raw = readFileSync(REGISTER_PATH, 'utf8');
+  return { raw, register: JSON.parse(raw) };
+}
+
+function canonical(value) {
+  return JSON.stringify(value);
+}
+
+function liveState(register, sliceId) {
+  const found = findSlice(register, sliceId);
+  if (!found) return null;
+  const verifying = verifyingIndex(register);
+  return {
+    id: sliceId,
+    program: found.parentId,
+    status: displayStatus(found.slice, verifying),
+    realtime: sliceDeliveryProgress(found.slice),
+    completion: completionContribution(found.slice),
+  };
+}
+
+function git(...args) {
+  return execFileSync('git', args, { cwd: REPO_ROOT, encoding: 'utf8' });
+}
+
+export function changedPaths(cwd = REPO_ROOT) {
+  const out = execFileSync('git', ['status', '--porcelain=v1'], { cwd, encoding: 'utf8' });
+  const paths = [];
+  for (const line of out.split('\n')) {
+    if (!line.trim()) continue;
+    const body = line.slice(3);
+    const renamed = body.split(' -> ');
+    paths.push((renamed.length > 1 ? renamed[renamed.length - 1] : body).trim());
+  }
+  return paths;
+}
+
+function record(argv) {
+  const flags = parseFlags(argv);
+  const event = {
+    slice: flags.slice,
+    checkpoint: flags.checkpoint,
+    status: flags.status,
+    title: flags.title,
+    purpose: flags.purpose,
+    weight: flags.weight === undefined ? undefined : Number(flags.weight),
+    evidence: flags.evidence,
+    reference: flags.reference,
+    blockedBy: flags.blockedBy,
+    reason: flags.reason,
+    completedAt: flags.completedAt,
+    latestUpdate: flags.latestUpdate,
+    initFile: flags.initFile,
+    at: flags.at,
+  };
+
+  const before = readRegister();
+  const beforeState = liveState(before.register, event.slice);
+  const beforeMetrics = headlineMetrics(before.register);
+
+  let applied;
+  try {
+    applied = applyProgressEvent(before.register, event);
+  } catch (error) {
+    process.stderr.write(`${error.message}\n`);
+    return 1;
+  }
+
+  const sync = syncSliceText(before.raw, event.slice, applied.slice);
+  if (!sync.ok) {
+    process.stderr.write(`${sync.reason}\n`);
+    return 1;
+  }
+  if (canonical(JSON.parse(sync.text)) !== canonical(applied.register)) {
+    process.stderr.write('record: the surgical register edit did not round-trip; nothing was written\n');
+    return 1;
+  }
+
+  if (flags.dryRun) {
+    process.stdout.write(`dry run: ${event.slice} would move to ${formatPercent(applied.slice ? sliceDeliveryProgress(applied.slice).percent : 0)} realtime\n`);
+    process.stdout.write(sync.text === before.raw ? 'register text: unchanged\n' : 'register text: would change\n');
+    return 0;
+  }
+
+  // Atomicity: write the register, regenerate every projection, then prove freshness.
+  writeFileSync(REGISTER_PATH, sync.text);
+  try {
+    execFileSync('node', [AI_PACK], { cwd: REPO_ROOT, stdio: 'inherit' });
+    execFileSync('node', [AI_PACK, '--check'], { cwd: REPO_ROOT, stdio: 'inherit' });
+  } catch {
+    writeFileSync(REGISTER_PATH, before.raw); // never publish a partial state
+    process.stderr.write('record: projection regeneration or freshness failed; the register was restored\n');
+    return 1;
+  }
+
+  const paths = changedPaths();
+  const classified = classifyProgressCommit(paths);
+  if (!classified.ok) {
+    // Never publish a partial state: put the register and every projection back.
+    writeFileSync(REGISTER_PATH, before.raw);
+    execFileSync('node', [AI_PACK], { cwd: REPO_ROOT, stdio: 'inherit' });
+    execFileSync('node', [AI_PACK, '--check'], { cwd: REPO_ROOT, stdio: 'inherit' });
+    process.stderr.write(`record: refusing to commit non-telemetry paths (DEC-0021); the register and projections were restored:\n- ${classified.violations.join('\n- ')}\n`);
+    return 1;
+  }
+
+  const afterState = liveState(applied.register, event.slice);
+  const afterMetrics = headlineMetrics(applied.register);
+  const programOf = (register) => [...(register.programs ?? []), ...(register.futurePrograms ?? [])]
+    .find((entity) => (entity.slices ?? []).some((slice) => slice.id === event.slice));
+  const programBefore = programTally(programOf(before.register), verifyingIndex(before.register));
+  const programAfter = programTally(programOf(applied.register), verifyingIndex(applied.register));
+  process.stdout.write([
+    `${event.slice}: ${beforeState.status} → ${afterState.status}`,
+    `  realtime ${formatPercent(beforeState.realtime.percent)} → ${formatPercent(afterState.realtime.percent)} (current checkpoint: ${afterState.realtime.current ? `${afterState.realtime.current.id} ${afterState.realtime.current.status}` : 'none'})`,
+    `  completion contribution ${formatPercent(beforeState.completion)} → ${formatPercent(afterState.completion)}`,
+    `  program ${afterState.program} realtime ${formatPercent(programBefore.realtime)} → ${formatPercent(programAfter.realtime)}; slice completion ${formatPercent(programBefore.percent)} → ${formatPercent(programAfter.percent)}`,
+    `  delivery realtime ${formatPercent(beforeMetrics.current.realtime)} → ${formatPercent(afterMetrics.current.realtime)}; slice completion ${formatPercent(beforeMetrics.current.sliceCompletion)} → ${formatPercent(afterMetrics.current.sliceCompletion)}`,
+    `  register + README + .ai regenerated; npm run lego:ai:check passed`,
+  ].join('\n'));
+
+  if (!flags.commit && !flags.push) {
+    process.stdout.write('\nno --commit given: the working tree holds the update. Re-run with --commit (and --push) to publish it.\n');
+    return 0;
+  }
+
+  const message = nonEmpty(flags.message) || `${LIVE_PROGRESS_MODEL.commitPrefix} ${defaultMessage(event)}`;
+  try {
+    git('add', '--', ...classified.allowed.filter((path) => paths.includes(path)));
+    git('commit', '-m', message);
+    const sha = git('rev-parse', 'HEAD').trim();
+    process.stdout.write(`committed ${sha.slice(0, 8)} on ${git('rev-parse', '--abbrev-ref', 'HEAD').trim()}\n`);
+    if (flags.push) {
+      git('push', 'origin', 'HEAD:main');
+      git('fetch', 'origin', 'main');
+      const remote = git('rev-parse', 'origin/main').trim();
+      if (remote !== sha) {
+        process.stderr.write(`record: origin/main is ${remote.slice(0, 8)}, expected ${sha.slice(0, 8)}\n`);
+        return 1;
+      }
+      process.stdout.write(`pushed and verified: main is ${sha.slice(0, 8)}\n`);
+    }
+  } catch (error) {
+    process.stderr.write(`record: git failed: ${error.message}\n`);
+    return 1;
+  }
+  return 0;
+}
+
+function defaultMessage(event) {
+  if (event.initFile) return `install ${event.slice} checkpoint model`;
+  return `update ${event.slice} ${event.checkpoint} → ${event.status}`;
+}
+
+function show(argv) {
+  const flags = parseFlags(argv);
+  const { register } = readRegister();
+  const verifying = verifyingIndex(register);
+  const metrics = headlineMetrics(register);
+  const wanted = flags.slice ? [flags.slice] : sliceRecords(register).filter((item) => item.slice.checkpoints).map((item) => item.slice.id);
+  if (!wanted.length) {
+    process.stdout.write(`no slice declares a checkpoint model. Realtime ${formatPercent(metrics.current.realtime)}, slice completion ${formatPercent(metrics.current.sliceCompletion)}.\n`);
+    return 0;
+  }
+  const lines = [`Realtime Delivery Progress ${formatPercent(metrics.current.realtime)} · Slice Completion ${formatPercent(metrics.current.sliceCompletion)} (${metrics.current.implemented}/${metrics.current.total})`, ''];
+  for (const id of wanted) {
+    const found = findSlice(register, id);
+    if (!found) {
+      process.stderr.write(`show: slice ${id} is not in the register\n`);
+      return 1;
+    }
+    const slice = found.slice;
+    const progress = sliceDeliveryProgress(slice);
+    lines.push(`${id} (${found.parentId}) — ${displayStatus(slice, verifying)} · realtime ${formatPercent(progress.percent)} · completion contribution ${formatPercent(completionContribution(slice))}`);
+    lines.push(`  last update: ${slice.updatedAt ?? '—'}${slice.latestUpdate ? ` — ${slice.latestUpdate}` : ''}`);
+    for (const checkpoint of slice.checkpoints ?? []) {
+      lines.push(`  ${checkpoint.id} ${checkpoint.status} weight ${checkpoint.weight} — ${checkpoint.title}${checkpoint.evidence ? ` · evidence ${checkpoint.evidence}` : ''}${checkpoint.blockedBy ? ` · blocker ${checkpoint.blockedBy}` : ''}${checkpoint.reason ? ` · reason ${checkpoint.reason}` : ''}`);
+    }
+    lines.push('');
+  }
+  process.stdout.write(`${lines.join('\n')}\n`);
+  return 0;
+}
+
+function classify(argv) {
+  const flags = parseFlags(argv);
+  const paths = flags._.length ? flags._ : changedPaths();
+  const result = classifyProgressCommit(paths);
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  if (!result.ok) {
+    process.stderr.write(`DEC-0021: these paths are implementation, not progress telemetry, and need a delivery PR:\n- ${result.violations.join('\n- ')}\n`);
+    return 1;
+  }
+  return 0;
+}
+
+function parseFlags(argv) {
+  const flags = { _: [] };
+  for (let index = 0; index < argv.length; index += 1) {
+    const token = argv[index];
+    if (token === '--') {
+      flags._.push(...argv.slice(index + 1));
+      break;
+    }
+    if (!token.startsWith('--')) {
+      flags._.push(token);
+      continue;
+    }
+    const [key, inline] = token.slice(2).split('=');
+    const name = key.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+    if (inline !== undefined) flags[name] = inline;
+    else if (argv[index + 1] && !argv[index + 1].startsWith('--')) flags[name] = argv[++index];
+    else flags[name] = true;
+  }
+  return flags;
+}
+
+const USAGE = `usage: progress-event.mjs <command>
+
+  record --slice <id> (--checkpoint <CP-nn> | --init-file <file>) [--status <status>]
+         [--evidence <ref>] [--reference <ref>] [--blocked-by <text>] [--reason <text>]
+         [--weight <int>] [--title <text>] [--purpose <text>] [--completed-at <iso>]
+         [--latest-update <text>] [--message <text>] [--commit] [--push] [--dry-run]
+  show [--slice <id>]
+  classify [-- <path> ...]        exit 1 when a path is not pure progress telemetry
+`;
+
+function main(argv = process.argv.slice(2)) {
+  const [command, ...rest] = argv;
+  if (command === 'record') return record(rest);
+  if (command === 'show') return show(rest);
+  if (command === 'classify') return classify(rest);
+  process.stderr.write(USAGE);
+  return 2;
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) process.exitCode = main();

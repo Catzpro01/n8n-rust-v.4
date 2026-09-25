@@ -14,7 +14,7 @@ document is right and the prose is stale.
 | Agent 1 branch | `main` |
 | Agent 2 branch | `main` |
 | **Latest completed slice** | **P5-M03** |
-| **Realtime Delivery Progress** | **85.6%** (P0–P11 checkpoint-weighted; future programs excluded; no checkpoint model contributes 0) |
+| **Realtime Delivery Progress** | **86.1%** (P0–P11 checkpoint-weighted; future programs excluded; no checkpoint model contributes 0) |
 | **Slice Completion** | **85.6%** (125/146 implemented; verifying and blocked contribute 0) |
 | **Active / verifying slices** | **P5-M08 (verifying)** |
 | Planned queue | P5-M09, P5-M07, P9-S01, P3-S01, P4-S01, P6-S01, P6-S02, P2-S02, P2-S03 |
@@ -51,6 +51,14 @@ is the row marked as such.
 - **Does not implement:** Plugin Manager / Plugin Supervisor implementation (P2.27, future prompt) — HISTORICAL reservation wording (P2.26 era), preserved verbatim and superseded 2026-09-24: delivered by slices P2.27.2 (manifest + registry) and P2.27.7 (supervisor lifecycle + quarantine); plugin sandbox / plugin broker / plugin runtime / WASM runtime / Python worker manager (P2.27) — HISTORICAL reservation wording (P2.26 era), preserved verbatim and superseded 2026-09-24: plugin runtime facade + locality policy landed (P2.27.1/.4) and the secret broker landed (P2.27.5); a full production WASM engine and a Python worker manager remain out of scope; plugin hot-swap / plugin rollback engine (P2.27) — HISTORICAL reservation wording (P2.26 era), preserved verbatim and superseded 2026-09-24: side-by-side upgrade + rollback landed in P2.27.9; hot-swap beyond the slice set remains out of scope; microservice rewrite / Kubernetes migration / full distributed scheduler; full marketplace / complete third-party plugin ecosystem; rewrite of all P2 components / rewrite to Rust / rewrite to Python; anything before a dedicated P2.27 Master Prompt — zero P2.27 implementation now — HISTORICAL reservation wording (P2.26 era), preserved verbatim and superseded 2026-09-24: the dedicated Master Prompt was issued 2026-09-24 and slices P2.27.0-P2.27.10 are merged and post-merge verified (finishEvidence PR #197 -> 7d4eae8d)
 - **Next:** `P2.17+`
 - **Completion gate:** tiny Core kernel implemented and tested (design section 3); plugin registry + contract resolver + version compatibility implemented and tested (design sections 4-5); trust model implemented and tested (design sections 8-9); runtime locality policy implemented and tested (design section 6); capability security implemented and tested (design sections 10-11); secret broker implemented and tested (design section 12); tenant security context + resource budgets implemented and tested (design sections 13-14); supervisor lifecycle + circuit breaker + deadline propagation implemented and tested (design sections 15-17); side-by-side upgrade/rollback implemented and tested (design section 19); supply-chain admission implemented and tested (design section 21); frontend plugin boundary implemented and tested (design section 22); contract replay fixtures green (design section 18); non-regression holds: no second engine, no scope expansion, historical evidence preserved (design section 24); contract-lock row lego.plugin-runtime published with its exported surface, zero lock drift (count pin + .ai regen updated in the same slice); implementation completes only via green PRs merged on protected main (dedicated Master Prompt issued 2026-09-24; all slices P2.27.0-P2.27.10 merged and post-merge verified)
+
+## Live progress (DEC-0021 — LIVE-MILESTONE EXCEPTION)
+
+Every slice that declares a checkpoint model, straight from the canonical register
+`docs/n8n-lego/milestones.json` on `main`. Status is not progress: a verifying or blocked slice keeps its
+evidenced progress and contributes 0% to Slice Completion.
+
+- **P5-M08** (P5) — verifying · realtime 70.0% · completion contribution 0.0% · current checkpoint CP-05 (blocked, 30) · latest completed CP-04 (completed) · updated 2026-09-25T16:17:23Z — DEC-0021 live-progress installation: checkpoint model declared from the slice scope and P5-M08-EVIDENCE.md; CP-01..CP-04 completed on PR #304, CP-05 blocked on runner verification
 
 ## The 15 AI/Agent LEGO by status
 

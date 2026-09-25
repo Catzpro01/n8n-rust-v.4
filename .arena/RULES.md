@@ -6,8 +6,12 @@ repository is the shared memory; GitHub is the code authority.
 
 1. Persistent branches: `main` and `arena-manager` only. Nothing else lives
    on the remote for long.
-2. Never push to, force-push, rewrite or delete `main`. Never delete
-   `arena-manager`. Changes reach `main` only through a pull request.
+2. Never force-push, rewrite or delete `main`. Never delete `arena-manager`.
+   Changes reach `main` through a pull request, with one exception: DEC-0021
+   (LIVE-MILESTONE EXCEPTION) lets the Manager commit progress telemetry straight
+   to `main` in a `governance(progress):` commit. That exception is telemetry only
+   (see rule 13); it never permits a force update, a rewrite, or an implementation
+   change without a delivery PR.
 3. Work happens on a short-lived Manager branch cut from fresh `main`. Its
    PR is the delivery for exactly one Slice (DEC-0014). The branch is deleted
    after merge (`cleanup.yml`).
@@ -44,11 +48,37 @@ repository is the shared memory; GitHub is the code authority.
     when implementation, register, README, `.ai` and evidence agree. Historical
     milestone evidence (P2.11-P2.27.x, recorded merge SHAs) is immutable.
     DEC-0020 complements DEC-0019.
-12. Completion progress is generated, never typed. The KPI is implemented slices
-    divided by slices in the active total, from `docs/n8n-lego/milestones.json`.
-    A verifying, in-progress, planned, or blocked slice contributes 0%. README
-    and `.ai` are projections of that number (`npm run lego:ai`). Do not count
-    a merged slice as implemented until DEC-0014 and DEC-0015 both hold, and do
-    not round a partial program up to 100%.
+12. Progress is generated, never typed, and it is two metrics (Issue #307).
+    Realtime Delivery Progress is checkpoint-weighted current P0–P11 work;
+    Slice Completion is implemented slices / active slices in the same
+    denominator. Both come from `docs/n8n-lego/milestones.json`; README and `.ai`
+    are projections of them (`npm run lego:ai`). Verifying, blocked, in-progress
+    and planned keep their last evidenced progress and contribute 0% to
+    completion; future programs stay visible but outside the denominator; program
+    `complete` is not numeric 100%. Do not count a merged slice as implemented
+    until DEC-0014 and DEC-0015 both hold, and do not round a partial program up
+    to 100%.
+13. Live progress (DEC-0021, LIVE-MILESTONE EXCEPTION). Milestone progress
+    telemetry — checkpoint progress, checkpoint status, checkpoint evidence,
+    current checkpoint, slice / program / overall progress, milestone status and
+    evidence, the README progress dashboard and the generated `.ai`
+    milestone/current-status projections — may be committed straight to `main`
+    by the Manager in a `governance(progress):` commit, with no governance PR,
+    because the repository is the live project monitor. Use
+    `node tools/lego/progress-event.mjs record ...`: it validates the evidence
+    and the weights, writes the register, regenerates README and `.ai`, runs
+    `npm run lego:ai:check`, commits, pushes and verifies `main` as one atomic
+    chain, and restores the register if any step fails. One measurable event is
+    one commit; never batch progress. Checkpoint weights are declared once per
+    slice from that slice's own scope and sum to 100; a completed checkpoint
+    needs evidence, a blocked one a blocker, a skipped one a reason; every
+    percentage is computed, never typed. The exception never covers source,
+    tests, runtime, API, frontend, backend, contracts, schemas, dependencies,
+    Rust, CI workflows, security policy, permissions, infrastructure, database
+    schema or production configuration — `node tools/lego/progress-event.mjs
+    classify` refuses such a commit. Live telemetry never bypasses a completion
+    gate: 100% realtime with 0% completion contribution is legitimate, and only
+    `implemented` moves Slice Completion. Historical milestone evidence is out of
+    scope for the exception and stays immutable.
 
 Order of authority: `main` > decision records > `arena-manager` > issue > chat.

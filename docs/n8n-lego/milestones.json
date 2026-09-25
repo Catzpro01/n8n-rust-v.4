@@ -1,5 +1,5 @@
 {
-  "registerVersion": "2.2.0",
+  "registerVersion": "2.3.0",
   "owner": "manager",
   "canonical": true,
   "purpose": "Granular milestone truth beneath the strategic Phase A-F roadmap, and \u2014 since the governance reset (#256) \u2014 the single canonical register of programs P0-P11, their slices, the thematic future programs and the feature registry. This is the only machine-readable milestone register. Milestones and slices may be refined by Manager only by updating this file; strategic phases are not deleted.",
@@ -10,7 +10,7 @@
   "executionPointer": {
     "authority": "main (DEC-0020). This block, read together with the slice statuses it names, is the only active-work pointer. arena-manager is Manager memory and handoff, never a milestone source; README.md and .ai/ are generated projections of this file.",
     "historicalLastP2Milestone": "P2.27",
-    "lastVerifiedMain": "600a21456213602ebdc6193229bab8432e6d1024",
+    "lastVerifiedMain": "97358bf7df6648b50d4052a6a327402ba70fa5dd",
     "latestCompletedSlice": {
       "id": "P5-M03",
       "pr": 291,
@@ -137,7 +137,7 @@
     "completionRule": "Immediately after merge + post-merge verification, the slice and its features become implemented with PR, merge SHA, tests and evidence; remaining debt is recorded as Pn-Mnn. An open PR means in-progress, never implemented.",
     "progressModel": {
       "decision": "Issue #307",
-      "reconciledToMain": false,
+      "reconciledToMain": true,
       "realtimeName": "Realtime Delivery Progress",
       "completionName": "Slice Completion",
       "currentDelivery": "P0-P11",
@@ -147,6 +147,31 @@
       "completionCounts": ["implemented"],
       "activeDenominatorExcludes": ["superseded", "retired", "rejected"],
       "examplesAreNotMeasurements": "Illustrations of the status/progress split are not register measurements and must not be copied into slice checkpoints.",
+      "checkpointModel": {
+        "statuses": ["planned", "in-progress", "completed", "blocked", "skipped"],
+        "weightRule": "Weights are positive integers declared once per slice and sum to 100. They come from the slice's declared scope, never from an estimate of effort.",
+        "evidenceRule": "A completed checkpoint names evidence. A blocked checkpoint names a blocker. A skipped checkpoint names a reason. A completed checkpoint without evidence is rejected by the validator.",
+        "progressRule": "The generator sums the weights of completed checkpoints. Status and progress are two axes. A blocked checkpoint keeps the points already earned and never resets progress to 0.",
+        "timestampRule": "A slice that declares checkpoints records updatedAt (ISO-8601 Z) and may record latestUpdate, so the register alone answers how fresh the state is."
+      },
+      "liveException": {
+        "decision": "DEC-0021",
+        "name": "LIVE-MILESTONE EXCEPTION",
+        "commitPrefix": "governance(progress):",
+        "tool": "tools/lego/progress-event.mjs",
+        "directMainPaths": [
+          "docs/n8n-lego/milestones.json",
+          "README.md",
+          ".ai/master/MILESTONE_REGISTER.md",
+          ".ai/master/CURRENT_STATUS.md",
+          "docs/n8n-lego/evidence/"
+        ],
+        "scope": "checkpoint progress, checkpoint status, checkpoint evidence, current checkpoint, slice progress, program progress, overall progress, milestone status, milestone evidence, the README progress dashboard and the generated .ai milestone / current-status projections",
+        "authority": "The Manager may reconcile these paths straight to protected main in a governance(progress): commit. No governance PR is required for telemetry, because the repository is the live project monitor.",
+        "forbidden": "source code, tests, runtime behaviour, API, frontend, backend, contract and schema implementation, dependency and package changes, Rust code, CI workflows, security policy, permissions, infrastructure, database schema and production configuration — those still go through a delivery PR",
+        "noBatching": "One measurable event is one commit. Live progress is never batched until a slice ends.",
+        "neverBypasses": "DEC-0014 and DEC-0015 completion gates. 100% realtime progress with a 0% completion contribution is a legitimate state, and only implemented moves Slice Completion."
+      },
       "weights": "The generator counts only weights declared on slice.checkpoints. It does not invent weights. A completed checkpoint requires evidence. Weights on a slice must sum to 100. A slice with no checkpoint model stays at 0 unless it is implemented, in which case the legacy rule contributes 100."
     },
     "deliveryModel": {
@@ -2930,6 +2955,61 @@
           "title": "Public /api/v1 second surface: tags (5 operations), variables (4, licence-gated 403 like the community edition), executions list/get/delete (lastId cursor), GET /api/v1/openapi.yml of exactly the mounted operations. Re-planned by the Manager: credentials, users and /docs to P5-M09; resources without a backing model to P5-M10 (one delivery PR per slice)",
           "kind": "maintenance",
           "status": "in-progress",
+          "checkpoints": [
+            {
+              "id": "CP-01",
+              "title": "tags surface: list, create, get, update, delete (5 operations)",
+              "purpose": "Mount the five tag operations on the P5-M03 pipeline with upstream tag.yml validation, the 409-on-save-failure quirk and workflow tag propagation",
+              "weight": 25,
+              "status": "completed",
+              "evidence": "docs/n8n-lego/evidence/P5-M08-EVIDENCE.md \u00a72.1 and \u00a73 (tags: 400 before 403, 201 with trimming, 409 for duplicate / whitespace-only / 25 characters, 404, offset-cursor walk)",
+              "reference": "PR #304, merge 600a21456213602ebdc6193229bab8432e6d1024",
+              "completedAt": "2026-09-25T12:53:15Z"
+            },
+            {
+              "id": "CP-02",
+              "title": "variables surface: list, create, update, delete (4 operations, community edition)",
+              "purpose": "Mount the four variable operations behind the upstream licence gate, which answers 403 in this community-edition build, with schema validation first",
+              "weight": 20,
+              "status": "completed",
+              "evidence": "docs/n8n-lego/evidence/P5-M08-EVIDENCE.md \u00a72.2 and \u00a73 (variables: exact licence 403 for a fully scoped and an unscoped key, schema 400 before the gate, security 401 first)",
+              "reference": "PR #304, merge 600a21456213602ebdc6193229bab8432e6d1024",
+              "completedAt": "2026-09-25T12:53:15Z"
+            },
+            {
+              "id": "CP-03",
+              "title": "executions surface: list, get, delete (3 operations, lastId cursor)",
+              "purpose": "Serve executions with upstream visibility, filters, field set and lastId cursor semantics, including the 404 and running-execution rules",
+              "weight": 15,
+              "status": "completed",
+              "evidence": "docs/n8n-lego/evidence/P5-M08-EVIDENCE.md \u00a72.3 and \u00a73 (executions: one real engine run, seeded records in every status, scope separation, full cursor walk, orphan and deleted-workflow 404s)",
+              "reference": "PR #304, merge 600a21456213602ebdc6193229bab8432e6d1024",
+              "completedAt": "2026-09-25T12:53:15Z"
+            },
+            {
+              "id": "CP-04",
+              "title": "GET /api/v1/openapi.yml of exactly the mounted operations",
+              "purpose": "Serve the pinned spec as public YAML, with the spec operations equal to the mounted table and no file or dangling $ref",
+              "weight": 10,
+              "status": "completed",
+              "evidence": "docs/n8n-lego/evidence/P5-M08-EVIDENCE.md \u00a72.4 and \u00a73 (openapi.yml public, GET only, advertised equals mounted, emitter unit cases)",
+              "reference": "PR #304, merge 600a21456213602ebdc6193229bab8432e6d1024",
+              "completedAt": "2026-09-25T12:53:15Z"
+            },
+            {
+              "id": "CP-05",
+              "title": "DEC-0015 self-hosted runner verification on main (Level 0, Level 1, Level 2 linux, post-merge verification)",
+              "purpose": "The remaining gate before this slice can be recorded as implemented; it is not an implementation step",
+              "weight": 30,
+              "status": "blocked",
+              "evidence": "docs/n8n-lego/evidence/P5-M08-EVIDENCE.md \u00a76 (Level 2 conformance SUCCESS on MDMTEST-n8n-wsl-5, Windows Level 2 SUCCESS on laptop-build-worker-2; Level 0, Level 1, Level 2 linux and post-merge cleanup failed with the runner losing communication: runs 36136621119, 36136621102, 36137555071)",
+              "reference": "docs/n8n-lego/evidence/P5-M08-EVIDENCE.md \u00a76; one environmental retry remains and was not spent",
+              "blockedBy": "DEC-0015 runner verification is not PASS: the self-hosted WSL runners lost communication (environmental, not an implementation regression)"
+            }
+          ],
+          "updatedAt": "2026-09-25T16:17:23Z",
+          "latestUpdate": "DEC-0021 live-progress installation: checkpoint model declared from the slice scope and P5-M08-EVIDENCE.md; CP-01..CP-04 completed on PR #304, CP-05 blocked on runner verification",
+          "checkpointWeightBasis": "5 points per declared operation (tags 5, variables 4, executions list/get/delete 3 = 12 operations \u2192 60 points), 10 for GET /api/v1/openapi.yml, 30 for the DEC-0015 runner-verification gate; total 100. The weights come from the scope declared in P5-M08-EVIDENCE.md \u00a71, not from an estimate of effort.",
           "pr": 304,
           "mergeSha": null,
           "issue": 85,
