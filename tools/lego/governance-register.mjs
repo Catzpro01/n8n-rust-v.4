@@ -844,6 +844,8 @@ The queue is \`executionPointer\` only. Historical \`P2.27\` is not the next sli
 ${queueLines.join('\n')}
 \`\`\`
 
+${pointer.latestCompletedSlice ? `Latest completed slice: \`${pointer.latestCompletedSlice.id}\` (PR #${pointer.latestCompletedSlice.pr}, merge ${short(pointer.latestCompletedSlice.mergeSha)}).` : '_No completed slice recorded._'}
+
 ${verifyingBlocks.join('\n') || '_No verifying slice._'}
 
 ${blockedBlocks.length ? `### Blocked\n\n${blockedBlocks.join('\n')}` : ''}

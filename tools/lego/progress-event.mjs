@@ -148,7 +148,6 @@ export function applyProgressEvent(register, event = {}) {
 
   target.updatedAt = at;
   if (nonEmpty(event.latestUpdate)) target.latestUpdate = nonEmpty(event.latestUpdate);
-  else if (target.latestUpdate === undefined) target.latestUpdate = null;
   return { register: next, slice: target, at };
 }
 
@@ -384,7 +383,9 @@ export function syncSliceText(raw, sliceId, slice) {
 function renderKeyLines(slice, keys) {
   const lines = [];
   for (const key of keys) {
-    if (slice[key] === undefined) continue;
+    // A key the slice does not carry stays absent: writing `"latestUpdate": null` would add a
+    // line the canonical register does not have, for no reason at all.
+    if (slice[key] === undefined || slice[key] === null) continue;
     lines.push(`${SLICE_INDENT}${jsonString(key)}: ${jsonString(slice[key])},`);
   }
   return lines;

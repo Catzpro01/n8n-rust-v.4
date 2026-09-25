@@ -44,6 +44,24 @@ function event(patch = {}) {
   return { slice: 'P5-M08', checkpoint: 'CP-05', ...patch };
 }
 
+const TEST_AT = '2026-09-26T09:00:00Z';
+/**
+ * The canonical register with CP-05 reopened, so a transition can be observed whichever
+ * checkpoint is open on main. P5-M08 is implemented, so the slice goes back in flight with it
+ * (status, merge SHA and executionPointer together) — that is exactly what the validator demands.
+ */
+function reopened() {
+  const register = clone();
+  const slice = m08(register);
+  slice.status = 'in-progress';
+  slice.mergeSha = null;
+  slice.checkpoints[4] = { ...slice.checkpoints[4], status: 'in-progress', completedAt: undefined };
+  register.executionPointer.latestCompletedSlice = { id: 'P5-M03', pr: 291, mergeSha: 'cf52701c91e5447f19c32377c38f6ae5eea7f3a7' };
+  register.executionPointer.activeSlices = ['P5-M08'];
+  assert.deepEqual(validateGovernanceRegister(register), []);
+  return register;
+}
+
 test('the register declares the DEC-0021 live-progress path and it validates', () => {
   const model = REGISTER.governance.progressModel;
   assert.equal(model.liveException.decision, 'DEC-0021');
@@ -55,15 +73,16 @@ test('the register declares the DEC-0021 live-progress path and it validates', (
   assert.deepEqual(classifyProgressCommit([...LIVE_PROGRESS_PATHS]).allowed.length, LIVE_PROGRESS_PATHS.length);
 });
 
-test('P5-M08 carries an evidenced checkpoint model: 70% realtime, 0% completion', () => {
+test('P5-M08 carries an evidenced checkpoint model and is implemented: 100% realtime, 100% completion', () => {
   const slice = m08(REGISTER);
-  assert.equal(slice.status, 'in-progress');
-  assert.equal(displayStatus(slice, verifyingIndex(REGISTER)), 'verifying');
+  assert.equal(slice.status, 'implemented');
+  assert.equal(slice.mergeSha, '600a21456213602ebdc6193229bab8432e6d1024');
+  assert.equal(displayStatus(slice, verifyingIndex(REGISTER)), 'implemented');
   assert.equal(sliceDeliveryProgress(slice).source, 'checkpoints');
-  assert.equal(sliceDeliveryProgress(slice).percent, 70);
-  assert.equal(sliceDeliveryProgress(slice).current.id, 'CP-05');
-  assert.equal(sliceDeliveryProgress(slice).latestCompleted.id, 'CP-04');
-  assert.equal(completionContribution(slice), 0, 'verifying never adds to slice completion');
+  assert.equal(sliceDeliveryProgress(slice).percent, 100);
+  assert.equal(sliceDeliveryProgress(slice).current, null, 'no checkpoint is open');
+  assert.equal(sliceDeliveryProgress(slice).latestCompleted.id, 'CP-05');
+  assert.equal(completionContribution(slice), 100, 'implemented adds to slice completion');
   for (const checkpoint of slice.checkpoints) {
     assert.equal(checkpoint.weight > 0, true, `${checkpoint.id} has a positive weight`);
     if (checkpoint.status === 'completed') assert.ok(String(checkpoint.evidence).trim(), `${checkpoint.id} evidence`);
@@ -74,13 +93,14 @@ test('P5-M08 carries an evidenced checkpoint model: 70% realtime, 0% completion'
 });
 
 test('1. changing a checkpoint changes slice progress', () => {
-  const before = sliceDeliveryProgress(m08(REGISTER)).percent;
-  const after = applyProgressEvent(REGISTER, event({ status: 'in-progress', at: '2026-09-26T09:00:00Z' }));
+  const base = reopened();
+  const before = sliceDeliveryProgress(m08(base)).percent;
+  const after = applyProgressEvent(base, event({ status: 'in-progress', at: TEST_AT }));
   assert.equal(sliceDeliveryProgress(after.slice).percent, before, 'an in-progress checkpoint earns nothing yet');
-  const completed = applyProgressEvent(REGISTER, event({
+  const completed = applyProgressEvent(base, event({
     status: 'completed',
     evidence: 'docs/n8n-lego/evidence/P5-M08-EVIDENCE.md §6 — runner verification PASS on main',
-    at: '2026-09-26T09:00:00Z',
+    at: TEST_AT,
   }));
   assert.equal(sliceDeliveryProgress(completed.slice).percent, 100, 'completing CP-05 moves the slice to 100%');
   assert.equal(sliceDeliveryProgress(completed.slice).current, null);
@@ -88,12 +108,13 @@ test('1. changing a checkpoint changes slice progress', () => {
 });
 
 test('2. changing a checkpoint changes program progress', () => {
-  const program = REGISTER.programs.find((item) => item.id === 'P5');
-  const before = programTally(program, verifyingIndex(REGISTER)).realtime;
-  const applied = applyProgressEvent(REGISTER, event({
+  const base = reopened();
+  const program = base.programs.find((item) => item.id === 'P5');
+  const before = programTally(program, verifyingIndex(base)).realtime;
+  const applied = applyProgressEvent(base, event({
     status: 'completed',
     evidence: 'docs/n8n-lego/evidence/P5-M08-EVIDENCE.md §6 — runner verification PASS on main',
-    at: '2026-09-26T09:00:00Z',
+    at: TEST_AT,
   }));
   const after = programTally(applied.register.programs.find((item) => item.id === 'P5'), verifyingIndex(applied.register)).realtime;
   assert.ok(after > before, `P5 realtime ${before} → ${after}`);
@@ -102,22 +123,24 @@ test('2. changing a checkpoint changes program progress', () => {
 });
 
 test('3. changing a checkpoint changes Realtime Delivery Progress and not Slice Completion', () => {
-  const before = headlineMetrics(REGISTER).current;
-  const applied = applyProgressEvent(REGISTER, event({
+  const base = reopened();
+  const before = headlineMetrics(base).current;
+  const applied = applyProgressEvent(base, event({
     status: 'completed',
     evidence: 'docs/n8n-lego/evidence/P5-M08-EVIDENCE.md §6 — runner verification PASS on main',
-    at: '2026-09-26T09:00:00Z',
+    at: TEST_AT,
   }));
   const after = headlineMetrics(applied.register).current;
   assert.ok(after.realtime > before.realtime, `delivery realtime ${before.realtime} → ${after.realtime}`);
   assert.equal(after.sliceCompletion, before.sliceCompletion, 'slice completion is untouched by telemetry');
   assert.equal(after.implemented, before.implemented);
-  assert.equal(headlineMetrics(applied.register).future.realtime, headlineMetrics(REGISTER).future.realtime, 'future programs never dilute the denominator');
+  assert.equal(headlineMetrics(applied.register).future.realtime, headlineMetrics(base).future.realtime, 'future programs never dilute the denominator');
 });
 
 test('4. README changes after a checkpoint change', () => {
-  const applied = applyProgressEvent(REGISTER, event({ status: 'in-progress', at: '2026-09-26T09:00:00Z' }));
-  const before = renderReadmeMilestoneSection(REGISTER);
+  const base = reopened();
+  const applied = applyProgressEvent(base, event({ status: 'in-progress', at: TEST_AT }));
+  const before = renderReadmeMilestoneSection(base);
   const after = renderReadmeMilestoneSection(applied.register);
   assert.notEqual(before, after);
   assert.match(after, /CP-05 DEC-0015 self-hosted runner verification on main[^\n]*\(in-progress, 30\)/);
@@ -129,15 +152,16 @@ test('4. README changes after a checkpoint change', () => {
 });
 
 test('5. the generated .ai projections change after a checkpoint change', () => {
+  const base = reopened();
   // A status-only move (no percentage change) must still reach the .ai pack.
-  const moved = applyProgressEvent(REGISTER, event({ status: 'in-progress', at: '2026-09-26T09:00:00Z' }));
-  assert.notEqual(currentStatus(REGISTER), currentStatus(moved.register), 'CURRENT_STATUS.md carries the live checkpoint state');
+  const moved = applyProgressEvent(base, event({ status: 'in-progress', at: TEST_AT }));
+  assert.notEqual(currentStatus(base), currentStatus(moved.register), 'CURRENT_STATUS.md carries the live checkpoint state');
   assert.match(currentStatus(moved.register), /CP-05 \(in-progress, 30\)/);
 
-  const completed = applyProgressEvent(REGISTER, event({
+  const completed = applyProgressEvent(base, event({
     status: 'completed',
     evidence: 'docs/n8n-lego/evidence/P5-M08-EVIDENCE.md §6 — runner verification PASS on main',
-    at: '2026-09-26T09:00:00Z',
+    at: TEST_AT,
   }));
   assert.notEqual(milestoneRegisterDoc(REGISTER), milestoneRegisterDoc(completed.register), 'MILESTONE_REGISTER.md');
   assert.notEqual(currentStatus(REGISTER), currentStatus(completed.register), 'CURRENT_STATUS.md');
@@ -145,7 +169,7 @@ test('5. the generated .ai projections change after a checkpoint change', () => 
 });
 
 test('6. freshness fails when a projection is stale after a checkpoint change', () => {
-  const applied = applyProgressEvent(REGISTER, event({ status: 'in-progress', at: '2026-09-26T09:00:00Z' }));
+  const applied = applyProgressEvent(reopened(), event({ status: 'in-progress', at: TEST_AT }));
   // The committed README is the pre-event projection: register advanced, projection did not.
   const problems = validateMilestoneProjections({
     register: applied.register,
@@ -179,38 +203,45 @@ test('8. weights that do not sum to 100 are rejected', () => {
 });
 
 test('9. a blocked checkpoint keeps the progress already earned', () => {
-  const applied = applyProgressEvent(REGISTER, event({ status: 'blocked', at: '2026-09-26T09:00:00Z', blockedBy: 'self-hosted runner lost communication' }));
+  const base = reopened();
+  const applied = applyProgressEvent(base, event({ status: 'blocked', at: TEST_AT, blockedBy: 'self-hosted runner lost communication' }));
   assert.equal(sliceDeliveryProgress(applied.slice).percent, 70, 'earned points are never reset');
   assert.equal(sliceDeliveryProgress(applied.slice).current.status, 'blocked');
   assert.equal(completionContribution(applied.slice), 0);
-  const skipped = applyProgressEvent(REGISTER, event({ status: 'skipped', reason: 'superseded by the runner retry policy', at: '2026-09-26T09:00:00Z' }));
+  const skipped = applyProgressEvent(base, event({ status: 'skipped', reason: 'superseded by the runner retry policy', at: TEST_AT }));
   assert.equal(sliceDeliveryProgress(skipped.slice).percent, 70, 'a skipped checkpoint earns nothing and removes nothing');
-  assert.throws(() => applyProgressEvent(REGISTER, event({ status: 'skipped', at: '2026-09-26T09:00:00Z' })), /without --reason/);
-  assert.throws(() => applyProgressEvent(REGISTER, event({ status: 'blocked', at: '2026-09-26T09:00:00Z', checkpoint: 'CP-05' })), /without --blocked-by/,
-    'the live in-progress CP-05 still needs a blocker before it can be blocked');
-  const blocked = applyProgressEvent(REGISTER, event({ status: 'blocked', at: '2026-09-26T09:00:00Z', blockedBy: 'runner lost communication' }));
+  assert.throws(() => applyProgressEvent(base, event({ status: 'skipped', at: TEST_AT })), /without --reason/);
+  assert.throws(() => applyProgressEvent(base, event({ status: 'blocked', at: TEST_AT })), /without --blocked-by/,
+    'a blocked checkpoint needs a blocker for the event that blocks it');
+  const blocked = applyProgressEvent(base, event({ status: 'blocked', at: TEST_AT, blockedBy: 'runner lost communication' }));
   assert.equal(sliceDeliveryProgress(blocked.slice).percent, 70, 'a new blocker keeps the points already earned');
 });
 
-test('10. verifying does not add slice completion', () => {
-  const applied = applyProgressEvent(REGISTER, event({
+test('10. 100% realtime is still not implemented', () => {
+  const base = reopened();
+  const applied = applyProgressEvent(base, event({
     status: 'completed',
     evidence: 'docs/n8n-lego/evidence/P5-M08-EVIDENCE.md §6 — runner verification PASS on main',
-    at: '2026-09-26T09:00:00Z',
+    at: TEST_AT,
   }));
   const slice = applied.slice;
   assert.equal(sliceDeliveryProgress(slice).percent, 100);
-  assert.equal(completionContribution(slice), 0);
-  assert.equal(displayStatus(slice, verifyingIndex(applied.register)), 'verifying');
-  assert.equal(headlineMetrics(applied.register).current.sliceCompletion, headlineMetrics(REGISTER).current.sliceCompletion);
+  assert.equal(completionContribution(slice), 0, '100% realtime with the slice still in flight adds nothing');
+  assert.equal(slice.status, 'in-progress', 'telemetry never changes a slice status');
+  assert.equal(displayStatus(slice, verifyingIndex(applied.register)), 'in-progress');
+  assert.equal(headlineMetrics(applied.register).current.sliceCompletion, headlineMetrics(base).current.sliceCompletion);
   assert.equal(validateGovernanceRegister(applied.register).some((error) => /implemented/.test(error)), false);
+  // Only the governance PR that records the merge makes it implemented.
+  const implemented = clone();
+  m08(implemented).status = 'implemented';
+  assert.equal(completionContribution(m08(implemented)), 100);
 });
 
 test('11. historical milestones never change through a live progress event', () => {
-  const applied = applyProgressEvent(REGISTER, event({
+  const applied = applyProgressEvent(reopened(), event({
     status: 'completed',
     evidence: 'docs/n8n-lego/evidence/P5-M08-EVIDENCE.md §6 — runner verification PASS on main',
-    at: '2026-09-26T09:00:00Z',
+    at: TEST_AT,
   }));
   assert.equal(historicalP2Fingerprint(applied.register), HISTORICAL_P2_FINGERPRINT);
   assert.equal(historicalP2Fingerprint(REGISTER), HISTORICAL_P2_FINGERPRINT);
@@ -252,25 +283,50 @@ test('the surgical register writer round-trips the canonical register unchanged'
     assert.equal(sync.ok, true, slice.id);
     assert.equal(sync.text, raw, `${slice.id}: rewriting the current state must not touch the file`);
   }
-  const applied = applyProgressEvent(REGISTER, event({ status: 'in-progress', at: '2026-09-26T09:00:00Z' }));
-  const sync = syncSliceText(raw, 'P5-M08', applied.slice);
+  // P5-M08 is implemented, so no legal checkpoint event exists for it any more. Prove the
+  // writer's fidelity on a slice that is still in flight, installing its checkpoint model first
+  // (which is also the --init-file path for a slice with no checkpoint block yet).
+  const seeded = clone();
+  const planned = findSlice(seeded, 'P5-M07').slice;
+  planned.updatedAt = '2026-09-26T00:00:00Z';
+  planned.checkpoints = [{
+    id: 'CP-01', title: 'Service-principal REST surface', purpose: 'create shown once, redacted list, revoke with tombstone',
+    weight: 100, status: 'planned', evidence: '', reference: '',
+  }];
+  const applied = applyProgressEvent(seeded, {
+    slice: 'P5-M07', checkpoint: 'CP-01', status: 'completed',
+    evidence: 'docs/n8n-lego/evidence/P5-M07-EVIDENCE.md \u00a72 \u2014 unit-test fixture', at: TEST_AT,
+  });
+  const sync = syncSliceText(raw, 'P5-M07', applied.slice);
   assert.equal(sync.ok, true);
-  assert.equal(JSON.stringify(JSON.parse(sync.text)), JSON.stringify(applied.register), 'the text edit must equal the intended register');
+  // Nothing outside the P5-M07 block may move, so the parsed result must equal the intended
+  // register (compared structurally: the writer emits its managed keys in its own order).
+  assert.deepEqual(JSON.parse(sync.text), applied.register, 'the text edit must equal the intended register');
   const before = raw.split('\n');
   const after = sync.text.split('\n');
   assert.notEqual(before.join('\n'), after.join('\n'), 'a checkpoint change must change the register text');
   // A progress commit touches only the slice it records: everything outside its block is byte-identical.
-  const bounds = (lines) => {
-    const start = lines.findIndex((line) => line === '          "id": "P5-M08",');
+  const bounds = (lines, sliceId) => {
+    const start = lines.findIndex((line) => line === `          "id": "${sliceId}",`);
     const end = lines.findIndex((line, index) => index > start && /^ {8}\},?$/.test(line));
     return { start, end };
   };
-  const beforeBounds = bounds(before);
-  const afterBounds = bounds(after);
+  const beforeBounds = bounds(before, 'P5-M07');
+  const afterBounds = bounds(after, 'P5-M07');
   const outside = (lines, region) => lines.slice(0, region.start).concat(lines.slice(region.end + 1));
-  assert.deepEqual(outside(before, beforeBounds), outside(after, afterBounds), 'only the P5-M08 block may change');
-  const grew = (afterBounds.end - afterBounds.start) - (beforeBounds.end - beforeBounds.start);
-  assert.ok(Math.abs(grew) <= 2, `a single checkpoint event must stay surgical (block grew by ${grew} lines)`);
+  assert.deepEqual(outside(before, beforeBounds), outside(after, afterBounds), 'only the recorded slice block may change');
+  // Surgicality: a *second* event on the model just installed must not grow the block at all.
+  const blocked = applyProgressEvent(applied.register, {
+    slice: 'P5-M07', checkpoint: 'CP-01', status: 'blocked',
+    blockedBy: 'a service-principal architecture decision is still open', at: TEST_AT,
+  });
+  const again = syncSliceText(sync.text, 'P5-M07', blocked.slice);
+  assert.equal(again.ok, true);
+  const againBounds = bounds(again.text.split('\n'), 'P5-M07');
+  assert.equal(againBounds.end - againBounds.start, afterBounds.end - afterBounds.start,
+    'a checkpoint event changes lines, it never adds them');
+  assert.match(again.text, /"status": "blocked"/);
+  assert.match(again.text, /"blockedBy": "a service-principal architecture decision is still open"/);
 });
 
 /* ------------------------------------- DEC-0021 §5/§6: evidence -> checkpoint state */
@@ -294,11 +350,12 @@ test('evidence resolver: all-green self-hosted checks derive completed, with run
   assert.match(derived.evidence, /run 36161486727/);
   assert.match(derived.evidence, /run 36161486715/);
 
-  const applied = applyProgressEvent(REGISTER, {
-    slice: 'P5-M08', checkpoint: 'CP-05', status: derived.status, evidence: derived.evidence, at: '2026-09-26T09:00:00Z',
+  const applied = applyProgressEvent(reopened(), {
+    slice: 'P5-M08', checkpoint: 'CP-05', status: derived.status, evidence: derived.evidence, at: TEST_AT,
   });
   assert.equal(sliceDeliveryProgress(applied.slice).percent, 100);
   assert.equal(completionContribution(applied.slice), 0, 'resolver output never becomes completion by itself');
+  assert.equal(applied.slice.status, 'in-progress', 'the resolver cannot change a slice status');
 });
 
 test('evidence resolver: WAITING_RUNNER, queued and hosted-only never derive completed (DEC-0015)', () => {
@@ -331,8 +388,8 @@ test('evidence resolver: a failed self-hosted check derives blocked with the fai
   assert.equal(derived.verdict.verdict, 'BLOCKED');
   assert.match(derived.evidence, /Level 1 \(Affected Tests\)/);
   assert.match(derived.blockedBy, /classify the failure/, 'the tool never relabels a failure as environmental or a regression');
-  const applied = applyProgressEvent(REGISTER, {
-    slice: 'P5-M08', checkpoint: 'CP-05', status: derived.status, evidence: derived.evidence, blockedBy: derived.blockedBy, at: '2026-09-26T09:00:00Z',
+  const applied = applyProgressEvent(reopened(), {
+    slice: 'P5-M08', checkpoint: 'CP-05', status: derived.status, evidence: derived.evidence, blockedBy: derived.blockedBy, at: TEST_AT,
   });
   assert.equal(sliceDeliveryProgress(applied.slice).percent, 70, 'earned progress survives a new blocker');
 });
@@ -418,11 +475,13 @@ test('telemetry never carries delivery state: a slice status transition is refus
   const slice = m08(mutated);
   slice.status = 'implemented';
   slice.mergeSha = '600a21456213602ebdc6193229bab8432e6d1024';
-  assert.ok(validateGovernanceRegister(mutated).some((problem) => /cannot carry an incomplete checkpoint/.test(problem)),
+  slice.checkpoints[4].status = 'in-progress';
+  assert.deepEqual(validateGovernanceRegister(mutated),
+    ['P5-M08: an implemented slice cannot carry an incomplete checkpoint'],
     'the register itself refuses implemented while a checkpoint is incomplete');
 
   // The telemetry tool cannot move a slice status or attach a merge SHA at all.
-  const applied = applyProgressEvent(REGISTER, event({ status: 'completed', evidence: 'docs/n8n-lego/evidence/P5-M08-EVIDENCE.md §6 — PASS', at: '2026-09-26T09:00:00Z' }));
+  const applied = applyProgressEvent(reopened(), event({ status: 'completed', evidence: 'docs/n8n-lego/evidence/P5-M08-EVIDENCE.md §6 — PASS', at: TEST_AT }));
   assert.equal(applied.slice.status, 'in-progress', 'a telemetry event cannot change a slice status');
   assert.equal(applied.slice.mergeSha, null, 'a telemetry event cannot attach a merge SHA');
   assert.equal(completionContribution(applied.slice), 0, 'completion still waits for the governance PR');
@@ -460,13 +519,22 @@ test('an event on an unknown slice or checkpoint is refused before anything is w
   assert.throws(() => applyProgressEvent(REGISTER, event({ checkpoint: 'C1' })), /must look like CP-01/);
 });
 
-test('the live state is readable from the register alone: status, checkpoint, evidence, blocker, timestamp', () => {
+test('the live state is readable from the register alone: status, checkpoint, evidence, timestamp', () => {
   const slice = m08(REGISTER);
   const rendered = renderReadmeMilestoneSection(REGISTER);
-  assert.match(rendered, new RegExp(`- \\*\\*Current checkpoint:\\*\\* CP-05[^\\n]*\\(in-progress, 30\\)`),
-    'CP-05 is in-progress on main: the DEC-0015 retry is in flight');
-  assert.match(rendered, /- \*\*Checkpoint evidence:\*\* CP-01: docs\/n8n-lego\/evidence\/P5-M08-EVIDENCE\.md/);
-  assert.match(rendered, new RegExp(`- \\*\\*Last progress update:\\*\\* ${slice.updatedAt}`));
+  // Implemented: the ladder row and the pointer carry the delivery record, not a verifying block.
+  assert.match(rendered, /\| `P5-M08` \|[^\n]*✅ Implemented \| 100\.0% \| 100\.0% \|/);
+  assert.match(rendered, /Latest completed slice: `P5-M08` \(PR #304, merge `600a2145`\)/);
+  assert.match(rendered, /CP-05 DEC-0015 self-hosted runner verification on main[^\n]*\(completed, 30\)/);
+  assert.match(rendered, /_No verifying slice\._/);
+  // The checkpoint evidence the resolver derived, with the runners and run IDs, is on the register.
+  assert.match(String(slice.checkpoints[4].evidence), /Level 0 \(Check & Format\) on MDMTEST-n8n-wsl-2 \(run 36166949165\)/);
+  assert.match(String(slice.checkpoints[4].evidence), /Post-Merge Verification & Branch Cleanup on MDMTEST-n8n-wsl-3 \(run 36167178324\)/);
+  for (const checkpoint of slice.checkpoints) assert.ok(String(checkpoint.evidence).trim(), checkpoint.id);
+  assert.equal(slice.checkpoints.some((checkpoint) => checkpoint.blockedBy), false, 'no checkpoint is blocked');
+  assert.match(slice.updatedAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/, 'the slice records when it last moved');
+  assert.match(String(slice.latestUpdate), /Implemented by PR #304 \(merge 600a2145[0-9a-f]*\)/,
+    'the slice headline names the delivery PR and merge');
   assert.match(rendered, /- 🔴 \*\*P5-M02\*\*[^\n]*Last progress update: —/);
   assert.match(rendered, /governance\(progress\):/);
   assert.match(rendered, /LIVE-MILESTONE EXCEPTION/);
