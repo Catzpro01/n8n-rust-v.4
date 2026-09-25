@@ -2955,9 +2955,10 @@
               "title": "POST /rest/service-principals: create, with the credential shown exactly once",
               "purpose": "Mint a service principal through createServicePrincipalRecord so the whole P5.7 create policy is enforced at the HTTP boundary: kind must be in SERVICE_PRINCIPAL_KINDS, the tenant is bound to the owner's tenant, requested scopes are attenuated to what the owner can grant (escalation is refused, not trimmed), the per-owner limit holds, and expiry satisfies the tenant policy. The raw credential is returned once and is never retrievable again.",
               "weight": 25,
-              "status": "planned",
-              "evidence": "",
-              "reference": "apps/n8n-lego/src/auth/security/machine-identity.mjs (createServicePrincipalRecord)"
+              "status": "completed",
+              "evidence": "apps/n8n-lego/test/service-principal-routes.test.mjs \u2014 'create returns the credential exactly once' and 'create enforces the whole P5.7 policy at the boundary': rawApiKey is on the create response and in no other body, the store holds a SHA-256 digest and a 4-character hint and never the raw value, an unknown kind is 400 naming worker/agent/mcp/gateway, a scope outside the universe is 403 and stores nothing, an empty/malformed/non-array scope list is 400, the label rules match /rest/api-keys, expiry is a number or null and is echoed, and the principal is bound to tenant default with audience service-principal. Merged in 0845c25f.",
+              "reference": "apps/n8n-lego/src/auth/security/machine-identity.mjs (createServicePrincipalRecord)",
+              "completedAt": "2026-09-25T20:22:46Z"
             },
             {
               "id": "CP-03",
@@ -2997,7 +2998,7 @@
               "requires": ["Level 0 (Check & Format)","Level 1 (Affected Tests)","Level 2 Workspace Tests (linux)","Level 2 Workspace Tests (windows)","Level 2 Conformance LEGO & Node Catalog","Post-Merge Verification & Branch Cleanup"]
             }
           ],
-          "updatedAt": "2026-09-25T20:22:37Z",
+          "updatedAt": "2026-09-25T20:22:46Z",
           "latestUpdate": "P5-M07: service-principal REST surface mounted (create once, redacted list, revoke tombstone, transfer rotates the credential); DEC-0023 closes the member boundary",
           "checkpointWeightBasis": "Five declared route operations. CP-01 carries 15 for the read pair (list + scopes); CP-02 carries 25 because it is the only route that mints a credential and must enforce the whole P5.7 create policy; CP-03 carries 15 for the tombstone semantics; CP-04 carries 20 for the six transfer invariants; CP-05 carries 15 for the end-to-end proof and manifest registration; CP-06 carries 10 for the DEC-0015 runner gate. 15+25+15+20+15+10 = 100. The weights come from the scope declared in P5-M07-EVIDENCE.md §1, not from effort, commit count or lines of code.",
           "mergeSha": null,
