@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 import {
   validateGovernanceRegister, TOP_LEVEL_PROGRAMS, EXPECTED_PROGRAM_STATUS, LEGACY_FUTURE_MILESTONES, countBy,
   README_MARKERS, renderReadmeMilestoneSection, syncReadmeMilestoneSection,
+  completionTally, sliceRecords, percent1, completionPercentForStatus, displayStatus, verifyingIndex,
   validateMilestoneProjections, MILESTONE_AUTHORITY, HISTORICAL_P2_FINGERPRINT, historicalP2Fingerprint,
 } from '../../../tools/lego/governance-register.mjs';
 
@@ -341,10 +342,38 @@ test('README projection is deterministic (repeated generation gives no diff)', (
 
 test('README projection lists current state, P5 ladder, recent slices and future programs', () => {
   const block = renderReadmeMilestoneSection(REGISTER);
-  for (const heading of ['### Active work', '### Recently completed slices', '### P5 maintenance ladder', '### Programs', '### Future programs']) assert.ok(block.includes(heading), heading);
+  for (const heading of ['## Overall Milestone Progress', '## Program Overview', '## Active Execution', '### Active work', '## Status Legend', '## Milestone Governance', '## P5 —']) assert.ok(block.includes(heading), heading);
   for (let n = 1; n <= 10; n += 1) assert.match(block, new RegExp(`\\| \`P5-M${String(n).padStart(2, '0')}\` \\|`));
   assert.match(block, /Historical pointers: current `P2\.27`, previous completed `P2\.26`/);
-  assert.match(block, /`P5-M08` \| [^\n]*\| in-progress \(verifying\) \| #304 \| `600a2145` \|/);
+  assert.match(block, /P5-M08[\s\S]*Status:\*\* VERIFYING/);
+  assert.match(block, /Completion contribution: \*\*0%\*\*/);
+  assert.match(block, /#304/);
+  assert.match(block, /`600a2145`/);
+  assert.doesNotMatch(block, /\| `P5-M08` \|[^\n]*Implemented/);
+});
+
+test('completion KPI is implemented/total and never counts verifying or blocked', () => {
+  const slices = sliceRecords(REGISTER).map((record) => record.slice);
+  const tally = completionTally(slices);
+  assert.equal(tally.implemented, slices.filter((slice) => slice.status === 'implemented').length);
+  assert.equal(tally.total, slices.length);
+  assert.equal(tally.percent, percent1(tally.implemented, tally.total));
+  assert.equal(tally.percent, 82.9);
+  const verifying = verifyingIndex(REGISTER);
+  const m08 = slices.find((slice) => slice.id === 'P5-M08');
+  assert.equal(displayStatus(m08, verifying), 'verifying');
+  assert.equal(completionPercentForStatus(m08.status), 0);
+  assert.equal(completionPercentForStatus('implemented'), 100);
+  assert.equal(completionPercentForStatus('blocked'), 0);
+  assert.equal(completionPercentForStatus('planned'), 0);
+  const block = renderReadmeMilestoneSection(REGISTER);
+  assert.match(block, /\*\*82\.9%\*\*/);
+  assert.match(block, /126 \/ 152 slices implemented/);
+  assert.match(block, /Merged\/verifying work is not counted as implemented/);
+  for (const record of sliceRecords(REGISTER)) assert.ok(block.includes('`' + record.slice.id + '`'), record.slice.id);
+  const mutated = clone();
+  mutated.programs[5].slices.find((slice) => slice.id === 'P5-M08').status = 'implemented';
+  assert.notEqual(renderReadmeMilestoneSection(mutated), block);
 });
 
 test('the historical P2 fingerprint is pinned', () => {

@@ -27,7 +27,7 @@ import { fileURLToPath } from 'node:url';
 import { loadRegistry, getChildren, CONTRACT_LOCK_FILE, MANIFEST_FILE } from '../../apps/n8n-lego/src/lego/registry.mjs';
 import { FOUNDATION, NODE_CONTRACT } from '../../apps/n8n-lego/src/lego/foundation.mjs';
 import { buildGraph, impactOf, TEST_TIERS } from './impact-graph.mjs';
-import { validateGovernanceRegister, renderGovernanceSections, syncReadmeMilestoneSection, validateMilestoneProjections } from './governance-register.mjs';
+import { validateGovernanceRegister, renderGovernanceSections, syncReadmeMilestoneSection, validateMilestoneProjections, completionTally, sliceRecords, formatPercent } from './governance-register.mjs';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const AI_ROOT = join(REPO_ROOT, '.ai');
@@ -1879,6 +1879,7 @@ document is right and the prose is stale.
 | Agent 1 branch | \`${milestones?.agentBranches?.agent1 ?? '—'}\` |
 | Agent 2 branch | \`${milestones?.agentBranches?.agent2 ?? '—'}\` |
 | **Latest completed slice** | **${milestones?.executionPointer?.latestCompletedSlice?.id ?? '—'}** |
+| **Completion KPI** | **${milestones ? formatPercent(completionTally(sliceRecords(milestones).map((record) => record.slice)).percent) : '—'}** (${milestones ? completionTally(sliceRecords(milestones).map((record) => record.slice)).implemented : '—'}/${milestones ? completionTally(sliceRecords(milestones).map((record) => record.slice)).total : '—'} implemented; verifying contributes 0) |
 | **Active / verifying slices** | **${[...(milestones?.executionPointer?.activeSlices ?? []), ...(milestones?.executionPointer?.verifyingSlices ?? []).map((entry) => `${entry.id} (verifying)`)].join(', ') || '—'}** |
 | Planned queue | ${(milestones?.executionPointer?.plannedQueue ?? []).join(', ') || '—'} |
 | Blocked slices | ${(milestones?.executionPointer?.blockedSlices ?? []).join(', ') || '—'} |

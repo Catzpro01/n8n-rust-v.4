@@ -162,4 +162,19 @@ Sources: `handlers/executions/executions.handler.ts`, `spec/schemas/execution.ym
 
 ## 6. Delivery record
 
-This section is filled in by the governance follow-up after the merge, as done for P5-M03.
+Observed after merge `600a21456213602ebdc6193229bab8432e6d1024` (PR #304, head `c102cff9d2744831828310b9353407f0811cd3d8`). This section does not mark the slice implemented.
+
+GitHub-hosted checks on the merge commit passed (architecture gate, unit/integration, clean-clone smoke, Windows portability). Self-hosted Windows Level 2 also passed (`laptop-build-worker-2`).
+
+Attempt 1 of the self-hosted Linux jobs never started a step: the runner lost communication. Attempt 2 (2026-09-25T14:59:54Z–15:10:59Z) ran and then failed the same way:
+
+| Job | Run | Runner | Result |
+| --- | --- | --- | --- |
+| Level 2 Conformance LEGO & Node Catalog | 36136621102 | MDMTEST-n8n-wsl-5 | SUCCESS |
+| Level 2 Workspace Tests (windows) | 36136621102 | laptop-build-worker-2 | SUCCESS (attempt 1) |
+| Level 0 (Check & Format) | 36136621119 | MDMTEST-n8n-wsl-3 | environmental failure: runner lost communication |
+| Level 1 (Affected Tests) | 36136621119 | MDMTEST-n8n-wsl-2 | environmental failure: runner lost communication |
+| Level 2 Workspace Tests (linux) | 36136621102 | MDMTEST-n8n-wsl-4 | environmental failure: runner lost communication |
+| Post-Merge Verification & Branch Cleanup | 36137555071 | MDMTEST-n8n-wsl | environmental failure: runner lost communication |
+
+Classification is environmental, not an implementation regression. DEC-0015: this is not PASS. The slice stays `in-progress` / verifying and contributes 0% to the completion KPI. Runner settings and workflow files were not changed. One environmental retry remains; it was not spent because all five WSL runners were offline when this evidence was recorded.

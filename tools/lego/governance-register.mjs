@@ -342,76 +342,278 @@ export const README_MARKERS = Object.freeze({
   end: '<!-- END GENERATED milestone-governance -->',
 });
 
+/** Completion KPI. Derived only from slice status. Verifying is not a status and never counts. */
+export function completionPercentForStatus(status) {
+  if (status === 'implemented' || status === 'retired') return 100;
+  return 0;
+}
+
+/** Retired is historical and stays out of the active completion ratio unless the register opts in. */
+export function countsTowardCompletion(slice) {
+  if (slice?.status === 'retired' && slice?.includeInCompletion !== true) return false;
+  return slice?.status === 'implemented';
+}
+
+export function inActiveCompletionTotal(slice) {
+  if (slice?.status === 'retired' && slice?.includeInCompletion !== true) return false;
+  return true;
+}
+
+export function percent1(numerator, denominator) {
+  if (!denominator) return 0;
+  return Math.round((numerator / denominator) * 1000) / 10;
+}
+
+export function formatPercent(value) {
+  return `${Number(value).toFixed(1)}%`;
+}
+
+export function progressBar(percent, width = 20) {
+  const clamped = Math.max(0, Math.min(100, Number(percent) || 0));
+  const filled = clamped >= 100 ? width : clamped <= 0 ? 0 : Math.round((clamped / 100) * width);
+  return `${'█'.repeat(filled)}${'░'.repeat(width - filled)}`;
+}
+
+export function sliceRecords(register) {
+  return [...(register.programs ?? []), ...(register.futurePrograms ?? [])].flatMap((entity) => (entity.slices ?? []).map((slice) => ({
+    slice,
+    parentId: entity.id,
+    parentTitle: entity.title,
+    parentStatus: entity.status,
+    parentScope: entity.scope ?? entity.rule ?? '',
+  })));
+}
+
+export function verifyingIndex(register) {
+  return new Map((register.executionPointer?.verifyingSlices ?? []).map((entry) => [entry.id, entry]));
+}
+
+export function displayStatus(slice, verifying) {
+  return verifying.has(slice.id) ? 'verifying' : slice.status;
+}
+
+export function slicePurpose(slice) {
+  if (typeof slice.purpose === 'string' && slice.purpose.trim()) return slice.purpose.trim();
+  const title = String(slice.title ?? '').trim();
+  const parts = title.split(/: /);
+  return parts.length > 1 ? parts.slice(1).join(': ').trim() : title;
+}
+
+const STATUS_LABEL = Object.freeze({
+  implemented: '✅ Implemented',
+  verifying: '🟠 Verifying',
+  planned: '🟡 Planned',
+  blocked: '🔴 Blocked',
+  proposed: '⚪ Proposed',
+  'in-progress': '🔵 In progress',
+  deferred: 'Deferred',
+  superseded: 'Superseded',
+  retired: 'Retired',
+  rejected: 'Rejected',
+});
+
+export function statusLabel(status) {
+  return STATUS_LABEL[status] ?? status;
+}
+
+export function completionTally(slices) {
+  const counted = slices.filter(inActiveCompletionTotal);
+  const implemented = counted.filter(countsTowardCompletion).length;
+  const byStatus = {};
+  for (const slice of counted) byStatus[slice.status] = (byStatus[slice.status] ?? 0) + 1;
+  return {
+    total: counted.length,
+    implemented,
+    percent: percent1(implemented, counted.length),
+    byStatus,
+  };
+}
+
+export function programTally(entity, verifying) {
+  const slices = entity.slices ?? [];
+  const tally = completionTally(slices);
+  const count = (status) => slices.filter((slice) => (status === 'verifying' ? verifying.has(slice.id) : slice.status === status && !verifying.has(slice.id))).length;
+  return {
+    ...tally,
+    verifying: slices.filter((slice) => verifying.has(slice.id)).length,
+    planned: slices.filter((slice) => slice.status === 'planned').length,
+    blocked: slices.filter((slice) => slice.status === 'blocked').length,
+    inProgress: slices.filter((slice) => slice.status === 'in-progress' && !verifying.has(slice.id)).length,
+    proposed: slices.filter((slice) => slice.status === 'proposed').length,
+    remaining: tally.total - tally.implemented,
+    statusCount: count,
+  };
+}
+
+function tallyLine(tally) {
+  const parts = [`${tally.implemented} implemented`];
+  for (const [status, label] of [['verifying', 'verifying'], ['inProgress', 'in progress'], ['planned', 'planned'], ['blocked', 'blocked'], ['proposed', 'proposed']]) {
+    if (tally[status]) parts.push(`${tally[status]} ${label}`);
+  }
+  return parts.join(', ');
+}
+
 /** README.md projection of the canonical register (DEC-0020). Not a second register. */
 export function renderReadmeMilestoneSection(register) {
   const gov = register.governance;
   const authority = gov.milestoneAuthority;
+  const verifying = verifyingIndex(register);
+  const records = sliceRecords(register);
+  const overall = completionTally(records.map((record) => record.slice));
+  const programs = register.programs ?? [];
+  const futures = register.futurePrograms ?? [];
+  const programRows = programs.map((program) => {
+    const tally = programTally(program, verifying);
+    return `| ${program.id} | ${cell(program.title)} | ${formatPercent(tally.percent)} | ${program.status} |`;
+  });
+  const bars = programs.map((program) => {
+    const tally = programTally(program, verifying);
+    return `${program.id.padEnd(3)} ${progressBar(tally.percent)} ${formatPercent(tally.percent).padStart(6)}  ${tally.implemented}/${tally.total}`;
+  });
+  const pointer = register.executionPointer ?? {};
+  const byId = new Map(records.map((record) => [record.slice.id, record]));
+  const queue = [
+    ...(pointer.verifyingSlices ?? []).map((entry) => entry.id),
+    ...(pointer.activeSlices ?? []),
+    ...(pointer.plannedQueue ?? []),
+  ];
+  const queueLines = queue.map((id, index) => `${'   '.repeat(index)}${index ? '↓ ' : ''}\`${id}\`${verifying.has(id) ? ' (verifying, completion 0%)' : ''}`);
+  const verifyingBlocks = (pointer.verifyingSlices ?? []).map((entry) => {
+    const record = byId.get(entry.id);
+    const slice = record?.slice;
+    return [
+      `### 🟠 ${entry.id} — ${cell(sliceTitle(slice))}`,
+      '',
+      `- **Status:** VERIFYING. Merged work is not implemented. Completion contribution: **0%**.`,
+      `- **Purpose:** ${cell(slice ? slicePurpose(slice) : '—')}`,
+      `- **PR:** #${entry.pr} · **Merge:** ${short(entry.mergeSha)} · **Head:** ${entry.headSha ? short(entry.headSha) : '—'}`,
+      `- **Pending:** ${cell(entry.pending)}`,
+      '',
+    ].join('\n');
+  });
+  const blockedBlocks = (pointer.blockedSlices ?? []).map((id) => {
+    const slice = byId.get(id)?.slice;
+    return `- 🔴 **${id}** — ${cell(sliceTitle(slice))}. Reason: ${cell(slice?.blockedBy)}. Completion contribution: 0%.`;
+  });
   const ladder = (register.milestones ?? []).filter((milestone) => milestone.status === 'complete').map((milestone) => milestone.id);
   const generic = (register.milestones ?? []).filter((milestone) => milestone.status !== 'complete').map((milestone) => `\`${milestone.id}\` (${milestone.status})`);
-  const programs = (register.programs ?? []).map((program) => {
-    const done = program.slices.filter((slice) => slice.status === 'implemented').length;
-    return `| ${program.id} | ${cell(program.title)} | ${program.status} | ${done}/${program.slices.length} |`;
+  const programSections = [...programs, ...futures].map((entity) => {
+    const tally = programTally(entity, verifying);
+    const rows = (entity.slices ?? []).map((slice) => {
+      const shown = displayStatus(slice, verifying);
+      const progress = shown === 'verifying' ? 0 : completionPercentForStatus(slice.status);
+      return `| \`${slice.id}\` | ${cell(sliceTitle(slice))} | ${cell(slicePurpose(slice))} | ${statusLabel(shown)} | ${formatPercent(progress)} |`;
+    });
+    return `## ${entity.id} — ${cell(entity.title)}
+
+**${formatPercent(tally.percent)}**
+
+\`${progressBar(tally.percent)} ${formatPercent(tally.percent)}\`
+
+${tally.implemented} / ${tally.total} slices implemented. Remaining ${tally.remaining}. ${tallyLine(tally)}.
+
+- **Program status:** ${entity.status}. Program status is not a substitute for the percentage.
+- **Purpose:** ${cell(entity.scope ?? entity.rule ?? entity.title)}
+
+<details><summary>Slices (${tally.total})</summary>
+
+| Slice | Title | Purpose | Status | Progress |
+| --- | --- | --- | --- | ---: |
+${rows.join('\n')}
+
+</details>`;
   });
-  const verifying = new Map((register.executionPointer?.verifyingSlices ?? []).map((entry) => [entry.id, entry]));
-  const newSlices = [...(register.programs ?? []), ...(register.futurePrograms ?? [])]
-    .flatMap((entity) => (entity.slices ?? []).filter((slice) => NEW_SLICE.test(slice.id) || FUTURE_SLICE.test(slice.id)));
-  const recent = newSlices.filter((slice) => slice.status === 'implemented' && Number.isInteger(slice.pr))
-    .sort((a, b) => b.pr - a.pr).slice(0, 5)
-    .map((slice) => `| \`${slice.id}\` | ${cell(sliceTitle(slice))} | #${slice.pr} | ${short(slice.mergeSha)} |`);
-  const p5 = ((register.programs ?? []).find((program) => program.id === 'P5')?.slices ?? []).filter((slice) => /^P5-M\d{2}$/.test(slice.id))
-    .map((slice) => `| \`${slice.id}\` | ${cell(sliceTitle(slice))} | ${slice.status}${verifying.has(slice.id) ? ' (verifying)' : ''} | ${slice.pr ? `#${slice.pr}` : '—'} | ${short(slice.mergeSha ?? verifying.get(slice.id)?.mergeSha)} |`);
-  const futures = (register.futurePrograms ?? []).map((future) => {
-    const done = (future.slices ?? []).filter((slice) => slice.status === 'implemented').length;
-    return `| ${future.id} | ${(future.legacyMilestones ?? []).join(', ') || '—'} | ${done}/${(future.slices ?? []).length} |`;
+  const futureRows = futures.map((future) => {
+    const tally = programTally(future, verifying);
+    return `| ${future.id} | ${(future.legacyMilestones ?? []).join(', ') || '—'} | ${formatPercent(tally.percent)} | ${tally.implemented}/${tally.total} |`;
   });
   return `${README_MARKERS.begin}
-## Current Milestone Governance
+## Overall Milestone Progress
 
-- **Milestone authority:** \`${authority.milestoneTruthOwner}\` owns milestone truth (${authority.decision}). Canonical register: [\`${authority.register}\`](${authority.register}); generated projections: this section of \`${authority.publicProjection}\`, \`${authority.generatedProjection}\` and \`.ai/master/CURRENT_STATUS.md\`. \`${authority.planningMemory}\` is Manager planning memory only (canonical: ${authority.planningMemoryIsCanonical}); \`docs/n8n-lego/ROADMAP.md\` is strategy narrative and owns no status.
-- **Rule:** ${authority.rule}
-- **Pending reconciliation:** ${authority.pendingReconciliation}
-- **Freshness:** generated by \`npm run lego:ai\` from register ${register.registerVersion} (fingerprint \`${registerFingerprint(register)}\`); \`npm run lego:ai:check\` fails when this section, the \`.ai\` pack or the register disagree.
-- **Top level:** programs P0–P11 only. There is no P12+ or P24+ and no P5.9; legacy P12–P23 are consolidated into future programs. New work is \`Pn-Snn\`, \`Pn-Mnn\` or \`FUTURE-<THEME>-Snn\`.
-- **Historical P2 ladder:** ${ladder.length} completed milestones (\`${ladder[0]}\` … \`${ladder.at(-1)}\`, with the \`P2.27.x\` sub-slices under program P2) are immutable implementation history. Historical pointers: current \`${register.currentMilestone}\`, previous completed \`${register.previousCompletedMilestone}\` (history, not active work).${generic.length ? ` The generic ${generic.join(', ')} row is a historical placeholder label; it authorizes no work.` : ''}
+**${formatPercent(overall.percent)}**
+
+\`${progressBar(overall.percent)} ${formatPercent(overall.percent)}\`
+
+**${overall.implemented} / ${overall.total} slices implemented.**
+
+| | |
+| --- | ---: |
+| Implemented | ${overall.implemented} |
+| Verifying | ${records.filter((record) => verifying.has(record.slice.id)).length} |
+| In progress (not verifying) | ${records.filter((record) => record.slice.status === 'in-progress' && !verifying.has(record.slice.id)).length} |
+| Planned | ${overall.byStatus.planned ?? 0} |
+| Blocked | ${overall.byStatus.blocked ?? 0} |
+| Proposed | ${overall.byStatus.proposed ?? 0} |
+| Total in the completion KPI | ${overall.total} |
+
+The percentage is \`implemented / total\` from \`docs/n8n-lego/milestones.json\`, programs P0–P11 plus future programs, rounded to one decimal. It is not estimated from time, PR count, or lines of code. Merged/verifying work is not counted as implemented. \`in-progress\` and \`verifying\` contribute 0% because the register has no objective fractional checklist.
+
+\`\`\`text
+${bars.join('\n')}
+\`\`\`
+
+## Program Overview
+
+| Program | Focus | Progress | State |
+| --- | --- | ---: | --- |
+${programRows.join('\n')}
+
+## Active Execution
 
 ### Active work
 
-| | |
-| --- | --- |
-${activeWorkLines(register).join('\n')}
+The queue is \`executionPointer\` only. Historical \`P2.27\` is not the next slice, and there is no \`P2.28\`.
 
-### Recently completed slices
+\`\`\`text
+${queueLines.join('\n')}
+\`\`\`
 
-| Slice | Title | PR | Merge |
-| --- | --- | --- | --- |
-${recent.join('\n')}
+${verifyingBlocks.join('\n') || '_No verifying slice._'}
 
-### P5 maintenance ladder
+${blockedBlocks.length ? `### Blocked\n\n${blockedBlocks.join('\n')}` : ''}
 
-| Slice | Title | Status | PR | Merge |
-| --- | --- | --- | --- | --- |
-${p5.join('\n')}
+Planned queue (planned ≠ authorized): ${(pointer.plannedQueue ?? []).map((id) => `\`${id}\``).join(' → ') || '—'}.
 
-### Programs
+Not authorized: ${cell(pointer.notAuthorized)}
 
-| Program | Title | Status | Slices implemented |
-| --- | --- | --- | --- |
-${programs.join('\n')}
+## Status Legend
 
-### Future programs (legacy P12–P23 consolidated)
+- ✅ Implemented — 100% completion contribution
+- 🟠 Verifying — merged, post-merge verification not passed; 0% completion contribution
+- 🔵 In progress — not merged as complete; 0% completion contribution
+- 🟡 Planned — 0%
+- 🔴 Blocked — 0%; the blocker stays visible
+- ⚪ Proposed — 0%
 
-| Future program | Legacy milestones | Slices implemented |
-| --- | --- | --- |
-${futures.join('\n')}
+## P0–P11 and future programs
 
-### How milestone state changes
+${programSections.join('\n\n')}
 
-1. ${authority.postMergeSequence.join(' → ')}.
-2. ${authority.noBatching}
-3. ${gov.completionRule}
-4. One delivery PR per slice (DEC-0014); the post-merge register/README/.ai update is a separate governance PR, not a second delivery PR.
-5. A slice cycle is closed only when implementation, register, this README section, the generated \`.ai\` and evidence agree on \`main\`.
-6. Evidence lives in \`docs/n8n-lego/evidence/\`; each slice's \`evidence\` field names its file.
+## Future programs (legacy P12–P23 consolidated)
+
+| Future program | Legacy milestones | Progress | Slices implemented |
+| --- | --- | ---: | --- |
+${futureRows.join('\n')}
+
+## Historical P2 ladder
+
+${ladder.length} completed milestones (\`${ladder[0]}\` … \`${ladder.at(-1)}\`, with the \`P2.27.x\` sub-slices under program P2) are immutable implementation history. Historical pointers: current \`${register.currentMilestone}\`, previous completed \`${register.previousCompletedMilestone}\` (history, not active work).${generic.length ? ` The generic ${generic.join(', ')} row is a historical placeholder label; it authorizes no work.` : ''}
+
+## Milestone Governance
+
+- **Milestone authority:** \`main\` owns milestone truth (DEC-0020). Canonical register: [\`docs/n8n-lego/milestones.json\`](docs/n8n-lego/milestones.json); generated projections: this section of \`README.md\`, \`.ai/master/MILESTONE_REGISTER.md\` and \`.ai/master/CURRENT_STATUS.md\`. \`arena-manager\` is Manager planning memory only (canonical: false); \`docs/n8n-lego/ROADMAP.md\` is strategy narrative and owns no status.
+- **Rule:** ${authority.rule}
+- **Pending reconciliation:** ${authority.pendingReconciliation}
+- **Freshness:** generated by \`npm run lego:ai\` from register ${register.registerVersion} (fingerprint \`${registerFingerprint(register)}\`); \`npm run lego:ai:check\` fails when this section, the \`.ai\` pack or the register disagree.
+- **Completion KPI:** implemented slices / slices in the active total. A verifying or blocked slice never increases the numerator.
+- **Purpose field:** a slice purpose is \`slice.purpose\` when present, otherwise the text after the first \`: \` in the canonical title, otherwise the title. No purpose is invented.
+- **Top level:** programs P0–P11 only. There is no P12+ or P24+ and no P5.9; legacy P12–P23 are consolidated into future programs. New work is \`Pn-Snn\`, \`Pn-Mnn\` or \`FUTURE-<THEME>-Snn\`.
+- **Post-merge sequence:** ${authority.postMergeSequence.join(' → ')}.
+- **No batching:** ${authority.noBatching}
+- **Completion rule:** ${gov.completionRule}
+- One delivery PR per slice (DEC-0014); the post-merge register/README/.ai update is a separate governance PR, not a second delivery PR.
+- A slice cycle is closed only when implementation, register, this README section, the generated \`.ai\` and evidence agree on \`main\`.
+- Evidence lives in \`docs/n8n-lego/evidence/\`; each slice's \`evidence\` field names its file.
 ${README_MARKERS.end}`;
 }
 
@@ -490,7 +692,20 @@ ${list.length ? featureTable(list) : '_none_'}
 
 </details>`;
   };
-  return `## Active work (executionPointer, DEC-0020)
+  const progress = completionTally(sliceRecords(register).map((record) => record.slice));
+  const progressTable = (register.programs ?? []).map((program) => {
+    const tally = programTally(program, verifyingIndex(register));
+    return `| ${program.id} | ${formatPercent(tally.percent)} | ${tally.implemented}/${tally.total} | ${program.status} |`;
+  }).join('\n');
+  return `## Completion progress (same KPI as README.md)
+
+Overall **${formatPercent(progress.percent)}** — ${progress.implemented}/${progress.total} slices implemented. Verifying and in-progress slices contribute 0. Merged/verifying work is not counted as implemented.
+
+| Program | Progress | Implemented | State |
+| --- | ---: | ---: | --- |
+${progressTable}
+
+## Active work (executionPointer, DEC-0020)
 
 | | |
 | --- | --- |

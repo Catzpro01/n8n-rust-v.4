@@ -44,5 +44,11 @@ repository is the shared memory; GitHub is the code authority.
     when implementation, register, README, `.ai` and evidence agree. Historical
     milestone evidence (P2.11-P2.27.x, recorded merge SHAs) is immutable.
     DEC-0020 complements DEC-0019.
+12. Completion progress is generated, never typed. The KPI is implemented slices
+    divided by slices in the active total, from `docs/n8n-lego/milestones.json`.
+    A verifying, in-progress, planned, or blocked slice contributes 0%. README
+    and `.ai` are projections of that number (`npm run lego:ai`). Do not count
+    a merged slice as implemented until DEC-0014 and DEC-0015 both hold, and do
+    not round a partial program up to 100%.
 
 Order of authority: `main` > decision records > `arena-manager` > issue > chat.
