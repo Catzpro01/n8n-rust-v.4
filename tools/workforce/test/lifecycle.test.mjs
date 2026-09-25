@@ -144,6 +144,7 @@ test('programs must be canonical (no invented P numbers)', () => {
   const h = harness();
   expectError(assert, h.run(M, 'TASK_CREATE', 'Task', 'NEW', { program: 'P24', title: 'new program' }), 'POLICY_DENIED');
   expectError(assert, h.run(M, 'TASK_CREATE', 'Task', 'NEW', { program: 'P12', title: 'revived legacy program' }), 'POLICY_DENIED');
+  h.slice('P5', 1);
   assert.equal(h.run(M, 'TASK_CREATE', 'Task', 'NEW', { program: 'P5', slice: 'P5-S01', title: 'slice under completed program' }).ok, true);
 });
 

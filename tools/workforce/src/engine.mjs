@@ -18,7 +18,7 @@ import { blockingDependencies, classifyMerge, commandText, detectPromptGovernanc
 const ACTIVE_WORK = new Set(['CLAIMED', 'ACKNOWLEDGED', 'PREPARING', 'WORKING', 'WAITING_EXTERNAL', 'BLOCKED', 'FROZEN']);
 const TRANSFERABLE = new Set(['CLAIMED', 'ACKNOWLEDGED', 'PREPARING', 'WORKING', 'WAITING_EXTERNAL', 'BLOCKED', 'FROZEN', 'HOLD']);
 const HANDOFF_REQUIRED_ON_CANCEL = new Set(['PREPARING', 'WORKING', 'WAITING_EXTERNAL', 'BLOCKED', 'HOLD', 'FROZEN']);
-const ID_PREFIX = { Task: 'TASK', Reservation: 'RES', Lease: 'LEASE', Evidence: 'EVD', Decision: 'DEC', MergeQueueItem: 'MQ', Handoff: 'HND', Request: 'REQ', Approval: 'APR', JournalEntry: 'JRN' };
+const ID_PREFIX = { Task: 'TASK', Reservation: 'RES', Lease: 'LEASE', Evidence: 'EVD', Decision: 'DEC', MergeQueueItem: 'MQ', Handoff: 'HND', Request: 'REQ', Approval: 'APR', JournalEntry: 'JRN', Slice: 'SLICE' };
 
 function loadCanonicalPrograms() {
   const p = join(REPO_ROOT, 'docs', 'n8n-lego', 'milestones.json');
@@ -453,19 +453,101 @@ function verifiedEvidence(ctx, taskId) {
   return ctx.tx.list('Evidence').filter((e) => e.taskId === taskId && e.state === 'VERIFIED');
 }
 
+// ---------------------------------------------------------------- DEC-0014: Slice = delivery boundary
+// A Slice groups Tasks (execution units) and is delivered by exactly one PR. Slice tasks never own a
+// merge-queue item; the Manager admits the Slice delivery PR once every task is READY_FOR_REVIEW, and
+// the tasks complete together with the Slice through the eight-point gate (SLICE_COMPLETE).
+function sliceByKey(ctx, key) { return ctx.tx.list('Slice').find((s) => s.key === key) ?? null; }
+
+function sliceTasks(ctx, slice) {
+  return ctx.tx.list('Task').filter((t) => t.slice === slice.key && !['CANCELLED', 'SUPERSEDED'].includes(t.state));
+}
+
+function itemTasks(ctx, item) {
+  if (item.sliceId) return (item.taskIds ?? []).map((id) => ctx.mustGet('Task', id, 'slice task'));
+  const task = item.taskId ? ctx.tx.get('Task', item.taskId) : null;
+  return task ? [task] : [];
+}
+
+function deliveryItemForTask(ctx, task, states) {
+  if (!task.slice) return taskMergeItem(ctx, task.objectId, states);
+  const slice = sliceByKey(ctx, task.slice);
+  if (!slice) return null;
+  return ctx.tx.list('MergeQueueItem').find((m) => m.sliceId === slice.objectId && (m.taskIds ?? []).includes(task.objectId) && states.includes(m.state)) ?? null;
+}
+
+function verifiedSliceEvidence(ctx, sliceId) {
+  return ctx.tx.list('Evidence').filter((e) => e.sliceId === sliceId && e.state === 'VERIFIED');
+}
+
+function denySliceTask(task, what) {
+  if (task.slice) fail('POLICY_DENIED', `${task.objectId} belongs to Slice ${task.slice}: ${what} (DEC-0014: one delivery PR per Slice)`);
+}
+
+/** A delivery PR that was rejected before merging returns the Slice to OPEN; the attempt is recorded. */
+function reopenSlice(ctx, item, reasonCode) {
+  if (!item.sliceId) return;
+  const slice = ctx.tx.get('Slice', item.sliceId);
+  if (!slice || !['DELIVERING', 'MERGING'].includes(slice.state) || slice.delivery.mergeQueueItemId !== item.objectId) return;
+  slice.rejectedDeliveries.push({ prNumber: item.pr.number, headSha: item.pr.headSha, mergeQueueItemId: item.objectId, reasonCode: reasonCode ?? null });
+  slice.delivery = { prNumber: null, headSha: null, mergeQueueItemId: null, mergeSha: null, verifiedMainSha: null };
+  ctx.transition(slice, 'OPEN', { eventType: 'SLICE_REOPENED', reasonCode: reasonCode ?? 'DELIVERY_REJECTED', reasonRequired: false });
+}
+
+function admitSliceDelivery(ctx) {
+  const { p, tx, policy } = ctx;
+  if (!ctx.isManager) fail('FORBIDDEN', 'a Slice delivery PR is admitted by the Manager');
+  if (p.taskId) fail('INVALID_SCHEMA', 'a Slice delivery item names payload.sliceId, not payload.taskId');
+  const slice = ctx.mustGet('Slice', p.sliceId, 'slice');
+  const delivered = tx.list('MergeQueueItem').find((m) => m.sliceId === slice.objectId && m.mergeSha);
+  if (delivered) fail('DUPLICATE', `${slice.key} is already delivered by PR #${delivered.pr.number}; a Slice has exactly one delivery PR`);
+  if (slice.state !== 'OPEN') fail('INVALID_STATE_TRANSITION', `delivery admission requires an OPEN slice; ${slice.key} is ${slice.state}`);
+  if (!/^[0-9a-f]{40}$/.test(p.pr?.headSha ?? '')) fail('INVALID_SCHEMA', 'payload.pr.headSha must be the exact 40-hex PR head');
+  const tasks = sliceTasks(ctx, slice);
+  if (!tasks.length) fail('EVIDENCE_INSUFFICIENT', `${slice.key} has no tasks to deliver`);
+  const pending = tasks.filter((t) => t.state !== 'READY_FOR_REVIEW');
+  if (pending.length) fail('DEPENDENCY_BLOCKED', `every task of ${slice.key} must be READY_FOR_REVIEW before the delivery PR is admitted: ${pending.map((t) => `${t.objectId}(${t.state})`).join(', ')}`, { pending: pending.map((t) => t.objectId) });
+  const dup = tx.list('MergeQueueItem').find((m) => !isTerminal(policy, 'MergeQueueItem', m.state) && (m.sliceId === slice.objectId || (m.pr.repository === p.pr.repository && m.pr.number === p.pr.number)));
+  if (dup) fail('DUPLICATE', `${dup.objectId} already queues this slice/PR`);
+  const foreign = tx.list('MergeQueueItem').find((m) => m.pr.repository === p.pr.repository && m.pr.number === p.pr.number && m.sliceId !== slice.objectId);
+  if (foreign) fail('DUPLICATE', `PR #${p.pr.number} already belongs to ${foreign.sliceId ?? foreign.taskId}`);
+  if (tx.list('MergeQueueItem').filter((m) => !isTerminal(policy, 'MergeQueueItem', m.state)).length >= policy.backpressure.maxMergeQueueItems) fail('RESOURCE_UNAVAILABLE', 'merge queue is full (backpressure)');
+  const order = policy.merge.rollbackClasses;
+  const strictest = tasks.map((t) => t.execution.rollbackClass).reduce((a, b) => (order.indexOf(b) > order.indexOf(a) ? b : a), order[0]);
+  if (p.rollback?.class && order.indexOf(p.rollback.class) < order.indexOf(strictest)) fail('POLICY_DENIED', `rollback class ${p.rollback.class} is weaker than the strictest slice task (${strictest})`);
+  const item = {
+    objectType: 'MergeQueueItem', objectId: ctx.newObjectId, state: 'QUEUED',
+    pr: { repository: p.pr.repository, number: p.pr.number, base: p.pr.base, headSha: p.pr.headSha, baseSha: p.pr.baseSha ?? null },
+    taskId: null, sliceId: slice.objectId, taskIds: tasks.map((t) => t.objectId), agentId: null, lane: 'HOLD', classification: { impact: 'LOCAL', ...(p.classification ?? {}) },
+    checks: { exactHeadCi: 'PENDING', architecture: 'PENDING', acceptance: 'PENDING', evidence: 'PENDING', reservation: 'PENDING', dependency: 'PENDING', checkedHeadSha: null },
+    rollback: { class: p.rollback?.class ?? strictest, strategy: p.rollback?.strategy ?? null, verified: p.rollback?.verified ?? false },
+    authorizationLeaseId: null, humanApprovalId: null, mergeSha: null, verifiedMainSha: null, laneReasons: ['awaiting classification'], reason: null,
+  };
+  ctx.targetObject = item;
+  ctx.create(item, 'MQ_ADMITTED');
+  slice.delivery = { prNumber: p.pr.number, headSha: p.pr.headSha, mergeQueueItemId: item.objectId, mergeSha: null, verifiedMainSha: null };
+  ctx.transition(slice, 'DELIVERING', { eventType: 'SLICE_DELIVERING', reasonRequired: false });
+}
+
 const trustRank = (policy, level) => policy.evidence.trustOrder.indexOf(level);
 
 function computedGates(ctx, item) {
-  const task = ctx.tx.get('Task', item.taskId);
+  const tasks = itemTasks(ctx, item);
+  const ids = new Set(tasks.map((t) => t.objectId));
+  // A Slice delivery takes the strictest lane of its tasks; a plain item keeps its task.
+  const task = item.sliceId
+    ? { execution: { mergeLane: tasks.every((t) => t.execution.mergeLane === 'SAFE-AUTO') ? 'SAFE-AUTO' : 'MANAGER' } }
+    : tasks[0] ?? null;
   const head = item.pr.headSha;
-  const ev = ctx.tx.list('Evidence').filter((e) => e.taskId === item.taskId && ['PUBLISHED', 'VERIFIED'].includes(e.state));
+  const ev = ctx.tx.list('Evidence').filter((e) => (item.sliceId ? e.sliceId === item.sliceId : e.taskId === item.taskId) && ['PUBLISHED', 'VERIFIED'].includes(e.state));
   const anchoredAtHead = (e) => ['COMMIT', 'PR_HEAD'].includes(e.subject?.subjectType) && e.subject.subjectId === head;
   const commitOk = ev.some((e) => e.type === 'COMMIT' && anchoredAtHead(e));
   const ciOk = ev.some((e) => e.type === 'CI' && e.result.status === 'PASS' && anchoredAtHead(e) && trustRank(ctx.policy, e.trustLevel) >= trustRank(ctx.policy, 'CI_VERIFIED'));
-  const reservations = ctx.tx.list('Reservation').filter((r) => r.taskId === item.taskId && !isTerminal(ctx.policy, 'Reservation', r.state));
+  const reservations = ctx.tx.list('Reservation').filter((r) => ids.has(r.taskId) && !isTerminal(ctx.policy, 'Reservation', r.state));
   const reservationClear = reservations.every((r) => r.state === 'ACTIVE');
   const tasksById = new Map(ctx.tx.list('Task').map((t) => [t.objectId, t]));
-  const blocking = task ? blockingDependencies(task, tasksById) : [];
+  // Dependencies between tasks of the same Slice are satisfied by the shared delivery PR.
+  const blocking = [...new Map(tasks.flatMap((t) => blockingDependencies(t, tasksById)).filter((b) => !ids.has(b.taskId)).map((b) => [b.taskId, b])).values()];
   const managerLaneReservation = reservations.some((r) => ctx.policy.reservation.managerLaneModes.includes(r.mode) && r.state === 'ACTIVE');
   return {
     evidence: commitOk && ciOk ? 'PASS' : 'FAIL',
@@ -489,8 +571,9 @@ function applyClassification(ctx, item) {
 function holdMergeItem(ctx, item, reasonCode) {
   if (item.authorizationLeaseId) { ctx.endLease(item.authorizationLeaseId, 'REVOKED', reasonCode); item.authorizationLeaseId = null; }
   if (item.state !== 'HOLD') ctx.transition(item, 'HOLD', { reasonCode });
-  const task = ctx.tx.get('Task', item.taskId);
-  if (task?.state === 'MERGING') ctx.transition(task, 'HOLD', { reasonCode });
+  for (const task of itemTasks(ctx, item)) if (task.state === 'MERGING') ctx.transition(task, 'HOLD', { reasonCode });
+  const slice = item.sliceId ? ctx.tx.get('Slice', item.sliceId) : null;
+  if (slice?.state === 'MERGING') ctx.transition(slice, 'DELIVERING', { reasonCode, reasonRequired: false });
 }
 
 function validateAnchor(ctx, type, subject) {
@@ -516,6 +599,15 @@ const HANDLERS = {
   TASK_CREATE(ctx) {
     const { p, tx } = ctx;
     if (ctx.programs && !ctx.programs.has(p.program)) fail('POLICY_DENIED', `program ${p.program} is not a canonical program in docs/n8n-lego/milestones.json (no new P numbers without a strategic decision)`);
+    const sp = ctx.policy.slices;
+    if (p.slice != null) {
+      const slice = sliceByKey(ctx, p.slice);
+      if (!slice) fail('POLICY_DENIED', `slice ${p.slice} is not registered; create it with SLICE_CREATE first (DEC-0014)`);
+      if (slice.state !== 'OPEN') fail('POLICY_DENIED', `slice ${p.slice} is ${slice.state}; tasks join only an OPEN slice`);
+      if (slice.program !== p.program) fail('POLICY_DENIED', `slice ${p.slice} belongs to ${slice.program}, not ${p.program}`);
+    } else if (sp && new RegExp(sp.requireSliceForPrograms).test(p.program ?? '')) {
+      fail('POLICY_DENIED', `${p.program} work is delivered through a Slice: payload.slice is required (DEC-0014)`);
+    }
     const deps = (p.dependencies ?? []).map((d) => ({ taskId: d.taskId, type: d.type ?? 'REQUIRED', condition: d.condition ?? null, conditionMet: d.conditionMet ?? null }));
     for (const d of deps) {
       if (d.taskId === ctx.newObjectId) fail('DEPENDENCY_BLOCKED', 'self-dependency is a cycle');
@@ -641,8 +733,12 @@ const HANDLERS = {
 
   TASK_REWORK(ctx) {
     const task = taskOf(ctx);
-    const item = taskMergeItem(ctx, task.objectId, ['QUEUED', 'READY', 'HOLD']);
-    if (item) { if (item.state === 'READY') holdMergeItem(ctx, item, 'TASK_REWORK'); ctx.transition(item, 'REJECTED', { reasonCode: 'TASK_REWORK' }); }
+    const item = deliveryItemForTask(ctx, task, ['QUEUED', 'READY', 'HOLD']);
+    if (item) {
+      if (item.state === 'READY') holdMergeItem(ctx, item, 'TASK_REWORK');
+      ctx.transition(item, 'REJECTED', { reasonCode: 'TASK_REWORK' });
+      reopenSlice(ctx, item, 'TASK_REWORK');
+    }
     task.history.retryCount += 1;
     const lease = task.execution.activeLeaseId ? ctx.tx.get('Lease', task.execution.activeLeaseId) : null;
     if (task.owner && ctx.leaseValidity(lease) !== 'ACTIVE') {
@@ -657,18 +753,19 @@ const HANDLERS = {
 
   TASK_MERGE_START(ctx) {
     const task = taskOf(ctx);
-    if (!taskMergeItem(ctx, task.objectId, ['MERGING'])) fail('POLICY_DENIED', 'task can only enter MERGING through its merge-queue item (MQ_MERGE_START)');
+    if (!deliveryItemForTask(ctx, task, ['MERGING'])) fail('POLICY_DENIED', 'task can only enter MERGING through its merge-queue item (MQ_MERGE_START)');
     ctx.transition(task, 'MERGING');
   },
 
   TASK_VERIFY_START(ctx) {
     const task = taskOf(ctx);
-    if (!taskMergeItem(ctx, task.objectId, ['VERIFYING', 'MERGED'])) fail('POLICY_DENIED', 'task can only enter VERIFYING after its merge result is recorded (MQ_MERGE_RESULT)');
+    if (!deliveryItemForTask(ctx, task, ['VERIFYING', 'MERGED'])) fail('POLICY_DENIED', 'task can only enter VERIFYING after its merge result is recorded (MQ_MERGE_RESULT)');
     ctx.transition(task, 'VERIFYING');
   },
 
   TASK_COMPLETE(ctx) {
     const task = taskOf(ctx);
+    denySliceTask(task, 'it completes together with its Slice (SLICE_COMPLETE)');
     const tasks = new Map(ctx.tx.list('Task').map((t) => [t.objectId, t]));
     const blocking = blockingDependencies(task, tasks);
     if (blocking.length) fail('DEPENDENCY_BLOCKED', `required dependencies incomplete: ${blocking.map((b) => `${b.taskId}(${b.state})`).join(', ')}`, { blocking });
@@ -691,6 +788,7 @@ const HANDLERS = {
     // DEC-0011: Manager-executed governance work. Same evidence bar as TASK_COMPLETE; the MERGED
     // merge-queue item is replaced by a VERIFIED COMMIT anchored to the declared merge SHA.
     const task = taskOf(ctx);
+    denySliceTask(task, 'it completes together with its Slice (SLICE_COMPLETE)');
     const spec = ctx.policy.managerExecuted;
     if (!spec) fail('POLICY_DENIED', 'policy.managerExecuted is not configured');
     if (task.owner) fail('POLICY_DENIED', `${task.objectId} was assigned to ${task.owner.agentId}; use TASK_COMPLETE`);
@@ -1019,7 +1117,9 @@ const HANDLERS = {
   // ---------------------------------------------------------------- Evidence
   EVIDENCE_PROPOSE(ctx) {
     const { p, policy } = ctx;
-    const task = ctx.mustGet('Task', p.taskId, 'task');
+    if (p.sliceId && p.taskId) fail('INVALID_SCHEMA', 'evidence names either payload.taskId or payload.sliceId');
+    const slice = p.sliceId ? ctx.mustGet('Slice', p.sliceId, 'slice') : null;
+    const task = slice ? null : ctx.mustGet('Task', p.taskId, 'task');
     const trust = p.trustLevel ?? 'SELF_REPORTED';
     const rank = trustRank(policy, trust);
     if (rank < 0) fail('INVALID_SCHEMA', `unknown trust level ${trust}`);
@@ -1027,7 +1127,7 @@ const HANDLERS = {
     if (ctx.actor.type === 'SYSTEM' && rank > trustRank(policy, policy.evidence.systemMaxTrust)) fail('POLICY_DENIED', `system actors publish at most ${policy.evidence.systemMaxTrust}`);
     validateAnchor(ctx, p.type, p.subject ?? null);
     const ev = {
-      objectType: 'Evidence', objectId: ctx.newObjectId, state: 'PROPOSED', taskId: task.objectId, type: p.type, trustLevel: trust,
+      objectType: 'Evidence', objectId: ctx.newObjectId, state: 'PROPOSED', taskId: task?.objectId ?? null, ...(slice ? { sliceId: slice.objectId } : {}), type: p.type, trustLevel: trust,
       subject: p.subject ? { subjectDigest: null, repository: null, prNumber: null, url: null, ...p.subject } : null,
       result: { metrics: {}, failureClass: null, ...(p.result ?? {}) }, producedBy: ctx.actor.id, verifiedAt: null, verifiedBy: null, reason: null,
     };
@@ -1106,7 +1206,9 @@ const HANDLERS = {
   // ---------------------------------------------------------------- Merge queue
   MQ_ADMIT(ctx) {
     const { p, tx, policy } = ctx;
+    if (p.sliceId !== undefined) { admitSliceDelivery(ctx); return; }
     const task = ctx.mustGet('Task', p.taskId, 'task');
+    denySliceTask(task, 'tasks never deliver their own PR; the Manager admits the Slice delivery PR (MQ_ADMIT with payload.sliceId)');
     if (task.state !== 'READY_FOR_REVIEW') fail('INVALID_STATE_TRANSITION', `merge admission requires READY_FOR_REVIEW, task is ${task.state}`);
     if (p.pr?.headSha !== task.current.headSha) fail('MERGE_HEAD_CHANGED', `PR head ${p.pr?.headSha} differs from the task's exact head ${task.current.headSha}`);
     const dup = tx.list('MergeQueueItem').find((m) => !isTerminal(policy, 'MergeQueueItem', m.state) && (m.taskId === task.objectId || (m.pr.repository === p.pr.repository && m.pr.number === p.pr.number)));
@@ -1161,6 +1263,8 @@ const HANDLERS = {
     if (['READY', 'MERGING', 'VERIFYING'].includes(item.state)) holdMergeItem(ctx, item, 'MERGE_HEAD_CHANGED');
     else if (item.state === 'QUEUED') ctx.transition(item, 'HOLD', { reasonCode: 'MERGE_HEAD_CHANGED' });
     else ctx.touch(item, 'MQ_HEAD_CHANGED');
+    const slice = item.sliceId ? ctx.tx.get('Slice', item.sliceId) : null;
+    if (slice && slice.delivery.mergeQueueItemId === item.objectId) { slice.delivery.headSha = head; ctx.touch(slice, 'SLICE_DELIVERY_HEAD_CHANGED'); }
     ctx.data.headChanged = true;
     ctx.data.previousHeadSha = previous;
   },
@@ -1193,10 +1297,14 @@ const HANDLERS = {
     if (v !== 'ACTIVE') fail('LEASE_REVOKED', 'no valid merge authorization lease');
     if (lease.subject.headSha !== item.pr.headSha || lease.subject.prNumber !== item.pr.number || lease.subject.base !== item.pr.base) fail('MERGE_HEAD_CHANGED', 'authorization lease pins a different PR/base/head');
     if (ctx.actor.type === 'SYSTEM' && lease.holder !== ctx.actor.id) fail('FORBIDDEN', `authorization lease is held by ${lease.holder}`);
-    const task = ctx.mustGet('Task', item.taskId, 'task');
-    if (task.state !== 'READY_FOR_REVIEW') fail('POLICY_DENIED', `task is ${task.state}; it must be READY_FOR_REVIEW to merge`);
+    const tasks = item.sliceId ? itemTasks(ctx, item) : [ctx.mustGet('Task', item.taskId, 'task')];
+    const notReady = tasks.filter((t) => t.state !== 'READY_FOR_REVIEW');
+    if (notReady.length) fail('POLICY_DENIED', `${notReady.map((t) => `${t.objectId} is ${t.state}`).join(', ')}; every delivered task must be READY_FOR_REVIEW to merge`);
+    const slice = item.sliceId ? ctx.mustGet('Slice', item.sliceId, 'slice') : null;
+    if (slice && slice.state !== 'DELIVERING') fail('INVALID_STATE_TRANSITION', `slice ${slice.key} is ${slice.state}; merge starts from DELIVERING`);
     ctx.transition(item, 'MERGING', { eventType: 'MQ_MERGING', reasonRequired: false });
-    ctx.transition(task, 'MERGING', { eventType: 'TASK_MERGING', reasonRequired: false });
+    for (const task of tasks) ctx.transition(task, 'MERGING', { eventType: 'TASK_MERGING', reasonRequired: false });
+    if (slice) ctx.transition(slice, 'MERGING', { eventType: 'SLICE_MERGING', reasonRequired: false });
   },
 
   MQ_MERGE_RESULT(ctx) {
@@ -1207,17 +1315,28 @@ const HANDLERS = {
     item.mergeSha = ctx.p.mergeSha;
     ctx.endLease(item.authorizationLeaseId, 'COMPLETED', 'MERGED');
     ctx.transition(item, 'VERIFYING', { eventType: 'MQ_MERGED_VERIFYING', reasonRequired: false });
-    const task = ctx.mustGet('Task', item.taskId, 'task');
-    if (task.state === 'MERGING') ctx.transition(task, 'VERIFYING', { eventType: 'TASK_VERIFYING', reasonRequired: false });
+    for (const task of item.sliceId ? itemTasks(ctx, item) : [ctx.mustGet('Task', item.taskId, 'task')]) {
+      if (task.state === 'MERGING') ctx.transition(task, 'VERIFYING', { eventType: 'TASK_VERIFYING', reasonRequired: false });
+    }
+    if (item.sliceId) {
+      const slice = ctx.mustGet('Slice', item.sliceId, 'slice');
+      slice.delivery.mergeSha = item.mergeSha;
+      ctx.transition(slice, 'VERIFYING', { eventType: 'SLICE_VERIFYING', reasonRequired: false });
+    }
   },
 
   MQ_VERIFY(ctx) {
     const item = ctx.targetObject;
-    const mainEv = verifiedEvidence(ctx, item.taskId).find((e) => e.type === 'MAIN_VERIFICATION' && ctx.policy.completion.mainVerificationTrust.includes(e.trustLevel) && e.result.status === 'PASS');
+    const mainEv = (item.sliceId ? verifiedSliceEvidence(ctx, item.sliceId) : verifiedEvidence(ctx, item.taskId)).find((e) => e.type === 'MAIN_VERIFICATION' && ctx.policy.completion.mainVerificationTrust.includes(e.trustLevel) && e.result.status === 'PASS');
     if (!mainEv) fail('EVIDENCE_INSUFFICIENT', 'fresh-main verification evidence (VERIFIED, MAIN_VERIFIED, PASS) is required');
     if (ctx.p.verifiedMainSha && ctx.p.verifiedMainSha !== mainEv.subject.subjectId) fail('EVIDENCE_INSUFFICIENT', 'payload main SHA does not match the main verification evidence');
     item.verifiedMainSha = mainEv.subject.subjectId;
     ctx.transition(item, 'MERGED', { eventType: 'MQ_VERIFIED', reasonRequired: false, evidenceIds: [mainEv.objectId] });
+    if (item.sliceId) {
+      const slice = ctx.mustGet('Slice', item.sliceId, 'slice');
+      slice.delivery.verifiedMainSha = item.verifiedMainSha;
+      ctx.touch(slice, 'SLICE_MAIN_VERIFIED');
+    }
   },
 
   MQ_HOLD(ctx) { if (!ctx.p.reasonCode) fail('INVALID_SCHEMA', 'payload.reasonCode is required for HOLD'); holdMergeItem(ctx, ctx.targetObject, ctx.p.reasonCode); },
@@ -1235,14 +1354,116 @@ const HANDLERS = {
 
   MQ_REJECT(ctx) {
     const item = ctx.targetObject;
+    if (item.sliceId && item.mergeSha) fail('POLICY_DENIED', 'a merged Slice delivery cannot be rejected; fix forward with a maintenance slice (Pn-Mnn)');
     if (item.state === 'READY') holdMergeItem(ctx, item, ctx.p.reasonCode ?? 'REJECTED');
-    const task = ctx.tx.get('Task', item.taskId);
-    if (task?.state === 'MERGING') ctx.transition(task, 'HOLD', { reasonCode: ctx.p.reasonCode ?? 'MERGE_REJECTED' });
+    for (const task of itemTasks(ctx, item)) if (task.state === 'MERGING') ctx.transition(task, 'HOLD', { reasonCode: ctx.p.reasonCode ?? 'MERGE_REJECTED' });
     ctx.endLease(item.authorizationLeaseId, 'REVOKED', 'MQ_REJECTED');
     ctx.transition(item, 'REJECTED', { eventType: 'MQ_REJECTED' });
+    reopenSlice(ctx, item, ctx.p.reasonCode ?? 'MERGE_REJECTED');
   },
 
-  MQ_SUPERSEDE(ctx) { ctx.transition(ctx.targetObject, 'SUPERSEDED', { eventType: 'MQ_SUPERSEDED' }); },
+  MQ_SUPERSEDE(ctx) {
+    ctx.transition(ctx.targetObject, 'SUPERSEDED', { eventType: 'MQ_SUPERSEDED' });
+    reopenSlice(ctx, ctx.targetObject, ctx.p.reasonCode ?? 'DELIVERY_SUPERSEDED');
+  },
+
+  // ---------------------------------------------------------------- Slice (DEC-0014)
+  SLICE_CREATE(ctx) {
+    const { p, policy } = ctx;
+    const sp = policy.slices;
+    if (ctx.programs && !ctx.programs.has(p.program)) fail('POLICY_DENIED', `program ${p.program} is not a canonical program in docs/n8n-lego/milestones.json`);
+    if (!new RegExp(sp.requireSliceForPrograms).test(p.program ?? '')) fail('POLICY_DENIED', `${p.program} is not sliced; GOVERNANCE work is delivered per task`);
+    if (!new RegExp(sp.keyPattern).test(p.key ?? '') || !p.key.startsWith(`${p.program}-`)) fail('INVALID_SCHEMA', `slice key ${p.key} must be ${p.program}-Snn (feature) or ${p.program}-Mnn (maintenance)`);
+    if (sliceByKey(ctx, p.key)) fail('DUPLICATE', `slice ${p.key} already exists; slice keys are never reused`);
+    const criteria = (p.acceptance?.criteria ?? []).map((c, i) => ({ id: c.id ?? `AC-${i + 1}`, text: c.text, met: false, evidenceRef: null }));
+    if (!criteria.length) fail('INVALID_SCHEMA', 'a Slice needs at least one acceptance criterion (payload.acceptance.criteria)');
+    if (new Set(criteria.map((c) => c.id)).size !== criteria.length) fail('INVALID_SCHEMA', 'acceptance criterion ids must be unique');
+    const slice = {
+      objectType: 'Slice', objectId: ctx.newObjectId, state: 'OPEN', key: p.key, program: p.program, milestone: p.milestone ?? null, issue: p.issue ?? null,
+      title: p.title, description: p.description ?? '', acceptance: { criteria },
+      delivery: { prNumber: null, headSha: null, mergeQueueItemId: null, mergeSha: null, verifiedMainSha: null },
+      rejectedDeliveries: [], milestoneRegister: null, completedMainSha: null, supersededBy: null, reason: null,
+    };
+    ctx.targetObject = slice;
+    ctx.create(slice, 'SLICE_CREATED');
+  },
+
+  SLICE_UPDATE_ACCEPTANCE(ctx) {
+    const slice = ctx.targetObject;
+    const updates = ctx.p.criteria ?? [];
+    if (!updates.length) fail('INVALID_SCHEMA', 'payload.criteria must list at least one {id, met, evidenceRef}');
+    for (const u of updates) {
+      const c = slice.acceptance.criteria.find((x) => x.id === u.id);
+      if (!c) fail('NOT_FOUND', `acceptance criterion ${u.id} is not part of ${slice.key}`);
+      if (typeof u.met !== 'boolean') fail('INVALID_SCHEMA', `criterion ${u.id}: met must be a boolean`);
+      if (u.met && !(typeof u.evidenceRef === 'string' && u.evidenceRef.length)) fail('EVIDENCE_INSUFFICIENT', `criterion ${u.id}: marking it met requires an evidenceRef`);
+      c.met = u.met;
+      c.evidenceRef = u.met ? u.evidenceRef : null;
+    }
+    ctx.touch(slice, 'SLICE_ACCEPTANCE_UPDATED');
+  },
+
+  SLICE_COMPLETE(ctx) {
+    const slice = ctx.targetObject;
+    const { policy } = ctx;
+    const sp = policy.slices;
+    const gate = (code, ok, message, details = {}) => { if (!ok) fail('EVIDENCE_INSUFFICIENT', `slice gate ${code}: ${message}`, { gate: code, ...details }); };
+    // 1. every task of the slice is done (delivered by the merged PR)
+    const tasks = sliceTasks(ctx, slice);
+    gate('ALL_TASKS_DONE', tasks.length > 0 && tasks.every((t) => t.state === 'VERIFYING'), 'every slice task must be delivered by the merged PR', { tasks: tasks.map((t) => `${t.objectId}(${t.state})`) });
+    // 2. acceptance criteria met
+    const unmet = slice.acceptance.criteria.filter((c) => !c.met);
+    gate('ACCEPTANCE_MET', unmet.length === 0, `unmet acceptance criteria: ${unmet.map((c) => c.id).join(', ')}`);
+    // 3. exactly one delivery PR, covering exactly the slice tasks
+    const merged = ctx.tx.list('MergeQueueItem').filter((m) => m.sliceId === slice.objectId && m.mergeSha);
+    gate('ONE_DELIVERY_PR', merged.length === 1 && merged[0].objectId === slice.delivery.mergeQueueItemId, `exactly one merged delivery PR is required, found ${merged.length}`);
+    const item = merged[0];
+    gate('ONE_DELIVERY_PR', tasks.map((t) => t.objectId).sort().join() === [...item.taskIds].sort().join(), 'the delivery PR must cover exactly the slice tasks');
+    // 4. exact-head CI / gates passed on the delivery PR head
+    const ev = verifiedSliceEvidence(ctx, slice.objectId).filter((e) => e.type !== 'CLAIM');
+    const checksOk = ['exactHeadCi', 'architecture', 'acceptance'].every((k) => item.checks[k] === policy.merge.passValues[k]) && item.checks.checkedHeadSha === item.pr.headSha;
+    const ciAtHead = ev.some((e) => e.type === 'CI' && e.result.status === 'PASS' && (e.subject?.subjectId === item.pr.headSha || e.subject?.subjectDigest === item.pr.headSha) && trustRank(policy, e.trustLevel) >= trustRank(policy, 'CI_VERIFIED'));
+    gate('EXACT_HEAD_CI_PASS', checksOk && ciAtHead, `exact-head checks and VERIFIED CI evidence on ${item.pr.headSha.slice(0, 12)} are required`);
+    // 5. merged to main
+    gate('MERGED_TO_MAIN', item.state === 'MERGED' && ev.some((e) => e.type === 'COMMIT' && e.subject?.subjectId === item.mergeSha), 'the delivery item must be MERGED with VERIFIED COMMIT evidence anchored to its merge SHA');
+    // 6. main re-verified
+    const mainEv = ev.find((e) => e.type === 'MAIN_VERIFICATION' && policy.completion.mainVerificationTrust.includes(e.trustLevel) && e.result.status === 'PASS' && e.subject?.subjectId === item.verifiedMainSha);
+    gate('MAIN_REVERIFIED', Boolean(mainEv), 'fresh-main verification evidence matching the verified main SHA is required');
+    // 7. evidence recorded
+    const missing = sp.requiredEvidenceTypes.filter((type) => !ev.some((e) => e.type === type));
+    gate('EVIDENCE_RECORDED', missing.length === 0, `missing VERIFIED evidence: ${missing.join(', ')}`);
+    // 8. milestone register updated (inside the delivery PR, or on the verified main)
+    const reg = ctx.p.milestoneRegister;
+    gate('MILESTONE_REGISTER_UPDATED', reg?.path === sp.milestoneRegisterPath && [item.mergeSha, item.verifiedMainSha].includes(reg?.commitSha), `payload.milestoneRegister must name ${sp.milestoneRegisterPath} at the delivery merge SHA or the verified main SHA`);
+    const evidenceIds = ev.map((e) => e.objectId);
+    for (const t of tasks) {
+      t.current.completedMainSha = mainEv.subject.subjectId;
+      releaseTaskAuthority(ctx, t, { leaseTo: 'COMPLETED', reasonCode: 'SLICE_COMPLETED' });
+      ctx.transition(t, 'COMPLETED', { eventType: 'TASK_COMPLETED', reasonCode: 'SLICE_COMPLETED', reasonRequired: false, evidenceIds });
+    }
+    for (const agentId of new Set(tasks.map((t) => t.owner?.agentId).filter(Boolean))) ctx.syncAgent(agentId);
+    slice.milestoneRegister = { path: reg.path, commitSha: reg.commitSha };
+    slice.completedMainSha = mainEv.subject.subjectId;
+    ctx.transition(slice, 'COMPLETED', { eventType: 'SLICE_COMPLETED', reasonRequired: false, evidenceIds });
+  },
+
+  SLICE_CANCEL(ctx) {
+    const slice = ctx.targetObject;
+    const live = ctx.tx.list('Task').filter((t) => t.slice === slice.key && !isTerminal(ctx.policy, 'Task', t.state));
+    if (live.length) fail('DEPENDENCY_BLOCKED', `cancel or supersede the slice tasks first: ${live.map((t) => t.objectId).join(', ')}`);
+    ctx.transition(slice, 'CANCELLED', { eventType: 'SLICE_CANCELLED', reasonRequired: true });
+  },
+
+  SLICE_SUPERSEDE(ctx) {
+    const slice = ctx.targetObject;
+    if (!ctx.p.reasonCode) fail('INVALID_SCHEMA', 'payload.reasonCode is required for SLICE_SUPERSEDE');
+    const by = ctx.mustGet('Slice', ctx.p.supersededBy, 'superseding slice');
+    if (by.objectId === slice.objectId) fail('INVALID_SCHEMA', 'a slice cannot supersede itself');
+    const live = ctx.tx.list('Task').filter((t) => t.slice === slice.key && !isTerminal(ctx.policy, 'Task', t.state));
+    if (live.length) fail('DEPENDENCY_BLOCKED', `cancel or supersede the slice tasks first: ${live.map((t) => t.objectId).join(', ')}`);
+    slice.supersededBy = by.objectId;
+    ctx.transition(slice, 'SUPERSEDED', { eventType: 'SLICE_SUPERSEDED' });
+  },
 
   // ---------------------------------------------------------------- records
   HANDOFF_PUBLISH(ctx) {

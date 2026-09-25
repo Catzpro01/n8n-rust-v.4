@@ -232,7 +232,7 @@ Relevance: ${Object.entries(countBy(features, 'relevance')).map(([r, n]) => `${r
 
 - **Intake flow:** ${gov.intakeFlow.join(' → ')}.
 - **Completion:** ${gov.completionRule}
-- **Slice naming:** ${Object.entries(gov.sliceNaming).map(([k, v]) => `${k}: ${v}`).join('; ')}.
+${gov.deliveryModel ? `- **Delivery model (${gov.deliveryModel.decision}):** Slice = ${gov.deliveryModel.slice}, Task = ${gov.deliveryModel.task}, PR = ${gov.deliveryModel.pr}. ${gov.deliveryModel.invariant} Slice completion gate: ${gov.deliveryModel.completionGate.map((g, i) => `(${i + 1}) ${g}`).join('; ')}.\n` : ''}- **Slice naming:** ${Object.entries(gov.sliceNaming).map(([k, v]) => `${k}: ${v}`).join('; ')}.
 - **Status vocabulary:** ${gov.statusVocabulary.map((s) => `\`${s}\``).join(', ')}. **Relevance:** ${gov.relevanceVocabulary.map((s) => `\`${s}\``).join(', ')}.
 - **Invariants:** ${gov.invariants.join('; ')}.
 - **Pointer scope:** ${gov.pointerScope}

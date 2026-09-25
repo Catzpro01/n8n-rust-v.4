@@ -23,9 +23,9 @@
     "commandType": {
       "enum": [
         "AGENT_ACTIVATE",
-        "AGENT_RECONFIGURE",
         "AGENT_HEARTBEAT",
         "AGENT_MARK_LOST",
+        "AGENT_RECONFIGURE",
         "AGENT_RECOVER",
         "AGENT_REGISTER",
         "AGENT_RETIRE",
@@ -75,6 +75,11 @@
         "RESERVATION_RELEASE",
         "RESERVATION_REQUEST",
         "RESERVATION_TRANSFER",
+        "SLICE_CANCEL",
+        "SLICE_COMPLETE",
+        "SLICE_CREATE",
+        "SLICE_SUPERSEDE",
+        "SLICE_UPDATE_ACCEPTANCE",
         "TASK_ACK",
         "TASK_ADD_DEPENDENCY",
         "TASK_ASSIGN",
@@ -127,7 +132,8 @@
             "Handoff",
             "Request",
             "Approval",
-            "JournalEntry"
+            "JournalEntry",
+            "Slice"
           ]
         },
         "objectId": {

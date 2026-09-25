@@ -27,6 +27,7 @@
     "Request": "^REQ-[0-9]{4,}$",
     "Approval": "^APR-[0-9]{4,}$",
     "JournalEntry": "^JRN-[0-9]{4,}$",
+    "Slice": "^SLICE-[0-9]{4,}$",
     "Event": "^EVT-[0-9]{6,}$",
     "Command": "^CMD-[A-Za-z0-9._:-]{3,}$"
   },
@@ -141,6 +142,20 @@
         "REJECTED": [],
         "SUPERSEDED": []
       }
+    },
+    "Slice": {
+      "decision": "DEC-0014",
+      "initial": "OPEN",
+      "terminal": ["COMPLETED", "CANCELLED", "SUPERSEDED"],
+      "transitions": {
+        "OPEN": ["DELIVERING", "CANCELLED", "SUPERSEDED"],
+        "DELIVERING": ["MERGING", "OPEN"],
+        "MERGING": ["VERIFYING", "DELIVERING", "OPEN"],
+        "VERIFYING": ["COMPLETED"],
+        "COMPLETED": [],
+        "CANCELLED": [],
+        "SUPERSEDED": []
+      }
     }
   },
   "reasonRequiredStates": ["BLOCKED", "CANCELLED", "FROZEN", "SUPERSEDED", "REJECTED", "REVOKED", "HOLD", "LOST", "RETIRED"],
@@ -163,6 +178,11 @@
     "TASK_VERIFY_START":      { "target": "Task", "kind": "transition", "roles": { "MANAGER": "any", "SYSTEM": "allowlist" }, "to": "VERIFYING" },
     "TASK_COMPLETE":          { "target": "Task", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "COMPLETED" },
     "TASK_COMPLETE_MANAGER_EXECUTED": { "target": "Task", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "COMPLETED", "from": ["UNASSIGNED"], "governance": true },
+    "SLICE_CREATE":           { "target": "Slice", "kind": "create", "roles": { "MANAGER": "any" }, "to": "OPEN" },
+    "SLICE_UPDATE_ACCEPTANCE": { "target": "Slice", "kind": "update", "roles": { "MANAGER": "any" } },
+    "SLICE_COMPLETE":         { "target": "Slice", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "COMPLETED", "from": ["VERIFYING"], "governance": true },
+    "SLICE_CANCEL":           { "target": "Slice", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "CANCELLED", "from": ["OPEN"] },
+    "SLICE_SUPERSEDE":        { "target": "Slice", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "SUPERSEDED", "from": ["OPEN"] },
     "TASK_FREEZE":            { "target": "Task", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "FROZEN" },
     "TASK_UNFREEZE":          { "target": "Task", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "WORKING", "from": ["FROZEN"] },
     "TASK_CANCEL":            { "target": "Task", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "CANCELLED" },
@@ -298,6 +318,26 @@
     "edge": ["UNASSIGNED", "COMPLETED"],
     "requiredEvidenceTypes": ["COMMIT", "CI", "MAIN_VERIFICATION"],
     "note": "Governance work the Manager executes itself (never assigned to a worker slot). The merge-queue requirement is replaced by a VERIFIED COMMIT anchored to the merge SHA; evidence requirements are not reduced."
+  },
+  "slices": {
+    "decision": "DEC-0014",
+    "boundaries": { "slice": "delivery", "task": "execution", "pr": "slice delivery" },
+    "invariant": "Every Slice produces exactly one delivery PR. Tasks of a Slice never deliver their own PR to main; separate task commits are reconciled into the Slice's single delivery PR.",
+    "requireSliceForPrograms": "^(P([0-9]|1[01])|FUTURE-[A-Z-]+)$",
+    "keyPattern": "^(P([0-9]|1[01])|FUTURE-[A-Z-]+)-[SM][0-9]{2,}$",
+    "milestoneRegisterPath": "docs/n8n-lego/milestones.json",
+    "requiredEvidenceTypes": ["COMMIT", "CI", "MAIN_VERIFICATION"],
+    "completionGate": [
+      "ALL_TASKS_DONE",
+      "ACCEPTANCE_MET",
+      "ONE_DELIVERY_PR",
+      "EXACT_HEAD_CI_PASS",
+      "MERGED_TO_MAIN",
+      "MAIN_REVERIFIED",
+      "EVIDENCE_RECORDED",
+      "MILESTONE_REGISTER_UPDATED"
+    ],
+    "note": "GOVERNANCE tasks are outside milestone slicing: each is its own delivery unit (TASK_COMPLETE / TASK_COMPLETE_MANAGER_EXECUTED)."
   },
   "runnerPool": {
     "decision": "DEC-0010",

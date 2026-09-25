@@ -67,6 +67,21 @@ A create uses `objectId: "NEW"` to get an allocated id, or passes an explicit id
 
 ## Key rules
 
+- **Slice = delivery boundary (DEC-0014):** a Slice (`SLICE-nnnn`, key `Pn-Snn` / `Pn-Mnn` /
+  `<FUTURE-PROGRAM>-Snn`) is the delivery unit, a Task is the execution unit and the PR is the Slice
+  delivery unit. **Every Slice produces exactly one delivery PR.**
+  - A Slice may hold one or many tasks on different workers. Their commits are reconciled into
+    the Slice's single PR, and a slice task never delivers its own PR.
+  - Program work (P0–P11, future programs) requires a registered OPEN Slice. GOVERNANCE work stays
+    one task = one PR.
+  - Flow: `SLICE_CREATE` → tasks → every task `READY_FOR_REVIEW` → Manager `MQ_ADMIT {sliceId}` →
+    exact-head checks → merge → fresh-main verification → `SLICE_UPDATE_ACCEPTANCE` →
+    `SLICE_COMPLETE {milestoneRegister}`. Completing the Slice completes all its tasks.
+  - `SLICE_COMPLETE` enforces eight gate points, in order: all tasks done; acceptance met; one
+    delivery PR; exact-head CI pass; merged to main; main re-verified; evidence recorded; milestone
+    register updated.
+  - A rejected, unmerged delivery PR reopens the Slice and is recorded in `rejectedDeliveries`. Once
+    a delivery has merged, no second PR is possible; fix forward with a maintenance slice.
 - **Manager-executed tasks (DEC-0011):** governance work the Manager does itself (never assigned to
   a slot) completes with `TASK_COMPLETE_MANAGER_EXECUTED`. It requires the same VERIFIED COMMIT, CI
   and MAIN_VERIFICATION evidence; a COMMIT anchored to the merge SHA replaces the merge-queue item.

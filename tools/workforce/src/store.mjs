@@ -19,7 +19,7 @@ import { join } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { CommandError } from './core.mjs';
 
-const OBJECT_TYPES = ['Task', 'Reservation', 'AgentState', 'Lease', 'Evidence', 'Decision', 'MergeQueueItem', 'Handoff', 'Request', 'Approval', 'JournalEntry', 'Actor'];
+const OBJECT_TYPES = ['Task', 'Reservation', 'AgentState', 'Lease', 'Evidence', 'Decision', 'MergeQueueItem', 'Handoff', 'Request', 'Approval', 'JournalEntry', 'Actor', 'Slice'];
 const sleeper = new Int32Array(new SharedArrayBuffer(4));
 function sleepMs(ms) { Atomics.wait(sleeper, 0, 0, ms); }
 

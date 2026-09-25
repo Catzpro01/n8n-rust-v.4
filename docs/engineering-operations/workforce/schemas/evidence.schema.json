@@ -53,8 +53,18 @@
       ]
     },
     "taskId": {
-      "type": "string",
+      "type": [
+        "string",
+        "null"
+      ],
       "pattern": "^TASK-[0-9]{4,}$"
+    },
+    "sliceId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^SLICE-[0-9]{4,}$"
     },
     "type": {
       "enum": [
