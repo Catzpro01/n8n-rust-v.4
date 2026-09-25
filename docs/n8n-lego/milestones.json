@@ -2995,13 +2995,14 @@
               "title": "DEC-0015 required self-hosted runner verification",
               "purpose": "The delivery gate: Level 0, Level 1, Level 2 linux, Level 2 windows, Level 2 conformance and post-merge verification must all pass on real self-hosted runners. Derived from the jobs and runner API, never typed.",
               "weight": 10,
-              "status": "planned",
-              "evidence": "",
+              "status": "completed",
+              "evidence": "DEC-0015 verification PASS on 2970f78659e8808daa89b07de5202459920bd400: Level 0 (Check & Format) on MDMTEST-n8n-wsl-4 (run 36184852788); Level 1 (Affected Tests) on MDMTEST-n8n-wsl-3 (run 36184852788); Level 2 Workspace Tests (linux) on MDMTEST-n8n-wsl (run 36184852810); Level 2 Workspace Tests (windows) on laptop-build-worker (run 36184852810); Level 2 Conformance LEGO & Node Catalog on MDMTEST-n8n-wsl-5 (run 36184852810); Post-Merge Verification & Branch Cleanup on MDMTEST-n8n-wsl (run 36185118273). Verdict ALL_GREEN (GitHub-hosted 3 pass, self-hosted 7 pass / 0 fail / 0 waiting).",
               "reference": "tools/lego/progress-event.mjs (resolve --fetch)",
-              "requires": ["Level 0 (Check & Format)","Level 1 (Affected Tests)","Level 2 Workspace Tests (linux)","Level 2 Workspace Tests (windows)","Level 2 Conformance LEGO & Node Catalog","Post-Merge Verification & Branch Cleanup"]
+              "requires": ["Level 0 (Check & Format)","Level 1 (Affected Tests)","Level 2 Workspace Tests (linux)","Level 2 Workspace Tests (windows)","Level 2 Conformance LEGO & Node Catalog","Post-Merge Verification & Branch Cleanup"],
+              "completedAt": "2026-09-25T20:23:35Z"
             }
           ],
-          "updatedAt": "2026-09-25T20:23:01Z",
+          "updatedAt": "2026-09-25T20:23:35Z",
           "latestUpdate": "P5-M07: service-principal REST surface mounted (create once, redacted list, revoke tombstone, transfer rotates the credential); DEC-0023 closes the member boundary",
           "checkpointWeightBasis": "Five declared route operations. CP-01 carries 15 for the read pair (list + scopes); CP-02 carries 25 because it is the only route that mints a credential and must enforce the whole P5.7 create policy; CP-03 carries 15 for the tombstone semantics; CP-04 carries 20 for the six transfer invariants; CP-05 carries 15 for the end-to-end proof and manifest registration; CP-06 carries 10 for the DEC-0015 runner gate. 15+25+15+20+15+10 = 100. The weights come from the scope declared in P5-M07-EVIDENCE.md §1, not from effort, commit count or lines of code.",
           "mergeSha": null,
