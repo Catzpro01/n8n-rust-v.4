@@ -2,9 +2,9 @@
   "schemaVersion": "1.0",
   "objectType": "Decision",
   "objectId": "DEC-0012",
-  "revision": 1,
+  "revision": 2,
   "createdAt": "2026-09-25T00:58:30Z",
-  "updatedAt": "2026-09-25T00:58:30Z",
+  "updatedAt": "2026-09-25T01:37:14Z",
   "events": [],
   "state": "ACTIVE",
   "category": "RESOURCE",
@@ -55,7 +55,10 @@
       259,
       268
     ],
-    "prs": [],
+    "prs": [
+      278,
+      280
+    ],
     "commits": [
       "50231cc07db5c37f88c2f0494b14c738094414da",
       "83b95552fb980c662f481c6a2d4ed8e885cc95e5",
@@ -63,18 +66,20 @@
       "c8dc8567d4f7ee0d2a8f6ed5f867b5125d6b89e8",
       "d2c5f98c0b010df7a151a5d051b0ed2860f27687",
       "3e12228b6fc8e041ac316aa16f8a26aa519352d4",
-      "c072ff27fb2fc15c2dd2f866a8f5b83467052270"
+      "c072ff27fb2fc15c2dd2f866a8f5b83467052270",
+      "422442941f8128fed39d8b3413eeb702ad4b7a60",
+      "45b1b25d494f3c6de11ba79e7dcafc6a79fa8bf8"
     ],
     "requests": []
   },
   "supersedes": null,
   "supersededBy": null,
   "promotion": {
-    "canonical": false,
-    "mainPath": null,
-    "mainCommitSha": null,
-    "promotedAt": null,
-    "promotedBy": null
+    "canonical": true,
+    "mainPath": "docs/engineering-operations/workforce/decisions/DEC-0012.json",
+    "mainCommitSha": "422442941f8128fed39d8b3413eeb702ad4b7a60",
+    "promotedAt": "2026-09-25T01:37:14Z",
+    "promotedBy": "MANAGER-01"
   },
   "reason": null
 }
