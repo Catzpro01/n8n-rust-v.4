@@ -1,0 +1,36 @@
+{
+  "objectType": "Evidence",
+  "objectId": "EVD-0128",
+  "state": "VERIFIED",
+  "taskId": null,
+  "sliceId": "SLICE-0002",
+  "type": "COMMIT",
+  "trustLevel": "REVIEW_VERIFIED",
+  "subject": {
+    "subjectDigest": null,
+    "repository": "Catzpro01/n8n-rust-v.4",
+    "prNumber": 291,
+    "url": null,
+    "subjectType": "COMMIT",
+    "subjectId": "6a3c505e21bfa0399499c255e6d7a7d74d7e7580"
+  },
+  "result": {
+    "metrics": {},
+    "failureClass": null,
+    "status": "PASS",
+    "summary": "P5-M03 delivery head 6a3c505e (PR #291): /api/v1 boundary + workflows resource + register re-plan; local backend 2422/2422, workforce 104/104, frontend 451/0/1skip, 7 gates OK"
+  },
+  "producedBy": "MANAGER-01",
+  "verifiedAt": "2026-09-25T08:00:19Z",
+  "verifiedBy": "MANAGER-01",
+  "reason": null,
+  "schemaVersion": "1.0",
+  "revision": 3,
+  "createdAt": "2026-09-25T08:00:19Z",
+  "updatedAt": "2026-09-25T08:00:19Z",
+  "events": [
+    "EVT-001129",
+    "EVT-001130",
+    "EVT-001131"
+  ]
+}

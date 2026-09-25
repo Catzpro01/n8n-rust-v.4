@@ -1,0 +1,40 @@
+{
+  "payloadDigest": "sha256:21f7861ed15ff6cde5c9dd5524a8951e9b52af6b531d87a316d86b64bd20ad1c",
+  "committedAt": "2026-09-25T08:10:28Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-mq2b-merge-result",
+    "objectType": "MergeQueueItem",
+    "objectId": "MQ-0002",
+    "previousRevision": 5,
+    "newRevision": 6,
+    "resultingState": "VERIFYING",
+    "eventId": "EVT-001145",
+    "eventIds": [
+      "EVT-001144",
+      "EVT-001145",
+      "EVT-001146",
+      "EVT-001147"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [
+      {
+        "objectType": "Lease",
+        "objectId": "LEASE-0002",
+        "state": "COMPLETED"
+      },
+      {
+        "objectType": "Task",
+        "objectId": "TASK-0020",
+        "state": "VERIFYING"
+      },
+      {
+        "objectType": "Slice",
+        "objectId": "SLICE-0002",
+        "state": "VERIFYING"
+      }
+    ],
+    "warnings": [],
+    "data": {}
+  }
+}

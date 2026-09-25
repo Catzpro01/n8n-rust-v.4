@@ -1,0 +1,94 @@
+{
+  "objectType": "Task",
+  "objectId": "TASK-0021",
+  "state": "COMPLETED",
+  "jobId": null,
+  "issue": 85,
+  "program": "GOVERNANCE",
+  "milestone": null,
+  "slice": null,
+  "title": "Register P5-M03 implemented (Slice gate 8) + P5-M03 delivery record",
+  "description": "",
+  "priority": "NORMAL",
+  "risk": "NORMAL",
+  "owner": null,
+  "dependencies": [],
+  "scope": {
+    "paths": [
+      "docs/n8n-lego/milestones.json",
+      "docs/n8n-lego/evidence/P5-M03-EVIDENCE.md",
+      ".ai/"
+    ],
+    "domains": [],
+    "contracts": [],
+    "generatedSurfaces": [],
+    "vocabulary": [],
+    "semanticSurfaces": [],
+    "securitySurfaces": [],
+    "governanceSurfaces": []
+  },
+  "constraints": {
+    "forbiddenPaths": [],
+    "forbiddenDomains": [],
+    "forbiddenContracts": [],
+    "securityBoundaries": [],
+    "workspaceBoundary": "task-scoped"
+  },
+  "requirements": {
+    "capabilities": [],
+    "capacityClass": "NORMAL",
+    "runnerClasses": [
+      "ANY"
+    ],
+    "network": "NONE",
+    "runnerRequired": false,
+    "runnerType": null
+  },
+  "acceptance": {
+    "criteria": [],
+    "requiredEvidenceTypes": [],
+    "requiredGates": []
+  },
+  "execution": {
+    "mergeLane": "MANAGER",
+    "rollbackClass": "SIMPLE",
+    "activeLeaseId": null,
+    "reservationIds": [],
+    "decisionPending": false,
+    "hold": false,
+    "phase": "PHASE_A_REMOTE"
+  },
+  "branch": {
+    "persistentBranch": null,
+    "taskBranch": null,
+    "baseSha": null
+  },
+  "current": {
+    "headSha": null,
+    "prNumber": null,
+    "nextAction": null,
+    "blocker": null,
+    "handoffId": null,
+    "reason": null,
+    "supersededBy": null,
+    "completedMainSha": "6c8ddb5809521b7582858cc7d9f2c2b75b721fdb"
+  },
+  "history": {
+    "reassignedCount": 0,
+    "retryCount": 0,
+    "recoveryCount": 0,
+    "deferCount": 0,
+    "ciRetryCount": 0,
+    "reservationConflictCount": 0,
+    "scopeCorrectionCount": 0
+  },
+  "runnerVerification": null,
+  "schemaVersion": "1.0",
+  "revision": 2,
+  "createdAt": "2026-09-25T08:10:45Z",
+  "updatedAt": "2026-09-25T08:18:27Z",
+  "events": [
+    "EVT-001157",
+    "EVT-001171"
+  ]
+}

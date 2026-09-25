@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:36421c2299f3af63550f75b4ed50bd55b6ab534cca12386aae6c3a4e992d3129",
+  "committedAt": "2026-09-25T08:18:27Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-ev-task-0021-ci-ver",
+    "objectType": "Evidence",
+    "objectId": "EVD-0133",
+    "previousRevision": 2,
+    "newRevision": 3,
+    "resultingState": "VERIFIED",
+    "eventId": "EVT-001167",
+    "eventIds": [
+      "EVT-001167"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}

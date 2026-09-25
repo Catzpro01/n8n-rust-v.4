@@ -1,0 +1,34 @@
+{
+  "payloadDigest": "sha256:e214da1a583a60df7200f2c4e0d951f742a1a384f439815b6fed2c801c4b4802",
+  "committedAt": "2026-09-25T08:08:46Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-pm-merge-start-mq-0002-6a3c505e21bf",
+    "objectType": "MergeQueueItem",
+    "objectId": "MQ-0002",
+    "previousRevision": 4,
+    "newRevision": 5,
+    "resultingState": "MERGING",
+    "eventId": "EVT-001141",
+    "eventIds": [
+      "EVT-001141",
+      "EVT-001142",
+      "EVT-001143"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [
+      {
+        "objectType": "Task",
+        "objectId": "TASK-0020",
+        "state": "MERGING"
+      },
+      {
+        "objectType": "Slice",
+        "objectId": "SLICE-0002",
+        "state": "MERGING"
+      }
+    ],
+    "warnings": [],
+    "data": {}
+  }
+}

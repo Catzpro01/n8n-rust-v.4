@@ -1,14 +1,14 @@
 {
   "sequences": {
-    "EVT": 1124,
-    "TASK": 19,
-    "JRN": 36,
-    "REQ": 1,
-    "EVD": 127,
-    "SLICE": 1,
-    "MQ": 1,
-    "LEASE": 1
+    "EVT": 1185,
+    "TASK": 22,
+    "JRN": 40,
+    "REQ": 2,
+    "EVD": 137,
+    "SLICE": 2,
+    "MQ": 2,
+    "LEASE": 2
   },
   "eventSegment": 1,
-  "eventsInSegment": 124
+  "eventsInSegment": 185
 }

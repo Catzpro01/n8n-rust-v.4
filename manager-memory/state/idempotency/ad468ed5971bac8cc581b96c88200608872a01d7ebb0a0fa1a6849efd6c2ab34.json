@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:3f25954e77a47a9010d6b8a987744883fd1db7582932fe366096d022644420a0",
+  "committedAt": "2026-09-25T08:10:45Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-task-register-p5-m03",
+    "objectType": "Task",
+    "objectId": "TASK-0021",
+    "previousRevision": 0,
+    "newRevision": 1,
+    "resultingState": "UNASSIGNED",
+    "eventId": "EVT-001157",
+    "eventIds": [
+      "EVT-001157"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}

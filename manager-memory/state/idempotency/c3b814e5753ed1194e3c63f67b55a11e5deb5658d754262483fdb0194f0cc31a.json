@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:e1b524bdfa95e5a89d63124a06569bb6c81bf0b2b906e26be64fefebd787ed16",
+  "committedAt": "2026-09-25T08:10:28Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-sev-slice-0002-main_verification-cf52701c91e5",
+    "objectType": "Evidence",
+    "objectId": "EVD-0131",
+    "previousRevision": 0,
+    "newRevision": 1,
+    "resultingState": "PROPOSED",
+    "eventId": "EVT-001151",
+    "eventIds": [
+      "EVT-001151"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}

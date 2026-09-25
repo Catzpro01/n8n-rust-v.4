@@ -1,0 +1,19 @@
+{
+  "objectType": "JournalEntry",
+  "objectId": "JRN-0040",
+  "kind": "FACT",
+  "summary": "Slice P5-M03 COMPLETED: public /api/v1 boundary + workflows resource. Delivery PR #291 merged cf52701c (exact-head CI ALL_GREEN, store MQ gate before merge), main re-verified, register implemented via PR #292 (6c8ddb58). TASK-0020 and TASK-0021 COMPLETED.",
+  "author": "MANAGER-01",
+  "refs": [
+    "PR#291",
+    "PR#292",
+    "SLICE-0002"
+  ],
+  "schemaVersion": "1.0",
+  "revision": 1,
+  "createdAt": "2026-09-25T08:18:27Z",
+  "updatedAt": "2026-09-25T08:18:27Z",
+  "events": [
+    "EVT-001174"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "objectType": "JournalEntry",
+  "objectId": "JRN-0039",
+  "kind": "FACT",
+  "summary": "P5-M02 scoping (read-only): the execution engine (packages/reconstructed-engine/node-registry.mjs) implements only manualTrigger/start/noOp/set/code/function/functionItem and documents HTTP/credential nodes as NOT IMPLEMENTED; apps/n8n-lego/src/engine.mjs never touches credentials. Resolving credentials via SecretRef in the execution path therefore has no consumer today. P5-M02 must wait for a credential-consuming node (native-node work, #116 / P6-S04, proposed-not-authorized). Not started, to avoid speculative wiring; register re-plan to record the dependency is pending.",
+  "author": "MANAGER-01",
+  "refs": [
+    "P5-M02",
+    "P6-S04"
+  ],
+  "schemaVersion": "1.0",
+  "revision": 1,
+  "createdAt": "2026-09-25T08:13:33Z",
+  "updatedAt": "2026-09-25T08:13:33Z",
+  "events": [
+    "EVT-001161"
+  ]
+}

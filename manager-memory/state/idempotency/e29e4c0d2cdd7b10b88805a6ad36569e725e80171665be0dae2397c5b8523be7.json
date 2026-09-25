@@ -1,0 +1,30 @@
+{
+  "payloadDigest": "sha256:f8db616276f39337f494e5fa66ae1550346a2c1ffab06b9ee291f15fa99c4c53",
+  "committedAt": "2026-09-25T08:13:33Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-task-ci-path-filter-gap",
+    "objectType": "Task",
+    "objectId": "TASK-0022",
+    "previousRevision": 0,
+    "newRevision": 1,
+    "resultingState": "UNASSIGNED",
+    "eventId": "EVT-001158",
+    "eventIds": [
+      "EVT-001158",
+      "EVT-001159"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [
+      {
+        "class": "PROMPT_GOVERNANCE_CONFLICT",
+        "findings": [
+          "FORCE_MERGE"
+        ],
+        "requestId": "REQ-0002"
+      }
+    ],
+    "data": {}
+  }
+}

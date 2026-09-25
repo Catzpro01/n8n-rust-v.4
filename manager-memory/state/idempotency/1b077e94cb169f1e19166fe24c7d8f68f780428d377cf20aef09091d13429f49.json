@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:1bf2734799d5e14e192c8a17cebb01d347388d9145239863ea7165cb88744a10",
+  "committedAt": "2026-09-25T07:53:47Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-jrn-p5-m03-credential-blocker",
+    "objectType": "JournalEntry",
+    "objectId": "JRN-0037",
+    "previousRevision": 0,
+    "newRevision": 1,
+    "resultingState": null,
+    "eventId": "EVT-001128",
+    "eventIds": [
+      "EVT-001128"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}

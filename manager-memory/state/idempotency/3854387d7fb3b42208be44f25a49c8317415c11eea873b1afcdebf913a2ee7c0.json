@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:6c9a5ffebebbc9f25eba271b54cafd71fa136ff7c0e8f2613fccdc13b62e5c1f",
+  "committedAt": "2026-09-25T08:13:33Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-jrn-ci-path-gap",
+    "objectType": "JournalEntry",
+    "objectId": "JRN-0038",
+    "previousRevision": 0,
+    "newRevision": 1,
+    "resultingState": null,
+    "eventId": "EVT-001160",
+    "eventIds": [
+      "EVT-001160"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:74f371af59e3b4751fa9bcfd024dd181f36ffdcc818b1ca8ba76d022bfceb7e3",
+  "committedAt": "2026-09-25T08:00:19Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-sev-slice-0002-commit-6a3c505e21bf-pub",
+    "objectType": "Evidence",
+    "objectId": "EVD-0128",
+    "previousRevision": 1,
+    "newRevision": 2,
+    "resultingState": "PUBLISHED",
+    "eventId": "EVT-001130",
+    "eventIds": [
+      "EVT-001130"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}

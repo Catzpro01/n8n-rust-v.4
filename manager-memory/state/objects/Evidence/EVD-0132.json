@@ -1,0 +1,35 @@
+{
+  "objectType": "Evidence",
+  "objectId": "EVD-0132",
+  "state": "VERIFIED",
+  "taskId": "TASK-0021",
+  "type": "COMMIT",
+  "trustLevel": "REVIEW_VERIFIED",
+  "subject": {
+    "subjectDigest": null,
+    "repository": "Catzpro01/n8n-rust-v.4",
+    "prNumber": 292,
+    "url": null,
+    "subjectType": "COMMIT",
+    "subjectId": "6c8ddb5809521b7582858cc7d9f2c2b75b721fdb"
+  },
+  "result": {
+    "metrics": {},
+    "failureClass": null,
+    "status": "PASS",
+    "summary": "PR #292 head f2104728 merged as 6c8ddb58 (SHA-pinned); tree identical to PR head"
+  },
+  "producedBy": "MANAGER-01",
+  "verifiedAt": "2026-09-25T08:18:27Z",
+  "verifiedBy": "MANAGER-01",
+  "reason": null,
+  "schemaVersion": "1.0",
+  "revision": 3,
+  "createdAt": "2026-09-25T08:18:27Z",
+  "updatedAt": "2026-09-25T08:18:27Z",
+  "events": [
+    "EVT-001162",
+    "EVT-001163",
+    "EVT-001164"
+  ]
+}

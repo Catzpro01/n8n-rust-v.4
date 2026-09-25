@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:a9936725a9b840894ad14e7e96a969150719f60285526733e8071dcf607206f2",
+  "committedAt": "2026-09-25T08:08:46Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-pm-ci-mq-0002-6a3c505e21bf",
+    "objectType": "Evidence",
+    "objectId": "EVD-0129",
+    "previousRevision": 0,
+    "newRevision": 1,
+    "resultingState": "PROPOSED",
+    "eventId": "EVT-001134",
+    "eventIds": [
+      "EVT-001134"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}

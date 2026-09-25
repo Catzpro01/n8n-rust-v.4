@@ -1,0 +1,67 @@
+{
+  "objectType": "Slice",
+  "objectId": "SLICE-0002",
+  "state": "COMPLETED",
+  "key": "P5-M03",
+  "program": "P5",
+  "milestone": null,
+  "issue": 85,
+  "title": "Public /api/v1 first surface: API-key boundary + workflows resource",
+  "description": "",
+  "acceptance": {
+    "criteria": [
+      {
+        "id": "AC-1",
+        "text": "/api/v1 is served as JSON ahead of the editor SPA fallback; the recorded upstream goldens publicApiNoKey and publicApiBadKey match exactly (status and body)",
+        "met": true,
+        "evidenceRef": "PR #291 / docs/n8n-lego/evidence/P5-M03-EVIDENCE.md; tests apps/n8n-lego/test/public-api-v1.test.mjs; main cf52701c fresh verification"
+      },
+      {
+        "id": "AC-2",
+        "text": "Pipeline in upstream order: route 404/405, API-key 401, invalid JSON 400, schema validation 400, key scope 403 via the P5.3 authorize kernel (scopes always enforced; key scopes intersect the owner current grant); session cookies are not /api/v1 credentials and API keys are not /rest credentials",
+        "met": true,
+        "evidenceRef": "PR #291 / docs/n8n-lego/evidence/P5-M03-EVIDENCE.md; tests apps/n8n-lego/test/public-api-v1.test.mjs; main cf52701c fresh verification"
+      },
+      {
+        "id": "AC-3",
+        "text": "Workflows resource: list (name/active/tags filters, offset cursor, limit<=250, invalid cursor 400), create, get, update (publishIfActive), delete, activate, deactivate, tags get/replace with upstream status codes and messages; data shared with the editor store",
+        "met": true,
+        "evidenceRef": "PR #291 / docs/n8n-lego/evidence/P5-M03-EVIDENCE.md; tests apps/n8n-lego/test/public-api-v1.test.mjs; main cf52701c fresh verification"
+      },
+      {
+        "id": "AC-4",
+        "text": "Honest scope: register re-planned (P5-M03 narrowed; P5-M06 email recovery, P5-M07 service-principal REST/UI, P5-M08 remaining /api/v1 resources + P5-F-DEBT-010); unserved parts and deliberate differences documented; swaggerUi flag not advertised; generated .ai regenerated; all gates and suites green",
+        "met": true,
+        "evidenceRef": "PR #291 / docs/n8n-lego/evidence/P5-M03-EVIDENCE.md; tests apps/n8n-lego/test/public-api-v1.test.mjs; main cf52701c fresh verification"
+      }
+    ]
+  },
+  "delivery": {
+    "prNumber": 291,
+    "headSha": "6a3c505e21bfa0399499c255e6d7a7d74d7e7580",
+    "mergeQueueItemId": "MQ-0002",
+    "mergeSha": "cf52701c91e5447f19c32377c38f6ae5eea7f3a7",
+    "verifiedMainSha": "cf52701c91e5447f19c32377c38f6ae5eea7f3a7"
+  },
+  "rejectedDeliveries": [],
+  "milestoneRegister": {
+    "path": "docs/n8n-lego/milestones.json",
+    "commitSha": "cf52701c91e5447f19c32377c38f6ae5eea7f3a7"
+  },
+  "completedMainSha": "cf52701c91e5447f19c32377c38f6ae5eea7f3a7",
+  "supersededBy": null,
+  "reason": null,
+  "schemaVersion": "1.0",
+  "revision": 7,
+  "createdAt": "2026-09-25T07:51:12Z",
+  "updatedAt": "2026-09-25T08:18:27Z",
+  "events": [
+    "EVT-001125",
+    "EVT-001133",
+    "EVT-001143",
+    "EVT-001147",
+    "EVT-001155",
+    "EVT-001156",
+    "EVT-001173"
+  ]
+}

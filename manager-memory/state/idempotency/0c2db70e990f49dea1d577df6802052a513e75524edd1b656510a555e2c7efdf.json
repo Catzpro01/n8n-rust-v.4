@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:2d66bcdfc41bd37895a8470af5206001203f13b8c798f68cd774a61d41c46b5d",
+  "committedAt": "2026-09-25T08:18:50Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-resolve-req-0002",
+    "objectType": "Request",
+    "objectId": "REQ-0002",
+    "previousRevision": 1,
+    "newRevision": 2,
+    "resultingState": "REJECTED",
+    "eventId": "EVT-001175",
+    "eventIds": [
+      "EVT-001175"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "payloadDigest": "sha256:f637db75f1d20ad22766e33a4ad4f4e09096757943c8a7258f3198b2e0ab119c",
+  "committedAt": "2026-09-25T08:18:27Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-slice-complete-p5-m03",
+    "objectType": "Slice",
+    "objectId": "SLICE-0002",
+    "previousRevision": 6,
+    "newRevision": 7,
+    "resultingState": "COMPLETED",
+    "eventId": "EVT-001173",
+    "eventIds": [
+      "EVT-001172",
+      "EVT-001173"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [
+      {
+        "objectType": "Task",
+        "objectId": "TASK-0020",
+        "state": "COMPLETED"
+      }
+    ],
+    "warnings": [],
+    "data": {}
+  }
+}

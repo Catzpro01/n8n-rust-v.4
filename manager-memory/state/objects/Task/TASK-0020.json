@@ -1,0 +1,115 @@
+{
+  "objectType": "Task",
+  "objectId": "TASK-0020",
+  "state": "COMPLETED",
+  "jobId": null,
+  "issue": 85,
+  "program": "P5",
+  "milestone": null,
+  "slice": "P5-M03",
+  "title": "Public /api/v1 boundary + workflows resource + register re-plan",
+  "description": "",
+  "priority": "NORMAL",
+  "risk": "NORMAL",
+  "owner": null,
+  "dependencies": [],
+  "scope": {
+    "paths": [
+      "apps/n8n-lego/src/auth/public-api-routes.mjs",
+      "apps/n8n-lego/src/server.mjs",
+      "apps/n8n-lego/src/auth/api-key-routes.mjs",
+      "apps/n8n-lego/src/settings/frontend-settings.mjs",
+      "apps/n8n-lego/test/public-api-v1.test.mjs",
+      "contracts/api.contract.md",
+      "docs/n8n-lego/milestones.json",
+      "docs/n8n-lego/evidence/P5-M03-EVIDENCE.md",
+      ".ai/"
+    ],
+    "domains": [],
+    "contracts": [],
+    "generatedSurfaces": [],
+    "vocabulary": [],
+    "semanticSurfaces": [],
+    "securitySurfaces": [],
+    "governanceSurfaces": []
+  },
+  "constraints": {
+    "forbiddenPaths": [],
+    "forbiddenDomains": [],
+    "forbiddenContracts": [],
+    "securityBoundaries": [],
+    "workspaceBoundary": "task-scoped"
+  },
+  "requirements": {
+    "capabilities": [],
+    "capacityClass": "NORMAL",
+    "runnerClasses": [
+      "ANY"
+    ],
+    "network": "NONE",
+    "runnerRequired": false,
+    "runnerType": null
+  },
+  "acceptance": {
+    "criteria": [],
+    "requiredEvidenceTypes": [],
+    "requiredGates": []
+  },
+  "execution": {
+    "mergeLane": "MANAGER",
+    "rollbackClass": "SIMPLE",
+    "activeLeaseId": null,
+    "reservationIds": [],
+    "decisionPending": false,
+    "hold": false,
+    "phase": "PHASE_A_REMOTE",
+    "executor": {
+      "type": "MANAGER",
+      "id": "MANAGER-01",
+      "decision": "DEC-0016",
+      "reasonCode": "NO_WORKER_SESSION",
+      "branch": "arena/manager/p5-m03-public-api-v1"
+    }
+  },
+  "branch": {
+    "persistentBranch": null,
+    "taskBranch": null,
+    "baseSha": null
+  },
+  "current": {
+    "headSha": "6a3c505e21bfa0399499c255e6d7a7d74d7e7580",
+    "prNumber": null,
+    "nextAction": null,
+    "blocker": null,
+    "handoffId": null,
+    "reason": {
+      "code": "SLICE_COMPLETED",
+      "summary": "All 8 DEC-0014 gates hold: TASK-0020 done, acceptance AC-1..4 met, one delivery PR #291, exact-head CI ALL_GREEN (no deferred runner checks), merged cf52701c, main re-verified, evidence recorded, register implemented on main 6c8ddb58 (PR #292). The delivery PR updated the register (re-plan, in-progress) at its merge SHA.",
+      "actor": "MANAGER-01",
+      "refs": []
+    },
+    "supersededBy": null,
+    "completedMainSha": "cf52701c91e5447f19c32377c38f6ae5eea7f3a7"
+  },
+  "history": {
+    "reassignedCount": 0,
+    "retryCount": 0,
+    "recoveryCount": 0,
+    "deferCount": 0,
+    "ciRetryCount": 0,
+    "reservationConflictCount": 0,
+    "scopeCorrectionCount": 0
+  },
+  "runnerVerification": null,
+  "schemaVersion": "1.0",
+  "revision": 5,
+  "createdAt": "2026-09-25T07:51:12Z",
+  "updatedAt": "2026-09-25T08:18:27Z",
+  "events": [
+    "EVT-001126",
+    "EVT-001127",
+    "EVT-001142",
+    "EVT-001146",
+    "EVT-001172"
+  ]
+}

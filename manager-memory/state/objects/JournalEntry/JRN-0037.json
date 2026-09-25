@@ -1,0 +1,18 @@
+{
+  "objectType": "JournalEntry",
+  "objectId": "JRN-0037",
+  "kind": "FACT",
+  "summary": "P5-M03 delivery commit 6a3c505e (branch arena/manager/p5-m03-public-api-v1) is complete and locally verified: backend 2422/2422, workforce 104/104, frontend 451/0/1skip, all 7 lego gates PASS. It is NOT pushed: the DEC-0009 owner credential is absent from this session env (env-only by design, never stored). The commit is preserved as a bundle and a patch in manager-state/pending/P5-M03. Push, PR, MQ_ADMIT, merge and persist all wait for the owner to supply the credential again. Store changes since arena-manager c35da5be are local only until persist.sh runs.",
+  "author": "MANAGER-01",
+  "refs": [
+    "SLICE-0002",
+    "TASK-0020"
+  ],
+  "schemaVersion": "1.0",
+  "revision": 1,
+  "createdAt": "2026-09-25T07:53:47Z",
+  "updatedAt": "2026-09-25T07:53:47Z",
+  "events": [
+    "EVT-001128"
+  ]
+}

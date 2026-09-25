@@ -1,0 +1,18 @@
+{
+  "objectType": "JournalEntry",
+  "objectId": "JRN-0038",
+  "kind": "FACT",
+  "summary": "PR #292 (register-only: docs/n8n-lego/milestones.json, evidence, .ai) triggered 0 workflow runs: every workflow is path-filtered and none includes docs/n8n-lego/** or .ai/**. The governance-register test and lego:ai:check therefore do not run on register edits. Workaround used: workflow_dispatch of n8n-lego.yml on the branch (run anchored to the exact head). Fix tracked as TASK-0022.",
+  "author": "MANAGER-01",
+  "refs": [
+    "PR#292",
+    "TASK-0022"
+  ],
+  "schemaVersion": "1.0",
+  "revision": 1,
+  "createdAt": "2026-09-25T08:13:33Z",
+  "updatedAt": "2026-09-25T08:13:33Z",
+  "events": [
+    "EVT-001160"
+  ]
+}

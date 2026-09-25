@@ -1,0 +1,30 @@
+{
+  "objectType": "Request",
+  "objectId": "REQ-0002",
+  "state": "REJECTED",
+  "kind": "PROMPT_GOVERNANCE_CONFLICT",
+  "requestedBy": "control-plane",
+  "summary": "Instruction text in TASK_CREATE from MANAGER-01 attempted governance/authority change; authority unchanged",
+  "subject": {
+    "objectType": "Task",
+    "objectId": "TASK-0022",
+    "current": null,
+    "requested": null
+  },
+  "findings": [
+    "FORCE_MERGE"
+  ],
+  "resolution": {
+    "by": "MANAGER-01",
+    "decisionId": null,
+    "summary": "Detector match on the TASK-0022 title, which describes an observed CI coverage defect (path filters exclude register files). It requests no governance or authority change; authority stays unchanged and the task stays a normal GOVERNANCE defect task."
+  },
+  "schemaVersion": "1.0",
+  "revision": 2,
+  "createdAt": "2026-09-25T08:13:33Z",
+  "updatedAt": "2026-09-25T08:18:50Z",
+  "events": [
+    "EVT-001159",
+    "EVT-001175"
+  ]
+}

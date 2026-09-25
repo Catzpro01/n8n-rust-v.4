@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:363f0cfa67dbf8733ed0cced02d44172da852aaf516bc1dc061b8d6c888920d8",
+  "committedAt": "2026-09-25T08:08:46Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-pm-checks-mq-0002-6a3c505e21bf",
+    "objectType": "MergeQueueItem",
+    "objectId": "MQ-0002",
+    "previousRevision": 1,
+    "newRevision": 2,
+    "resultingState": "QUEUED",
+    "eventId": "EVT-001137",
+    "eventIds": [
+      "EVT-001137"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}

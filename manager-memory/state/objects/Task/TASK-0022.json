@@ -1,0 +1,92 @@
+{
+  "objectType": "Task",
+  "objectId": "TASK-0022",
+  "state": "COMPLETED",
+  "jobId": null,
+  "issue": 85,
+  "program": "GOVERNANCE",
+  "milestone": null,
+  "slice": null,
+  "title": "CI path filters skip register-only changes: docs/n8n-lego/** and .ai/** trigger no workflow, so milestones.json and generated .ai merge without the governance-register test and lego:ai:check",
+  "description": "",
+  "priority": "NORMAL",
+  "risk": "NORMAL",
+  "owner": null,
+  "dependencies": [],
+  "scope": {
+    "paths": [
+      ".github/workflows/n8n-lego.yml"
+    ],
+    "domains": [],
+    "contracts": [],
+    "generatedSurfaces": [],
+    "vocabulary": [],
+    "semanticSurfaces": [],
+    "securitySurfaces": [],
+    "governanceSurfaces": []
+  },
+  "constraints": {
+    "forbiddenPaths": [],
+    "forbiddenDomains": [],
+    "forbiddenContracts": [],
+    "securityBoundaries": [],
+    "workspaceBoundary": "task-scoped"
+  },
+  "requirements": {
+    "capabilities": [],
+    "capacityClass": "NORMAL",
+    "runnerClasses": [
+      "ANY"
+    ],
+    "network": "NONE",
+    "runnerRequired": false,
+    "runnerType": null
+  },
+  "acceptance": {
+    "criteria": [],
+    "requiredEvidenceTypes": [],
+    "requiredGates": []
+  },
+  "execution": {
+    "mergeLane": "MANAGER",
+    "rollbackClass": "SIMPLE",
+    "activeLeaseId": null,
+    "reservationIds": [],
+    "decisionPending": false,
+    "hold": false,
+    "phase": "PHASE_A_REMOTE"
+  },
+  "branch": {
+    "persistentBranch": null,
+    "taskBranch": null,
+    "baseSha": null
+  },
+  "current": {
+    "headSha": null,
+    "prNumber": null,
+    "nextAction": null,
+    "blocker": null,
+    "handoffId": null,
+    "reason": null,
+    "supersededBy": null,
+    "completedMainSha": "7d1203676f7f45ab2ca34c6355d1df79d6096d05"
+  },
+  "history": {
+    "reassignedCount": 0,
+    "retryCount": 0,
+    "recoveryCount": 0,
+    "deferCount": 0,
+    "ciRetryCount": 0,
+    "reservationConflictCount": 0,
+    "scopeCorrectionCount": 0
+  },
+  "runnerVerification": null,
+  "schemaVersion": "1.0",
+  "revision": 2,
+  "createdAt": "2026-09-25T08:13:33Z",
+  "updatedAt": "2026-09-25T08:27:47Z",
+  "events": [
+    "EVT-001158",
+    "EVT-001185"
+  ]
+}
