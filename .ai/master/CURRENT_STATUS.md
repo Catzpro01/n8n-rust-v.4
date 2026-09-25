@@ -14,7 +14,7 @@ document is right and the prose is stale.
 | Agent 1 branch | `main` |
 | Agent 2 branch | `main` |
 | **Latest completed slice** | **P5-M08** |
-| **Realtime Delivery Progress** | **86.9%** (P0–P11 checkpoint-weighted; future programs excluded; no checkpoint model contributes 0) |
+| **Realtime Delivery Progress** | **87.0%** (P0–P11 checkpoint-weighted; future programs excluded; no checkpoint model contributes 0) |
 | **Slice Completion** | **86.3%** (126/146 implemented; verifying and blocked contribute 0) |
 | **Active / verifying slices** | **P5-M09** |
 | Planned queue | P5-M07, P9-S01, P3-S01, P4-S01, P6-S01, P6-S02, P2-S02, P2-S03 |
@@ -59,7 +59,7 @@ Every slice that declares a checkpoint model, straight from the canonical regist
 evidenced progress and contributes 0% to Slice Completion.
 
 - **P5-M08** (P5) — implemented · realtime 100.0% · completion contribution 100.0% · current checkpoint — · latest completed CP-05 (completed) · updated 2026-09-26T04:05:00Z — Implemented by PR #304 (merge 600a21456213602ebdc6193229bab8432e6d1024). CP-05 DEC-0015 verification PASS on head d520a740 (PR #310, merge b528a19): Level 0 on MDMTEST-n8n-wsl-2, Level 1 on MDMTEST-n8n-wsl, Level 2 linux on MDMTEST-n8n-wsl-3, Level 2 windows on laptop-build-worker-3, conformance on MDMTEST-n8n-wsl-4, post-merge verification on MDMTEST-n8n-wsl-3 (run 36167178324). This was the last documented environmental retry; the earlier failure was a runner communication loss, not an implementation regression, and the P5-M08 implementation on this head is byte-identical to delivery merge 600a2145
-- **P5-M09** (P5) — in-progress · realtime 85.0% · completion contribution 0.0% · current checkpoint — · latest completed CP-04 (completed) · updated 2026-09-25T19:12:29Z — P5-M09: public /api/v1 credentials + users over the editor's backing stores
+- **P5-M09** (P5) — in-progress · realtime 100.0% · completion contribution 0.0% · current checkpoint — · latest completed CP-05 (completed) · updated 2026-09-25T19:12:31Z — P5-M09: public /api/v1 credentials + users over the editor's backing stores
 
 ## The 15 AI/Agent LEGO by status
 

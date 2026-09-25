@@ -3065,10 +3065,13 @@
               "title": "/api/v1/docs decision and the OpenAPI spec of exactly the mounted operations",
               "purpose": "Record the decision on serving Swagger UI without a runtime dependency (DEC-0022) and extend the published openapi.yml to the credentials and users operations, keeping the spec a projection of PUBLIC_API_OPERATIONS rather than a hand-written file.",
               "weight": 15,
-              "status": "planned"
+              "status": "completed",
+              "evidence": "docs/engineering-operations/workforce/decisions/DEC-0022.json (the /docs decision) + apps/n8n-lego/data/public-api-openapi.json regenerated to 31 operations on 17 paths by apps/n8n-lego/scripts/extract-public-api-spec.py, with the /docs 404 assertion in the new test file",
+              "reference": "reference/n8n/packages/cli/src/public-api/index.ts",
+              "completedAt": "2026-09-25T19:12:31Z"
             }
           ],
-          "updatedAt": "2026-09-25T19:12:29Z",
+          "updatedAt": "2026-09-25T19:12:31Z",
           "latestUpdate": "P5-M09: public /api/v1 credentials + users over the editor's backing stores",
           "mergeSha": null,
           "issue": 85,
