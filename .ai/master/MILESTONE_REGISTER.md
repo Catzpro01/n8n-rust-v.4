@@ -14,7 +14,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | **P2** | LEGO / AI / Plugin Foundation | **COMPLETE** | 32/34 | 29 | `P2-S02` (planned) |
 | **P3** | Workflow + Execution + Unlimited Nodes | **COMPLETE** | 17/18 | 24 | `P3-S01` (planned) |
 | **P4** | Trigger / Webhook / Ingress | **COMPLETE** | 9/10 | 19 | `P4-S01` (planned) |
-| **P5** | Identity / Authentication / Authorization / Credentials (Security) | **COMPLETE** | 9/16 | 18 | `P5-M03` (in-progress) |
+| **P5** | Identity / Authentication / Authorization / Credentials (Security) | **COMPLETE** | 10/16 | 18 | `P5-M02` (planned) |
 | **P6** | Node Registry / Node Runtime | **COMPLETE** | 31/35 | 67 | `P6-S01` (planned) |
 | **P7** | Dynamic Parameters / Schema Runtime | **PLANNED** | 0/1 | 29 | `P7-S01` (planned) |
 | **P8** | Storage / Data Layer | **PLANNED** | 0/1 | 5 | `P8-S01` (planned) |
@@ -40,8 +40,8 @@ Legacy traceability: legacy issue → feature (`sourceIssue`) → program (`pare
 
 | Status | Features |
 | --- | --- |
-| implemented | 135 |
-| in-progress | 2 |
+| implemented | 136 |
+| in-progress | 1 |
 | planned | 169 |
 | proposed | 47 |
 | blocked | 0 |
@@ -336,7 +336,7 @@ Identity, sessions, authorization, credential boundary, key management, account 
 | `P5.8` | security plane certification, operator credential CLI, benchmark, runbook | implemented | #253 | `87099dc0` | #221 |
 | `P5-M01` | Security hardening: soft-revoke API keys and service principals (bounded tombstones, REVOKED verdict, audit row kept); REST decision cache deferred on measured evidence (P5.8 finding 1: warm hit 438 ns p50 is not faster than uncached authorize 384 ns p50) | implemented | — | `27191091` | #85 |
 | `P5-M02` | Credential runtime integration: execution path resolves credentials via SecretRef over the P2.27 broker | planned | — | — | #85 |
-| `P5-M03` | Public /api/v1 first surface: API-key boundary in upstream order (recorded 401 goldens), key scopes always enforced through the P5.3 kernel, offset-cursor pagination, workflows resource (9 operations). Re-planned by the Manager: email recovery moved to P5-M06, service-principal REST/UI to P5-M07, remaining /api/v1 resources to P5-M08 (one delivery PR per slice) | in-progress | — | — | #85 |
+| `P5-M03` | Public /api/v1 first surface: API-key boundary in upstream order (recorded 401 goldens), key scopes always enforced through the P5.3 kernel, offset-cursor pagination, workflows resource (9 operations). Re-planned by the Manager: email recovery moved to P5-M06, service-principal REST/UI to P5-M07, remaining /api/v1 resources to P5-M08 (one delivery PR per slice) | implemented | — | `cf52701c` | #85 |
 | `P5-M04` | Key-rotation work list without an O(n) scan: measure first (per-batch scan vs the O(n) replaceAll persist), index only if the scan dominates | planned | — | — | #85 |
 | `P5-M05` | Multi-host key storage and shared session + rate-limiter state; depends on the P8 storage contract (P8-S01, not authorized) | planned | — | — | #85 |
 | `P5-M06` | Email-based password recovery: needs a mail transport decision first (Node has no built-in SMTP: a dependency or an injected transport contract), then upstream /rest/forgot-password delivery over the P5 reset-token primitive (split out of P5-M03) | planned | — | — | #85 |
@@ -345,7 +345,7 @@ Identity, sessions, authorization, credential boundary, key management, account 
 
 </details>
 
-<details><summary>Features (18: 9 implemented, 1 deferred, 7 planned, 1 in-progress)</summary>
+<details><summary>Features (18: 10 implemented, 1 deferred, 7 planned)</summary>
 
 | Feature | Title | Status | Relevance | Slice | Issues | Merge SHA |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -363,7 +363,7 @@ Identity, sessions, authorization, credential boundary, key management, account 
 | `P5-F-DEBT-004` | Key storage beyond a single host | planned | maintenance | `P5-M05` | #85, #221 | — |
 | `P5-F-DEBT-005` | Sessions + rate limiters in shared (multi-process) state | planned | maintenance | `P5-M05` | #85, #221 | — |
 | `P5-F-DEBT-006` | Execution resolves credentials via SecretRef | planned | maintenance | `P5-M02` | #85, #221 | — |
-| `P5-F-DEBT-007` | Public /api/v1 compatibility surface: API-key boundary + workflows resource | in-progress | maintenance | `P5-M03` | #85, #221 | — |
+| `P5-F-DEBT-007` | Public /api/v1 compatibility surface: API-key boundary + workflows resource | implemented | maintenance | `P5-M03` | #85, #221 | `cf52701c` |
 | `P5-F-DEBT-008` | Email-based password recovery | planned | maintenance | `P5-M06` | #85, #221 | — |
 | `P5-F-DEBT-009` | Service-principal REST + UI management | planned | maintenance | `P5-M07` | #85, #221 | — |
 | `P5-F-DEBT-010` | Public /api/v1 remaining resources and OpenAPI/docs endpoints | planned | maintenance | `P5-M08` | #85, #221 | — |

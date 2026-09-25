@@ -96,4 +96,11 @@ No existing assertion was relaxed. Gates: architecture, architecture selftest, f
 
 ## 6. Delivery record
 
-This section is completed after the merge, in the register follow-up, with the merge SHA, exact-head CI, fresh-main verification and runner verification.
+| Gate | Result |
+|---|---|
+| Delivery PR | #291 (the only PR for P5-M03), head `6a3c505e21bfa0399499c255e6d7a7d74d7e7580` |
+| Exact-head CI at merge time | ALL_GREEN: GitHub-hosted PASS 3/3; self-hosted PASS 7/7, including the Windows worker probe and the clean-clone browser smoke. No check was deferred, so DEC-0015 runner verification is not needed |
+| Store merge-queue gate | MQ-0002, lane MANAGER, authorized at the exact head **before** the merge (ship.sh store gate) |
+| Merge | `cf52701c91e5447f19c32377c38f6ae5eea7f3a7` (SHA-pinned; tree identical to the PR head) |
+| Fresh-main verification | workforce 104/104, gates 7/7, certification OK, backend 2422/2422, frontend 451/0 (1 skipped), 0 dirty files; main push CI ALL_GREEN |
+| Register | P5-M03 and P5-F-DEBT-007 marked `implemented` in the governance follow-up (TASK-0021). Inside the delivery PR the register carried the re-plan with P5-M03 `in-progress` |
