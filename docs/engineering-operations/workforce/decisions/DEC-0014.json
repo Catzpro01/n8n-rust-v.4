@@ -1,0 +1,71 @@
+{
+  "schemaVersion": "1.0",
+  "objectType": "Decision",
+  "objectId": "DEC-0014",
+  "revision": 1,
+  "createdAt": "2026-09-25T05:23:09Z",
+  "updatedAt": "2026-09-25T05:23:09Z",
+  "events": [],
+  "state": "ACTIVE",
+  "category": "WORKFORCE",
+  "title": "Slice = delivery boundary, Task = execution boundary, one delivery PR per Slice",
+  "problem": "Issue #282 asked whether one Task maps 1:1 to one Slice. The control plane treated the Task as the unit that owns a PR and completes, and Task.slice was a free-text label, so one Slice could be delivered through several PRs and milestone progress could not be counted per Slice.",
+  "options": [
+    {
+      "id": "slice-delivery",
+      "summary": "Slice = delivery unit, Task = execution unit, PR = Slice delivery unit: every Slice produces exactly one delivery PR; a Slice may hold one or many Tasks on different workers, and their commits are reconciled into that single PR"
+    },
+    {
+      "id": "task-equals-slice",
+      "summary": "One Task = one Slice = one PR (1:1:1)"
+    },
+    {
+      "id": "pr-per-task",
+      "summary": "Keep one PR per Task and group PRs under a Slice label"
+    }
+  ],
+  "selectedOption": "slice-delivery",
+  "rationale": "Owner instruction (2026-09-25), recorded as the final answer to #282. Rule: Slice = delivery boundary, Task = execution boundary, PR = Slice delivery boundary. Invariant: every Slice produces exactly one delivery PR; separate task commits are reconciled into it, and tasks of a Slice never deliver their own PR to main. A Slice is COMPLETE only when all eight gate points hold: (1) every task of the Slice is done; (2) the Slice acceptance criteria are met; (3) exactly one delivery PR exists; (4) the PR's exact-head CI/gates passed; (5) the PR is merged to main; (6) main is re-verified; (7) evidence is recorded; (8) the milestone register is updated. Enforced by the control plane: Slice object and state machine (OPEN -> DELIVERING -> MERGING -> VERIFYING -> COMPLETED), P-program and future-program tasks require a registered OPEN Slice, MQ_ADMIT rejects task-level PRs for slice tasks and admits one Manager-owned delivery item per Slice, a merged Slice delivery can never be followed by a second PR (a rejected unmerged PR reopens the Slice and is recorded), SLICE_COMPLETE checks the eight points in order and completes every task with the Slice. GOVERNANCE work is outside milestone slicing and stays one task = one PR (DEC-0011). Milestone accounting becomes Milestone -> Slices -> one PR each.",
+  "scope": {
+    "programs": [
+      "GOVERNANCE"
+    ],
+    "slices": [],
+    "domains": [],
+    "surfaces": []
+  },
+  "authority": {
+    "decidedBy": "OWNER",
+    "managerOnly": false,
+    "humanEscalation": true,
+    "proposedBy": "MANAGER-01"
+  },
+  "evidence": [],
+  "evidenceRefs": [
+    "docs/engineering-operations/workforce/policy.json#slices",
+    "docs/engineering-operations/workforce/schemas/slice.schema.json",
+    "tools/workforce/src/engine.mjs",
+    "tools/workforce/test/slices.test.mjs",
+    "docs/n8n-lego/milestones.json#governance.deliveryModel"
+  ],
+  "sources": {
+    "issues": [
+      282,
+      256,
+      264
+    ],
+    "prs": [],
+    "commits": [],
+    "requests": []
+  },
+  "supersedes": null,
+  "supersededBy": null,
+  "promotion": {
+    "canonical": false,
+    "mainPath": null,
+    "mainCommitSha": null,
+    "promotedAt": null,
+    "promotedBy": null
+  },
+  "reason": null
+}

@@ -7,7 +7,7 @@
 import { canTransition, isTerminal } from './core.mjs';
 import { validate } from './schema.mjs';
 
-const OBJECT_TYPES = ['Task', 'AgentState', 'Reservation', 'Lease', 'Evidence', 'Decision', 'MergeQueueItem', 'Handoff', 'Request', 'Approval', 'JournalEntry', 'Actor'];
+const OBJECT_TYPES = ['Task', 'AgentState', 'Reservation', 'Lease', 'Evidence', 'Decision', 'MergeQueueItem', 'Handoff', 'Request', 'Approval', 'JournalEntry', 'Actor', 'Slice'];
 const secs = (a, b) => (Date.parse(b) - Date.parse(a)) / 1000;
 
 export function snapshot(store) {
@@ -77,7 +77,23 @@ export function verifyIntegrity(store, policy) {
     const t = tasks.get(r.taskId);
     if (t && isTerminal(policy, 'Task', t.state) && r.state === 'ACTIVE') findings.push({ kind: 'ORPHAN_ACTIVE_RESERVATION', object: `Reservation/${r.objectId}`, task: t.objectId });
   }
-  for (const m of s.MergeQueueItem) if (!tasks.has(m.taskId)) findings.push({ kind: 'DANGLING_TASK', object: `MergeQueueItem/${m.objectId}`, ref: m.taskId });
+  const slices = byId('Slice');
+  for (const m of s.MergeQueueItem) {
+    if (m.taskId && !tasks.has(m.taskId)) findings.push({ kind: 'DANGLING_TASK', object: `MergeQueueItem/${m.objectId}`, ref: m.taskId });
+    if (!m.taskId && !m.sliceId) findings.push({ kind: 'MQ_WITHOUT_SUBJECT', object: `MergeQueueItem/${m.objectId}` });
+    if (m.sliceId && !slices.has(m.sliceId)) findings.push({ kind: 'DANGLING_SLICE', object: `MergeQueueItem/${m.objectId}`, ref: m.sliceId });
+    for (const id of m.taskIds ?? []) if (!tasks.has(id)) findings.push({ kind: 'DANGLING_TASK', object: `MergeQueueItem/${m.objectId}`, ref: id });
+  }
+  // DEC-0014: a Slice has at most one merged delivery PR, and slice tasks never own a merge-queue item.
+  for (const sl of s.Slice) {
+    const merged = s.MergeQueueItem.filter((m) => m.sliceId === sl.objectId && m.mergeSha);
+    if (merged.length > 1) findings.push({ kind: 'SLICE_MULTIPLE_DELIVERY_PRS', object: `Slice/${sl.objectId}`, prs: merged.map((m) => m.pr.number) });
+  }
+  const sliceKeys = new Set(s.Slice.map((sl) => sl.key));
+  for (const m of s.MergeQueueItem) {
+    const t = m.taskId ? tasks.get(m.taskId) : null;
+    if (t?.slice && sliceKeys.has(t.slice)) findings.push({ kind: 'SLICE_TASK_OWN_PR', object: `MergeQueueItem/${m.objectId}`, task: t.objectId, slice: t.slice });
+  }
   for (const l of s.Lease) {
     if (l.subject.taskId && !tasks.has(l.subject.taskId)) findings.push({ kind: 'DANGLING_TASK', object: `Lease/${l.objectId}`, ref: l.subject.taskId });
     if (l.subject.queueItemId && !mq.has(l.subject.queueItemId)) findings.push({ kind: 'DANGLING_MQ', object: `Lease/${l.objectId}`, ref: l.subject.queueItemId });

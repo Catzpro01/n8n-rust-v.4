@@ -27,6 +27,16 @@ export function renderMemory(controlPlane, now, repo = {}) {
     ['Task', 'State', 'Program', 'Slice', 'Priority', 'Owner', 'Lease', 'Head', 'Next action'],
     openTasks.map((t) => [t.objectId, t.state, t.program, t.slice, t.priority, t.owner?.agentId, t.execution.activeLeaseId, t.current.headSha?.slice(0, 12), t.current.nextAction]),
   ) + `\n## Closed\n\n${table(['Task', 'State', 'Main SHA'], s.Task.filter((t) => isTerminal(policy, 'Task', t.state)).map((t) => [t.objectId, t.state, t.current.completedMainSha?.slice(0, 12)]))}`;
+  // DEC-0014: Slice = delivery boundary (one delivery PR per Slice); Task = execution boundary.
+  files['SLICES.md'] = HEADER('Slices (delivery units)', now, digest) + table(
+    ['Slice', 'Key', 'State', 'Program', 'Title', 'Tasks', 'Delivery PR', 'Exact head', 'Merge SHA', 'Acceptance', 'Register'],
+    s.Slice.map((sl) => {
+      const tasks = s.Task.filter((t) => t.slice === sl.key);
+      const met = sl.acceptance.criteria.filter((c) => c.met).length;
+      return [sl.objectId, sl.key, sl.state, sl.program, sl.title, tasks.map((t) => `${t.objectId}(${t.state})`).join(', '), sl.delivery.prNumber ? `#${sl.delivery.prNumber}` : null,
+        sl.delivery.headSha?.slice(0, 12), sl.delivery.mergeSha?.slice(0, 12), `${met}/${sl.acceptance.criteria.length}`, sl.milestoneRegister ? sl.milestoneRegister.commitSha.slice(0, 12) : null];
+    }),
+  ) + `\nInvariant: ${policy.slices?.invariant ?? 'n/a'}\n`;
   files['MERGE-QUEUE.md'] = HEADER('Merge queue', now, digest) + table(
     ['Item', 'State', 'Lane', 'PR', 'Exact head', 'Checks', 'Rollback', 'Reasons'],
     s.MergeQueueItem.filter((m) => !isTerminal(policy, 'MergeQueueItem', m.state)).map((m) => [m.objectId, m.state, m.lane, `#${m.pr.number}`, m.pr.headSha.slice(0, 12), Object.entries(m.checks).filter(([k]) => k !== 'checkedHeadSha').map(([k, v]) => `${k}:${v}`).join(' '), m.rollback.class, (m.laneReasons ?? []).slice(0, 3).join('; ')]),
@@ -67,6 +77,7 @@ export function renderMemory(controlPlane, now, repo = {}) {
 export function statusReport(controlPlane, now, repo = {}, pre) {
   const { policy, store } = controlPlane;
   const s = pre?.s ?? snapshot(store);
+  s.Slice ??= [];
   const sched = pre?.sched ?? plan({ tasks: s.Task, agents: s.AgentState, reservations: s.Reservation }, policy, now);
   const rec = pre?.rec ?? reconcile(store, policy, now);
   const count = (arr, key = 'state') => Object.entries(arr.reduce((m, o) => ({ ...m, [o[key]]: (m[o[key]] ?? 0) + 1 }), {})).map(([k, v]) => `${k} ${v}`).join(', ') || 'none';
@@ -76,6 +87,7 @@ export function statusReport(controlPlane, now, repo = {}, pre) {
     `MAIN: ${repo.main ?? 'unverified'}`,
     `ARENA-MANAGER: ${repo.arenaManager ?? 'unverified'}`,
     `WORKERS: ${count(s.AgentState)}`,
+    `SLICES: ${count(s.Slice)}`,
     `TASKS: ${count(s.Task)}`,
     `PROGRAMS: ${programs}`,
     `RESERVATIONS: ${count(s.Reservation.filter((r) => !isTerminal(policy, 'Reservation', r.state)))}`,

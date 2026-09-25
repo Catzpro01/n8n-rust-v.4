@@ -81,6 +81,27 @@
       "update this register (feature + slice status)"
     ],
     "completionRule": "Immediately after merge + post-merge verification, the slice and its features become implemented with PR, merge SHA, tests and evidence; remaining debt is recorded as Pn-Mnn. An open PR means in-progress, never implemented.",
+    "deliveryModel": {
+      "decision": "DEC-0014",
+      "sourceIssue": 282,
+      "slice": "delivery boundary",
+      "task": "execution boundary",
+      "pr": "slice delivery boundary",
+      "invariant": "Every Slice produces exactly one delivery PR. A Slice may contain one or many Tasks (on different workers); their commits are reconciled into the Slice's single PR. Tasks of a Slice never deliver their own PR to main.",
+      "completionGate": [
+        "all tasks of the slice are done",
+        "slice acceptance criteria are met",
+        "exactly one delivery PR exists",
+        "the PR's exact-head CI/gates passed",
+        "the PR is merged to main",
+        "main is re-verified",
+        "evidence is recorded",
+        "this milestone register is updated"
+      ],
+      "accounting": "Milestone -> Slices -> one delivery PR each; a slice is implemented only when its gate is complete.",
+      "governanceWork": "GOVERNANCE tasks are outside milestone slicing: one task = one PR (DEC-0011).",
+      "enforcement": "tools/workforce (Slice object, MQ_ADMIT sliceId, SLICE_COMPLETE); docs/engineering-operations/workforce/policy.json#slices"
+    },
     "labels": {
       "status": [
         "status:implemented",

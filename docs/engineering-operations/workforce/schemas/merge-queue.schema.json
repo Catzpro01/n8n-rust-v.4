@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/Catzpro01/n8n-rust-v.4/docs/engineering-operations/workforce/schemas/merge-queue.schema.json",
   "title": "MergeQueueItem",
-  "description": "Deterministic integration surface. Pins repository, PR number, base, exact head SHA, taskId and agentId. A head change forces READY -> HOLD (#264 \u00a77).",
+  "description": "Deterministic integration surface. Pins repository, PR number, base, exact head SHA, taskId and agentId. A head change forces READY -> HOLD (#264 \u00a77). A Slice delivery item (DEC-0014) has taskId null, sliceId set and taskIds listing every task delivered by the PR.",
   "type": "object",
   "required": [
     "schemaVersion",
@@ -93,8 +93,25 @@
       }
     },
     "taskId": {
-      "type": "string",
+      "type": [
+        "string",
+        "null"
+      ],
       "pattern": "^TASK-[0-9]{4,}$"
+    },
+    "sliceId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^SLICE-[0-9]{4,}$"
+    },
+    "taskIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^TASK-[0-9]{4,}$"
+      }
     },
     "agentId": {
       "type": [

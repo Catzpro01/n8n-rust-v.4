@@ -27,6 +27,7 @@ export const SCHEMA_FILES = Object.freeze({
   Request: 'request.schema.json',
   Approval: 'approval.schema.json',
   JournalEntry: 'journal-entry.schema.json',
+  Slice: 'slice.schema.json',
   Actor: 'actor.schema.json',
   Command: 'command.schema.json',
   Event: 'event.schema.json',

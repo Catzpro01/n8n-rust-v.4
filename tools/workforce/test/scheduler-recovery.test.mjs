@@ -28,10 +28,11 @@ test('scheduler: priority order, capability matching, dependency and scope defer
 test('scheduler: SERIALIZED on conflicting scopes, HOLD for held work, SAFE_PARALLEL across programs', () => {
   const h = harness();
   for (const n of [1, 2, 3]) h.agent(n);
-  const a = h.task({ program: 'P7', scope: { paths: ['apps/x/'], securitySurfaces: ['auth'] } });
-  const b = h.task({ program: 'P8', scope: { paths: ['apps/y/'], securitySurfaces: ['auth'] } });
-  const c = h.task({ program: 'P11', scope: { paths: ['tools/z/'] } });
-  const d = h.task({ program: 'P10', scope: { paths: ['q/'] }, execution: { hold: true } });
+  for (const prog of ['P7', 'P8', 'P11', 'P10']) h.slice(prog, 1);
+  const a = h.task({ program: 'P7', slice: 'P7-S01', scope: { paths: ['apps/x/'], securitySurfaces: ['auth'] } });
+  const b = h.task({ program: 'P8', slice: 'P8-S01', scope: { paths: ['apps/y/'], securitySurfaces: ['auth'] } });
+  const c = h.task({ program: 'P11', slice: 'P11-S01', scope: { paths: ['tools/z/'] } });
+  const d = h.task({ program: 'P10', slice: 'P10-S01', scope: { paths: ['q/'] }, execution: { hold: true } });
   const p = planOf(h);
   assert.deepEqual(p.assignments.map((x) => x.taskId).sort(), [a, c].sort());
   assert.match(p.deferred.find((x) => x.taskId === b).reasons.join(), /serialized behind planned/);
@@ -116,12 +117,18 @@ test('replay verification detects snapshot tampering and illegal chains', () => 
 
 test('memory views and MANAGER STATUS render every required section', () => {
   const h = harness();
-  const id = h.working(1, { program: 'P7', scope: { paths: ['a/'] } });
-  const mq = h.readyForMerge(id);
-  h.mergeAndVerify(id, mq);
+  const sl = h.slice('P7', 1);
+  const id = h.working(1, { program: 'P7', slice: sl.key, scope: { paths: ['a/'] } });
+  h.ok(W(1), 'TASK_READY_FOR_REVIEW', 'Task', id, { headSha: SHA('c') });
+  const mq = h.readySliceDelivery(sl.id);
+  h.mergeSliceDelivery(sl.id, mq);
+  h.ok(M, 'SLICE_UPDATE_ACCEPTANCE', 'Slice', sl.id, { criteria: [{ id: 'AC-1', met: true, evidenceRef: 'EVD-0001' }] });
+  h.ok(M, 'SLICE_COMPLETE', 'Slice', sl.id, { milestoneRegister: { path: 'docs/n8n-lego/milestones.json', commitSha: SHA('d') } });
   h.ok(M, 'JOURNAL_APPEND', 'JournalEntry', 'NEW', { kind: 'LESSON', summary: 'exact-head pins prevent stale merges' });
   const files = renderMemory(h.cp, h.iso(), { main: SHA('b') });
-  for (const f of ['CURRENT.md', 'AGENTS.md', 'TASKS.md', 'MERGE-QUEUE.md', 'BLOCKERS.md', 'BOTTLENECKS.md', 'HANDOFFS.md', 'JOURNAL.md', 'LESSONS.md', 'DECISIONS.md', 'RESERVATIONS.md', 'RECOVERY.md']) assert.ok(files[f], f);
+  for (const f of ['CURRENT.md', 'AGENTS.md', 'TASKS.md', 'MERGE-QUEUE.md', 'BLOCKERS.md', 'BOTTLENECKS.md', 'HANDOFFS.md', 'JOURNAL.md', 'LESSONS.md', 'DECISIONS.md', 'RESERVATIONS.md', 'RECOVERY.md', 'SLICES.md']) assert.ok(files[f], f);
+  assert.match(files['SLICES.md'], /P7-S01 \| COMPLETED/);
+  assert.match(files['CURRENT.md'], /SLICES: COMPLETED 1/);
   assert.match(files['LESSONS.md'], /exact-head pins/);
   const status = statusReport(h.cp, h.iso(), { main: SHA('b') });
   for (const k of ['MAIN', 'ARENA-MANAGER', 'WORKERS', 'TASKS', 'PROGRAMS', 'RESERVATIONS', 'LEASES', 'MERGE QUEUE', 'DECISIONS', 'RECOVERY', 'BLOCKERS', 'COMPLETED', 'NEXT']) assert.match(status, new RegExp(`^${k}: `, 'm'), k);
