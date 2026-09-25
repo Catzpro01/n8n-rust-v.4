@@ -377,9 +377,9 @@ test('completion KPI is implemented/total and never counts verifying or blocked'
   assert.equal(tally.implemented, slices.filter((slice) => slice.status === 'implemented').length);
   assert.equal(tally.total, slices.length);
   assert.equal(tally.percent, percent1(tally.implemented, tally.total));
-  // Pin of the reconciled register (130 implemented / 152 recorded). Refresh it when a slice's
+  // Pin of the reconciled register (131 implemented / 152 recorded). Refresh it when a slice's
   // delivery state is reconciled; it exists so a silently-flipped status cannot pass unnoticed.
-  assert.equal(tally.percent, 85.5);
+  assert.equal(tally.percent, 86.2);
   const verifying = verifyingIndex(REGISTER);
   const m08 = slices.find((slice) => slice.id === 'P5-M08');
   assert.equal(displayStatus(m08, verifying), 'implemented');
@@ -389,13 +389,13 @@ test('completion KPI is implemented/total and never counts verifying or blocked'
   assert.equal(completionPercentForStatus('planned'), 0);
   const metrics = headlineMetrics(REGISTER);
   assert.equal(metrics.current.total, 146);
-  assert.equal(metrics.current.implemented, 129);
-  assert.equal(metrics.current.sliceCompletion, percent1(129, 146));
+  assert.equal(metrics.current.implemented, 130);
+  assert.equal(metrics.current.sliceCompletion, percent1(130, 146));
   assert.equal(metrics.future.total, 6);
   assert.equal(metrics.current.total + metrics.future.total, tally.total);
   const block = renderReadmeMilestoneSection(REGISTER);
   assert.match(block, new RegExp(`\\*\\*${formatPercent(metrics.current.sliceCompletion)}\\*\\*`));
-  assert.match(block, /129 \/ 146 slices implemented/);
+  assert.match(block, /130 \/ 146 slices implemented/);
   assert.match(block, /Future programs are excluded/);
   assert.doesNotMatch(block, /\*\*82\.9%\*\*/);
   for (const record of sliceRecords(REGISTER)) assert.ok(block.includes('`' + record.slice.id + '`'), record.slice.id);
