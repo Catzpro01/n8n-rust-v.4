@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "1.0",
+  "objectType": "Decision",
+  "objectId": "DEC-0015",
+  "revision": 1,
+  "createdAt": "2026-09-25T06:44:09Z",
+  "updatedAt": "2026-09-25T06:44:09Z",
+  "events": [],
+  "state": "ACTIVE",
+  "category": "WORKFORCE",
+  "title": "Two-phase execution: PHASE_A_REMOTE vs PHASE_B_RUNNER, WAITING_RUNNER, merge on GitHub-hosted checks with deferred runner verification",
+  "problem": "Issue #285: the self-hosted Windows/WSL runners are only online when the owner is home. Every PR also runs self-hosted jobs (windows-portability; validation/integration/audit on code changes), and the merge protocol required every check to complete successfully. With all 10 runners offline no delivery could merge, and runner-required work had no state other than BLOCKED.",
+  "options": [
+    {
+      "id": "B-deferred-runner-verification",
+      "summary": "Classify work PHASE_A_REMOTE / PHASE_B_RUNNER. Phase A deliveries may merge when every GitHub-hosted check is green and the self-hosted checks are WAITING_RUNNER; WAITING_RUNNER is reported separately and is never PASS; the Slice stays VERIFYING until the self-hosted checks pass on main, and a failure moves it to REGRESSION with a linked regression task"
+    },
+    {
+      "id": "A-strict",
+      "summary": "Merge only when every check including self-hosted passed; Phase A stops at a green-hosted PR and waits for the runners"
+    },
+    {
+      "id": "C-hosted-runners",
+      "summary": "Move the self-hosted jobs to GitHub-hosted runners"
+    }
+  ],
+  "selectedOption": "B-deferred-runner-verification",
+  "rationale": "Owner decision 2026-09-25 (chat answer to the Manager's runner-offline question; issue #285). A would stop the whole pipeline because of an offline external resource, contradicting the goal that Phase A work keeps progressing from a phone. C changes the CI architecture: jobs like windows-portability deliberately need the Windows/self-hosted environment and must not be silently replaced to obtain green output; that needs a separate infrastructure decision. Tightening: WAITING_RUNNER is not PASS. Status must show 'GitHub-hosted: PASS | Self-hosted: WAITING_RUNNER | Merge: ALLOWED_BY_DEC-0015 | Slice: VERIFYING'. When the runners are back, the deferred self-hosted checks run against a main commit containing the merge: PASS -> the Slice may complete; FAIL -> VERIFYING -> REGRESSION and the Manager creates a linked regression task (never a second PR for the merged Slice). Enforced by the control plane: task execution.phase / requirements.runnerRequired / requirements.runnerType; Task state WAITING_RUNNER (not BLOCKED, holds no worker slot, parking work in progress needs a handoff); scheduler runner availability (unknown fails closed) with TASK_WAIT_RUNNER / TASK_RUNNER_AVAILABLE recommendations; merge-queue checks.deferredRunnerChecks forcing the MANAGER lane; runnerVerification on the Slice or manager-executed task; RUNNER_VERIFICATION evidence anchored to main; SLICE_RUNNER_RESULT, SLICE_REGRESSION_RESOLVED, TASK_RUNNER_RESULT; SLICE_COMPLETE, TASK_COMPLETE and TASK_COMPLETE_MANAGER_EXECUTED refuse WAITING_RUNNER; tools/workforce/src/checks.mjs derives the merge verdict (ALL_GREEN / ALLOWED_BY_DEC-0015 / PENDING / BLOCKED) from the exact-head jobs and the online runner pool. This decision's own delivery PR is merged under the owner decision it records.",
+  "scope": {
+    "programs": [
+      "GOVERNANCE"
+    ],
+    "slices": [],
+    "domains": [],
+    "surfaces": []
+  },
+  "authority": {
+    "decidedBy": "OWNER",
+    "managerOnly": false,
+    "humanEscalation": true,
+    "proposedBy": "MANAGER-01"
+  },
+  "evidence": [],
+  "evidenceRefs": [
+    "docs/engineering-operations/workforce/policy.json#executionPhases",
+    "docs/engineering-operations/workforce/schemas/task.schema.json",
+    "docs/engineering-operations/workforce/schemas/slice.schema.json",
+    "tools/workforce/src/checks.mjs",
+    "tools/workforce/src/engine.mjs",
+    "tools/workforce/src/scheduler.mjs",
+    "tools/workforce/test/phases.test.mjs",
+    "docs/n8n-lego/milestones.json#governance.executionPhases"
+  ],
+  "sources": {
+    "issues": [
+      285,
+      282,
+      256
+    ],
+    "prs": [],
+    "commits": [],
+    "requests": []
+  },
+  "supersedes": null,
+  "supersededBy": null,
+  "promotion": {
+    "canonical": false,
+    "mainPath": null,
+    "mainCommitSha": null,
+    "promotedAt": null,
+    "promotedBy": null
+  },
+  "reason": null
+}

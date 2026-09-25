@@ -12,6 +12,10 @@
 //   status                        MANAGER STATUS (§47)
 //   render <outDir>               write derived Manager memory views (AGENTS.md, TASKS.md, …)
 //   decisions-check               validate the canonical decision records on disk
+//   checks <jobs.json|->          DEC-0015 merge verdict for exact-head jobs ({ jobs, onlineRunners? })
+//
+// plan / status / render accept --runners WINDOWS=n,WSL=n (observed online self-hosted pool, DEC-0015);
+// without it runner availability is unknown and runner-required work stays WAITING_RUNNER.
 //
 // Exit codes: 0 ok, 1 command rejected / findings, 2 usage error.
 // State lives OUTSIDE git by default (.arena/workforce-state is gitignored operational state).
@@ -20,6 +24,7 @@ import { join, resolve } from 'node:path';
 import { ControlPlane } from './engine.mjs';
 import { loadPolicy, isoNow } from './core.mjs';
 import { plan } from './scheduler.mjs';
+import { classifyChecks, formatChecks } from './checks.mjs';
 import { reconcile, applySafeRecovery, snapshot } from './recovery.mjs';
 import { renderMemory, statusReport } from './render.mjs';
 import { validate, REPO_ROOT, WORKFORCE_DOCS } from './schema.mjs';
@@ -34,6 +39,18 @@ const BOOTSTRAP_ACTORS = [
   { id: 'SYSTEM-MERGE-EXECUTOR', type: 'SYSTEM' },
   { id: 'SYSTEM-MERGE-CLASSIFIER', type: 'SYSTEM' },
 ];
+
+/** --runners WINDOWS=0,WSL=2 -> { WINDOWS: 0, WSL: 2 }; absent -> undefined (unknown, fail closed). */
+export function parseRunners(v) {
+  if (v === undefined) return undefined;
+  const out = {};
+  for (const part of String(v).split(',').filter(Boolean)) {
+    const [k, n] = part.split('=');
+    if (!['WINDOWS', 'WSL'].includes(k) || !/^[0-9]+$/.test(n ?? '')) throw new Error(`--runners expects WINDOWS=n,WSL=n, got ${part}`);
+    out[k] = Number(n);
+  }
+  return out;
+}
 
 function parse(argv) {
   const args = { _: [] };
@@ -74,9 +91,19 @@ export function main(argv = process.argv.slice(2), io = { out: (s) => process.st
   const json = (v) => io.out(`${JSON.stringify(v, null, 2)}\n`);
   switch (cmd) {
     case 'validate-policy': { const p = loadPolicy(); json({ ok: true, path: p.path, digest: p.digest }); return 0; }
+    case 'checks': {
+      const src = args._[1];
+      if (!src) { io.err('usage: checks <jobs.json|->\n'); return 2; }
+      const input = JSON.parse(readFileSync(src === '-' ? 0 : src, 'utf8'));
+      const r = classifyChecks(input.jobs ?? [], { onlineRunners: input.onlineRunners });
+      json({ ...r, summary: formatChecks(r) });
+      return r.mergeAllowed ? 0 : 1;
+    }
     case 'decisions-check': { const r = checkDecisionRecords(); json({ ok: r.problems.length === 0, decisions: r.records.map((d) => `${d.objectId}:${d.state}`), problems: r.problems }); return r.problems.length ? 1 : 0; }
   }
   const cp = new ControlPlane({ stateDir, now: () => now });
+  const runners = parseRunners(args.runners);
+  const repo = { main: args.main, arenaManager: args['arena-manager'], runners };
   switch (cmd) {
     case 'bootstrap': json({ ok: true, actors: cp.bootstrapActors(BOOTSTRAP_ACTORS) }); return 0;
     case 'exec': {
@@ -87,20 +114,20 @@ export function main(argv = process.argv.slice(2), io = { out: (s) => process.st
       json(result);
       return result.ok ? 0 : 1;
     }
-    case 'plan': { const s = snapshot(cp.store); json(plan({ tasks: s.Task, agents: s.AgentState, reservations: s.Reservation }, cp.policy, now)); return 0; }
+    case 'plan': { const s = snapshot(cp.store); json(plan({ tasks: s.Task, agents: s.AgentState, reservations: s.Reservation, runners }, cp.policy, now)); return 0; }
     case 'reconcile': { const r = reconcile(cp.store, cp.policy, now); json(r); return r.findings.length ? 1 : 0; }
     case 'recover': { const r = applySafeRecovery(cp, now); json({ journal: r.journal, applied: r.applied, remaining: r.remaining.findings.length }); return 0; }
-    case 'status': io.out(statusReport(cp, now, { main: args.main, arenaManager: args['arena-manager'] })); return 0;
+    case 'status': io.out(statusReport(cp, now, repo)); return 0;
     case 'render': {
       const out = resolve(args._[1] ?? join(stateDir, 'memory'));
       mkdirSync(out, { recursive: true });
-      const files = renderMemory(cp, now, { main: args.main, arenaManager: args['arena-manager'] });
+      const files = renderMemory(cp, now, repo);
       for (const [name, text] of Object.entries(files)) writeFileSync(join(out, name), text);
       json({ ok: true, out, files: Object.keys(files) });
       return 0;
     }
     default:
-      io.err('usage: cli.mjs <validate-policy|decisions-check|bootstrap|exec|plan|reconcile|recover|status|render> [--state DIR] [--now ISO]\n');
+      io.err('usage: cli.mjs <validate-policy|decisions-check|checks|bootstrap|exec|plan|reconcile|recover|status|render> [--state DIR] [--now ISO]\n');
       return 2;
   }
 }

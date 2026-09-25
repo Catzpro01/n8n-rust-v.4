@@ -79,7 +79,8 @@
         "DEPLOYMENT",
         "REVIEW",
         "NEGATIVE_TEST",
-        "MAIN_VERIFICATION"
+        "MAIN_VERIFICATION",
+        "RUNNER_VERIFICATION"
       ]
     },
     "trustLevel": {
@@ -169,6 +170,20 @@
             "string",
             "null"
           ]
+        },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "deferredRunnerChecks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       }
     },

@@ -82,6 +82,22 @@ A create uses `objectId: "NEW"` to get an allocated id, or passes an explicit id
     register updated.
   - A rejected, unmerged delivery PR reopens the Slice and is recorded in `rejectedDeliveries`. Once
     a delivery has merged, no second PR is possible; fix forward with a maintenance slice.
+- **Two-phase execution (DEC-0015):** every task is `PHASE_A_REMOTE` (default) or
+  `PHASE_B_RUNNER` (`requirements.runnerType` WINDOWS / WSL / ANY). A Slice may mix both and still
+  has one delivery PR.
+  - Runner offline: Phase A keeps being scheduled. Phase B waits in `WAITING_RUNNER`, which is not
+    BLOCKED and holds no worker slot (parking work in progress needs a handoff). `plan --runners
+    WINDOWS=n,WSL=n` recommends `TASK_WAIT_RUNNER` / `TASK_RUNNER_AVAILABLE`; unknown availability
+    fails closed.
+  - Merge: `node tools/workforce/src/cli.mjs checks <jobs.json>` classifies the exact-head jobs.
+    GitHub-hosted all green plus self-hosted `WAITING_RUNNER` gives `ALLOWED_BY_DEC-0015`; report it
+    with `MQ_UPDATE_CHECKS {deferredRunnerChecks}`, which forces the MANAGER lane.
+  - **WAITING_RUNNER is never PASS.** After the merge the Slice (or manager-executed task) carries
+    `runnerVerification: WAITING_RUNNER` and cannot complete. When the runners are back, record
+    `RUNNER_VERIFICATION` evidence anchored to main: `SLICE_RUNNER_RESULT` PASS allows
+    `SLICE_COMPLETE`; FAIL moves the Slice to `REGRESSION` and must link a regression task (in a
+    maintenance slice or GOVERNANCE, never the merged Slice). `SLICE_REGRESSION_RESOLVED` returns it
+    to `VERIFYING` once every linked task is COMPLETED, and a new PASS is required.
 - **Manager-executed tasks (DEC-0011):** governance work the Manager does itself (never assigned to
   a slot) completes with `TASK_COMPLETE_MANAGER_EXECUTED`. It requires the same VERIFIED COMMIT, CI
   and MAIN_VERIFICATION evidence; a COMMIT anchored to the merge SHA replaces the merge-queue item.

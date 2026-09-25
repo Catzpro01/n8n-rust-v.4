@@ -102,8 +102,18 @@ export function matchAgent(task, agent, ctx) {
 }
 
 /**
+ * DEC-0015: how many online self-hosted runners can serve a runner type? `runners` is the observed
+ * pool ({ WINDOWS: n, WSL: n }) or undefined when availability is unknown (fails closed: 0).
+ */
+export function onlineRunnersFor(type, runners) {
+  if (!runners) return 0;
+  if (type === 'ANY') return (runners.WINDOWS ?? 0) + (runners.WSL ?? 0);
+  return runners[type] ?? 0;
+}
+
+/**
  * Produce a scheduling plan.
- * snapshot: { tasks, agents, reservations }
+ * snapshot: { tasks, agents, reservations, runners? }  (runners: DEC-0015 observed online pool)
  */
 export function plan(snapshot, policy, now) {
   const tasks = snapshot.tasks ?? [];
@@ -134,6 +144,12 @@ export function plan(snapshot, policy, now) {
 
   const assignments = [];
   const deferred = [];
+  const runnerActions = [];
+  // WAITING_RUNNER work returns to the READY queue as soon as a matching runner is online (DEC-0015).
+  for (const t of tasks.filter((x) => x.state === 'WAITING_RUNNER')) {
+    const verifying = t.runnerVerification && t.runnerVerification.status !== 'NOT_REQUIRED';
+    if (!verifying && onlineRunnersFor(t.requirements?.runnerType ?? 'ANY', snapshot.runners) > 0) runnerActions.push({ taskId: t.objectId, command: 'TASK_RUNNER_AVAILABLE', reason: `online ${t.requirements?.runnerType ?? 'ANY'} runner` });
+  }
   let slots = policy.backpressure.maxActiveTasks - active.length;
   const planned = [];
   for (const { task, prio } of candidates) {
@@ -149,6 +165,11 @@ export function plan(snapshot, policy, now) {
       const pc = classifyPair(task, p, ctx);
       if (pc.class === 'SERIALIZED' || pc.class === 'HOLD') { why.push(`serialized behind planned ${p.objectId}: ${pc.reason}`); break; }
     }
+    let waitingRunner = false;
+    if ((task.execution?.phase ?? 'PHASE_A_REMOTE') === 'PHASE_B_RUNNER' && onlineRunnersFor(task.requirements?.runnerType ?? 'ANY', snapshot.runners) === 0) {
+      waitingRunner = true;
+      why.push(`WAITING_RUNNER: no online ${task.requirements?.runnerType ?? 'ANY'} runner${snapshot.runners ? '' : ' (availability unknown, fail closed)'}`);
+    }
     if (slots <= 0) why.push('backpressure: maxActiveTasks reached');
     let best = null;
     const rejections = [];
@@ -161,7 +182,8 @@ export function plan(snapshot, policy, now) {
       if (!best) why.push('no eligible agent (capability/capacity/runner)');
     }
     if (why.length) {
-      deferred.push({ taskId: task.objectId, priority: prio, reasons: why, agentRejections: rejections.slice(0, 10) });
+      deferred.push({ taskId: task.objectId, priority: prio, reasons: why, agentRejections: rejections.slice(0, 10), ...(waitingRunner ? { waitingRunner: true } : {}) });
+      if (waitingRunner) runnerActions.push({ taskId: task.objectId, command: 'TASK_WAIT_RUNNER', reason: 'runner-required task parked without holding a worker slot' });
       continue;
     }
     assignments.push({ taskId: task.objectId, agentId: best.agentId, priority: prio, command: 'TASK_ASSIGN' });
@@ -216,6 +238,11 @@ export function plan(snapshot, policy, now) {
     capacity: { maxActiveTasks: policy.backpressure.maxActiveTasks, active: active.length, plannedAssignments: assignments.length, queued },
     assignments,
     deferred,
+    runner: {
+      availability: snapshot.runners ?? null,
+      waiting: tasks.filter((t) => t.state === 'WAITING_RUNNER').map((t) => t.objectId),
+      actions: runnerActions,
+    },
     concurrency: { summary, pairs },
     alerts,
   };

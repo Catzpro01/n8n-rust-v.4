@@ -147,6 +147,8 @@ export function classifyMerge(item, policy, context = {}) {
   }
   if (checks.checkedHeadSha && checks.checkedHeadSha !== item.pr.headSha) holdReasons.push('checks were produced for a different head SHA');
   if (!checks.checkedHeadSha) holdReasons.push('checks are not anchored to the exact head SHA');
+  // DEC-0015: self-hosted checks that are WAITING_RUNNER never make a merge SAFE-AUTO; they are reported, not passed.
+  if ((checks.deferredRunnerChecks ?? []).length) reasons.push(`ALLOWED_BY_DEC-0015: self-hosted checks WAITING_RUNNER (${checks.deferredRunnerChecks.join(', ')})`);
   const cls = item.classification ?? {};
   for (const flag of mp.managerLaneFlags) if (cls[flag] === true) reasons.push(`classification.${flag}`);
   for (const flag of mp.managerLaneFlags) if (cls[flag] === undefined) reasons.push(`classification.${flag} unknown (fail closed)`);

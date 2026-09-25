@@ -102,6 +102,18 @@
       "governanceWork": "GOVERNANCE tasks are outside milestone slicing: one task = one PR (DEC-0011).",
       "enforcement": "tools/workforce (Slice object, MQ_ADMIT sliceId, SLICE_COMPLETE); docs/engineering-operations/workforce/policy.json#slices"
     },
+    "executionPhases": {
+      "decision": "DEC-0015",
+      "sourceIssue": 285,
+      "phases": {
+        "PHASE_A_REMOTE": "remote-capable work (contracts, schemas, source, unit tests, docs, GitHub-side operations); continues while the self-hosted runners are offline",
+        "PHASE_B_RUNNER": "work that needs the self-hosted Windows/WSL runner (runnerRequired, runnerType); waits in WAITING_RUNNER without holding a worker slot"
+      },
+      "sliceRule": "A Slice may contain tasks of both phases and still has exactly one delivery PR (DEC-0014).",
+      "mergeRule": "Merge is allowed when every GitHub-hosted check is green and the self-hosted checks are green or WAITING_RUNNER; any failed check blocks. WAITING_RUNNER is never PASS.",
+      "completionRule": "A Slice merged with WAITING_RUNNER checks stays VERIFYING until the self-hosted checks pass on main; a failure moves it to REGRESSION with a linked regression task.",
+      "enforcement": "tools/workforce (execution.phase, WAITING_RUNNER, runnerVerification, SLICE_RUNNER_RESULT, checks.mjs); docs/engineering-operations/workforce/policy.json#executionPhases"
+    },
     "labels": {
       "status": [
         "status:implemented",

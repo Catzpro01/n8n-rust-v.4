@@ -78,6 +78,8 @@
         "SLICE_CANCEL",
         "SLICE_COMPLETE",
         "SLICE_CREATE",
+        "SLICE_REGRESSION_RESOLVED",
+        "SLICE_RUNNER_RESULT",
         "SLICE_SUPERSEDE",
         "SLICE_UPDATE_ACCEPTANCE",
         "TASK_ACK",
@@ -97,13 +99,16 @@
         "TASK_READY_FOR_REVIEW",
         "TASK_RESUME_REVIEW",
         "TASK_REWORK",
+        "TASK_RUNNER_AVAILABLE",
+        "TASK_RUNNER_RESULT",
         "TASK_START",
         "TASK_SUPERSEDE",
         "TASK_TRANSFER",
         "TASK_UNCLAIM",
         "TASK_UNFREEZE",
         "TASK_VERIFY_START",
-        "TASK_WAIT_EXTERNAL"
+        "TASK_WAIT_EXTERNAL",
+        "TASK_WAIT_RUNNER"
       ]
     },
     "schemaVersion": {
