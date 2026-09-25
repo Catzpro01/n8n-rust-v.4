@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { plan, effectivePriority, classifyPair } from '../src/scheduler.mjs';
+import { plan, effectivePriority, classifyPair, heavyRunnerClass } from '../src/scheduler.mjs';
 import { reconcile, applySafeRecovery, verifyEventLog, verifyIntegrity, snapshot } from '../src/recovery.mjs';
 import { renderMemory, statusReport } from '../src/render.mjs';
 import { loadPolicy } from '../src/core.mjs';
@@ -138,4 +138,42 @@ test('MANAGER STATUS reports held and decision-pending work that has not started
   assert.match(status, new RegExp(`BLOCKERS: .*${held}\\(ON_HOLD\\)`));
   assert.match(status, new RegExp(`BLOCKERS: .*${pending}\\(DECISION_PENDING\\)`));
   assert.match(renderMemory(h.cp, h.iso(), {})['BLOCKERS.md'], /waiting for credential/);
+});
+
+test('DEC-0010 open slots: any idle slot takes any task; runner pool is shared; heavy limits count the task runner class', () => {
+  assert.equal(policy.runnerPool.model, 'SHARED');
+  assert.equal(policy.runnerPool.defaultRunnerClass, 'ANY');
+  const h = harness();
+  for (const n of [1, 2, 3, 4]) h.agent(n);
+  for (const n of [1, 2, 3, 4]) assert.equal(h.get('AgentState', `AGENT-0${n}`).capacity.runnerClass, 'ANY');
+  const win = h.task({ title: 'win', scope: { paths: ['w/'] }, requirements: { runnerClasses: ['WINDOWS'] } });
+  const wsl = h.task({ title: 'wsl', scope: { paths: ['l/'] }, requirements: { runnerClasses: ['WSL'] } });
+  const any = h.task({ title: 'any', scope: { paths: ['a/'] } });
+  const p = planOf(h);
+  assert.deepEqual(p.assignments.map((a) => a.taskId).sort(), [win, wsl, any].sort(), 'no task waits for a specific slot');
+  assert.equal(new Set(p.assignments.map((a) => a.agentId)).size, 3);
+  assert.equal(heavyRunnerClass({ requirements: { runnerClasses: ['WINDOWS'] } }), 'WINDOWS');
+  assert.equal(heavyRunnerClass({ requirements: { runnerClasses: ['WINDOWS', 'WSL'] } }), 'ANY');
+  assert.equal(heavyRunnerClass({}), 'ANY');
+  // Heavy WINDOWS builds are capped by the pool limit even though every slot is ANY.
+  const h2 = harness();
+  for (let n = 1; n <= 6; n += 1) h2.agent(n);
+  const heavy = [];
+  for (let i = 0; i < 5; i += 1) heavy.push(h2.task({ title: `hw${i}`, scope: { paths: [`hw${i}/`] }, requirements: { capacityClass: 'HEAVY', runnerClasses: ['WINDOWS'] } }));
+  const p2 = planOf(h2);
+  assert.equal(p2.assignments.length, policy.backpressure.maxHeavyBuildsPerRunnerClass.WINDOWS);
+  assert.ok(p2.deferred.every((d) => d.reasons.join().includes('no eligible agent')));
+});
+
+test('AGENT_RECONFIGURE: Manager reconfigures an idle slot; busy slots and worker callers are refused', () => {
+  const h = harness();
+  h.agent(1, { capacity: { runnerClass: 'WINDOWS' } });
+  h.ok(M, 'AGENT_RECONFIGURE', 'AgentState', 'AGENT-01', { capacity: { runnerClass: 'ANY' }, capabilities: ['node', 'git', 'node'] });
+  const a = h.get('AgentState', 'AGENT-01');
+  assert.equal(a.capacity.runnerClass, 'ANY');
+  assert.deepEqual(a.capabilities, ['git', 'node']);
+  expectError(assert, h.run(M, 'AGENT_RECONFIGURE', 'AgentState', 'AGENT-01', { capacity: { activeTaskCount: 5 } }), 'INVALID_SCHEMA');
+  expectError(assert, h.run(W(1), 'AGENT_RECONFIGURE', 'AgentState', 'AGENT-01', { capacity: { runnerClass: 'WSL' } }), 'FORBIDDEN');
+  h.working(1, { scope: { paths: ['x/'] } });
+  expectError(assert, h.run(M, 'AGENT_RECONFIGURE', 'AgentState', 'AGENT-01', { capacity: { runnerClass: 'WSL' } }), 'POLICY_DENIED');
 });

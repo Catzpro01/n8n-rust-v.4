@@ -23,6 +23,7 @@
     "commandType": {
       "enum": [
         "AGENT_ACTIVATE",
+        "AGENT_RECONFIGURE",
         "AGENT_HEARTBEAT",
         "AGENT_MARK_LOST",
         "AGENT_RECOVER",
