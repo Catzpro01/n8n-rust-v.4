@@ -10,16 +10,15 @@
   "executionPointer": {
     "authority": "main (DEC-0020). This block, read together with the slice statuses it names, is the only active-work pointer. arena-manager is Manager memory and handoff, never a milestone source; README.md and .ai/ are generated projections of this file.",
     "historicalLastP2Milestone": "P2.27",
-    "lastVerifiedMain": "0845c25ff13973ccf09bda6d909be147b2681d02",
+    "lastVerifiedMain": "abe81c33266264f4dd460e10a025b8e2699cff4a",
     "latestCompletedSlice": {
-      "id": "P5-M07",
-      "pr": 317,
-      "mergeSha": "0845c25ff13973ccf09bda6d909be147b2681d02"
+      "id": "P9-S01",
+      "pr": 319,
+      "mergeSha": "abe81c33266264f4dd460e10a025b8e2699cff4a"
     },
     "activeSlices": [],
     "verifyingSlices": [],
     "plannedQueue": [
-      "P9-S01",
       "P3-S01",
       "P4-S01",
       "P6-S01",
@@ -3797,10 +3796,10 @@
           "id": "P9-S01",
           "title": "Per-node execution cost/resource ledger correlated with P9 telemetry (#224 item 20)",
           "kind": "slice",
-          "status": "planned",
-          "mergeSha": null,
+          "status": "implemented",
+          "mergeSha": "abe81c33266264f4dd460e10a025b8e2699cff4a",
           "issue": 224,
-          "evidence": null,
+          "evidence": "docs/n8n-lego/evidence/P9-S01-EVIDENCE.md",
           "owner": "manager (unassigned)"
         }
       ]
