@@ -1,4 +1,4 @@
-// Repository-level invariants for the workforce control plane (DEC-0002, DEC-0004).
+// Repository-level invariants for the governance records (DEC-0002, DEC-0004, DEC-0019).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -27,7 +27,7 @@ test('workforce control plane stays out of the product manifests and product cod
   for (const f of readdirSync(src)) assert.doesNotMatch(readFileSync(join(src, f), 'utf8'), /from ['"][./]*\/?apps\/|n8n-lego\/src/, `${f} must not import product code`);
 });
 
-test('no secret-like material in workforce sources, policy or decisions', () => {
+test('no secret-like material in governance sources or decisions', () => {
   const roots = [join(REPO_ROOT, 'tools', 'workforce'), join(REPO_ROOT, 'docs', 'engineering-operations', 'workforce')];
   const pat = /(ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----)/;
   const walk = (d) => { for (const e of readdirSync(d, { withFileTypes: true })) { const p = join(d, e.name); if (e.isDirectory()) walk(p); else assert.doesNotMatch(readFileSync(p, 'utf8'), pat, p); } };
@@ -67,10 +67,16 @@ test('canonical decision records are schema-valid and consistent', () => {
   }
 });
 
-test('cli: validate-policy and decisions-check succeed; unknown command is a usage error', () => {
+test('cli: decisions-check succeeds; unknown command is a usage error', () => {
   const out = [];
   const io = { out: (s) => out.push(s), err: () => {} };
-  assert.equal(main(['validate-policy'], io), 0);
   assert.equal(main(['decisions-check'], io), 0);
   assert.equal(main(['frobnicate'], io), 2);
+});
+
+test('DEC-0019: the task-distribution engine and legacy agent runtime stay removed', () => {
+  const gone = ['tools/workforce/src/engine.mjs', 'tools/workforce/src/scheduler.mjs', 'docs/engineering-operations/workforce/policy.json',
+    'tools/arena-bridge', 'tools/arena-executor', 'tools/gateway', 'tools/orchestration/control_plane.py', 'tools/orchestration/task_manager.py', 'tools/orchestration/audit_runner.py',
+    '.arena/AGENT_RULES.md', '.arena/templates'];
+  for (const p of gone) assert.ok(!existsSync(join(REPO_ROOT, p)), `${p} must not come back without a new owner decision`);
 });

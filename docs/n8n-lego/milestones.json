@@ -100,7 +100,7 @@
       ],
       "accounting": "Milestone -> Slices -> one delivery PR each; a slice is implemented only when its gate is complete.",
       "governanceWork": "GOVERNANCE tasks are outside milestone slicing: one task = one PR (DEC-0011).",
-      "enforcement": "tools/workforce (Slice object, MQ_ADMIT sliceId, SLICE_COMPLETE); docs/engineering-operations/workforce/policy.json#slices"
+      "enforcement": "Manager delivery checklist (DEC-0019: the Manager executes every task and verifies the 8 gates before recording a slice as implemented); the former engine enforcement was removed with the task-distribution engine"
     },
     "executionPhases": {
       "decision": "DEC-0015",
@@ -112,7 +112,7 @@
       "sliceRule": "A Slice may contain tasks of both phases and still has exactly one delivery PR (DEC-0014).",
       "mergeRule": "Merge is allowed when every GitHub-hosted check is green and the self-hosted checks are green or WAITING_RUNNER; any failed check blocks. WAITING_RUNNER is never PASS.",
       "completionRule": "A Slice merged with WAITING_RUNNER checks stays VERIFYING until the self-hosted checks pass on main; a failure moves it to REGRESSION with a linked regression task.",
-      "enforcement": "tools/workforce (execution.phase, WAITING_RUNNER, runnerVerification, SLICE_RUNNER_RESULT, checks.mjs); docs/engineering-operations/workforce/policy.json#executionPhases"
+      "enforcement": "tools/workforce/src/checks.mjs (DEC-0015 merge verdict: GitHub-hosted vs self-hosted, WAITING_RUNNER never PASS) plus Manager post-merge runner verification on main (DEC-0019)"
     },
     "labels": {
       "status": [

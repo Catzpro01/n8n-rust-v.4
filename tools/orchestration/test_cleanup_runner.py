@@ -110,40 +110,6 @@ class GitFixture:
         return cr.make_runner(str(cwd), env=env)
 
 
-class StubControlPlane:
-    """Unconfigured control plane: the runner must skip it."""
-    url = ""
-    key = ""
-
-
-class RecordingControlPlane:
-    """A configured legacy control plane whose RPCs are recorded, not sent."""
-
-    def __init__(self, status: str = "MERGING", start_response=None, fail: Optional[Exception] = None):
-        self.url, self.key = "https://control-plane.invalid", "configured"
-        self.status, self.calls = status, []
-        self.start_response = start_response
-        self.fail = fail
-
-    def get_task_by_key(self, key):
-        self.calls.append(("get_task_by_key", key))
-        if self.fail:
-            raise self.fail
-        return {"id": "T-1", "status": self.status, "version": 3}
-
-    def record_merge(self, task_id, sha, version):
-        self.calls.append(("record_merge", task_id, sha, version))
-        return 200, {"success": True, "version": version + 1}
-
-    def start_cleanup(self, task_id, version):
-        self.calls.append(("start_cleanup", task_id, version))
-        return self.start_response or (200, {"success": True, "version": version + 1})
-
-    def complete_cleanup(self, task_id, version):
-        self.calls.append(("complete_cleanup", task_id, version))
-        return 200, {"success": True}
-
-
 class FakeGit:
     """Scripted ``git`` for pure unit tests.  ``rules`` map a command prefix to a
     ``CompletedProcess`` or to a callable producing one; unmatched commands succeed."""
@@ -172,10 +138,9 @@ def fail(rc: int = 1, err: str = "") -> CompletedProcess:
     return CompletedProcess([], rc, "", err)
 
 
-def run_main(fx: GitFixture, cwd: Path, *args: str, control_plane=None, extra_env=None) -> Tuple[int, str]:
+def run_main(fx: GitFixture, cwd: Path, *args: str, extra_env=None) -> Tuple[int, str]:
     lines: List[str] = []
-    factory = (lambda: control_plane) if control_plane is not None else (lambda: StubControlPlane())
-    code = cr.main(list(args) + ["--skip-tests"], run=fx.runner(cwd, extra_env), control_plane_factory=factory, out=lines.append)
+    code = cr.main(list(args) + ["--skip-tests"], run=fx.runner(cwd, extra_env), out=lines.append)
     return code, "\n".join(lines)
 
 
@@ -428,62 +393,27 @@ class TestDeletionWithFakeGit(unittest.TestCase):
         self.assertTrue(git.saw("git", "push", "origin", "--delete", "refs/heads/arena/manager/P5-M04"))
 
 
-# ------------------------------------------- legacy control plane (best effort)
+# ------------------------------------ no legacy control plane (DEC-0019)
 
-class TestControlPlaneBestEffort(unittest.TestCase):
-    def setUp(self):
-        self.fx = GitFixture(commits=4)
-        self.addCleanup(self.fx.cleanup)
-        self.clone = self.fx.clone("full")
-        self.merge_sha = self.fx.shas[-1]
-
-    def test_unconfigured_control_plane_is_skipped(self):
-        code, out = run_main(self.fx, self.clone, "--branch", GitFixture.SLICE, "--merge-sha", self.merge_sha)
-        self.assertEqual(code, 0, out)
-        self.assertIn("control plane not configured", out)
-        self.assertNotIn(GitFixture.SLICE, self.fx.remote_heads())
-
-    def test_legacy_transitions_wrap_the_deletion(self):
-        plane = RecordingControlPlane(status="MERGING")
-        code, out = run_main(self.fx, self.clone, "--branch", GitFixture.SLICE, "--merge-sha", self.merge_sha, control_plane=plane)
-        self.assertEqual(code, 0, out)
-        self.assertEqual([c[0] for c in plane.calls], ["get_task_by_key", "record_merge", "start_cleanup", "complete_cleanup"])
-        self.assertEqual(plane.calls[1][2], self.merge_sha)
-        self.assertNotIn(GitFixture.SLICE, self.fx.remote_heads())
-
-    def test_already_completed_task_does_not_stop_the_cleanup(self):
-        plane = RecordingControlPlane(status="POST_MERGE_VERIFY", start_response=(200, {"success": False, "action": "ALREADY_COMPLETED"}))
-        code, out = run_main(self.fx, self.clone, "--branch", GitFixture.SLICE, "--merge-sha", self.merge_sha, control_plane=plane)
-        self.assertEqual(code, 0, out)
-        self.assertIn("already completed", out)
-        self.assertNotIn("complete_cleanup", [c[0] for c in plane.calls])
-        self.assertNotIn(GitFixture.SLICE, self.fx.remote_heads())
-
-    def test_control_plane_failure_never_blocks_the_cleanup(self):
-        plane = RecordingControlPlane(fail=RuntimeError("connection refused"))
-        code, out = run_main(self.fx, self.clone, "--branch", GitFixture.SLICE, "--merge-sha", self.merge_sha, control_plane=plane)
-        self.assertEqual(code, 0, out)
-        self.assertIn("control plane unavailable (RuntimeError: connection refused)", out)
-        self.assertNotIn(GitFixture.SLICE, self.fx.remote_heads())
-
-    def test_build_control_plane_reads_env_without_printing_it(self):
-        fake = {"SUPABASE_URL": "https://control-plane.invalid/", "SUPABASE_SERVICE_ROLE_KEY": "not-a-real-key-value"}
-        saved = {k: os.environ.get(k) for k in fake}
-        os.environ.update(fake)
+class TestNoLegacyControlPlane(unittest.TestCase):
+    def test_cleanup_needs_only_git_and_ignores_legacy_env(self):
+        fx = GitFixture(commits=4)
+        self.addCleanup(fx.cleanup)
+        clone = fx.clone("full")
+        saved = os.environ.get("SUPABASE_URL")
+        os.environ["SUPABASE_URL"] = "https://control-plane.invalid/"
         try:
-            client = cr.build_control_plane()
+            code, out = run_main(fx, clone, "--branch", GitFixture.SLICE, "--merge-sha", fx.shas[-1])
         finally:
-            for k, v in saved.items():
-                if v is None:
-                    os.environ.pop(k, None)
-                else:
-                    os.environ[k] = v
-        self.assertEqual(client.url, "https://control-plane.invalid")
-        self.assertEqual(client.key, "not-a-real-key-value")
-        # Nothing about the client is ever logged by the runner: the log lines only name the outcome.
-        lines: List[str] = []
-        cr.sync_control_plane(StubControlPlane(), "b", "0" * 40, lines.append)
-        self.assertEqual(lines, ["control plane not configured; skipped legacy state transition"])
+            if saved is None:
+                os.environ.pop("SUPABASE_URL", None)
+            else:
+                os.environ["SUPABASE_URL"] = saved
+        self.assertEqual(code, 0, out)
+        self.assertIn("cleanup finished: DELETED", out)
+        self.assertNotIn("control plane", out)
+        self.assertNotIn("control-plane.invalid", out)
+        self.assertFalse(hasattr(cr, "build_control_plane"))
 
 
 if __name__ == "__main__":

@@ -160,7 +160,7 @@ function* opsFiles(relative) {
 
 test('no polling/wait sleep above 1 second in CI workflows or operations tooling', () => {
   const offenders = [];
-  const roots = ['.github/workflows', 'tools/orchestration', 'tools/gateway', 'tools/arena-bridge', 'tools/arena-executor', 'scripts', 'apps/n8n-lego/scripts'];
+  const roots = ['.github/workflows', 'tools/orchestration', 'scripts', 'apps/n8n-lego/scripts'];
   const patterns = [
     /\bsleep\s+(\d+(?:\.\d+)?)\b/g, // shell
     /time\.sleep\(\s*(\d+(?:\.\d+)?)\s*\)/g, // python literal

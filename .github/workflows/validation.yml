@@ -80,12 +80,3 @@ jobs:
             echo "Testing: $AFFECTED"
             cargo test $AFFECTED
           fi
-
-      - name: Report Build & Test Status to Supabase
-        if: always()
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: |
-          python3 tools/orchestration/report_ci_status.py --suite validation --status ${{ job.status }} --sha $COMMIT_SHA

@@ -52,12 +52,3 @@ jobs:
 
       - name: Level 2 - Execution LEGO Conformance Tests
         run: node --experimental-strip-types --test packages/execution-lego/test/02-runtime.test.mjs packages/execution-lego/test/03-context-recovery.test.mjs
-
-      - name: Report Integration Status to Supabase
-        if: always()
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: |
-          python3 tools/orchestration/report_ci_status.py --suite integration --status ${{ job.status }} --sha $COMMIT_SHA

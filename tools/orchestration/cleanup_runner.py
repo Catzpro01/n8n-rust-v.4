@@ -11,10 +11,7 @@ Runs after a pull request into ``main`` was merged.  In order it
    checkout,
 2. optionally re-runs the post-merge verification (``cargo check`` /
    ``cargo test``; the workflow already runs them and passes ``--skip-tests``),
-3. mirrors the task state into the legacy Supabase control plane when it is
-   configured (best effort: the Manager records task state in git, so a
-   control-plane problem never blocks the cleanup),
-4. deletes the PR head branch on the remote -- unless the branch is permanent
+3. deletes the PR head branch on the remote -- unless the branch is permanent
    (``main``, ``master`` or ``arena-manager``, DEC-0019) or already gone.  Both cases exit ``0`` with a clear
    message; nothing else is ever deleted.
 
@@ -22,9 +19,8 @@ Exit codes: ``0`` success or clean skip, ``1`` failure (clear message, nothing
 deleted), ``2`` usage error.
 
 No secret is read from the command line, written to a file or printed.  Git
-uses the credential the checkout already persisted; the control-plane client
-receives ``SUPABASE_URL`` / ``SUPABASE_SERVICE_ROLE_KEY`` from the environment
-and any text echoed from a subprocess passes through :func:`redact`.
+uses the credential the checkout already persisted, and any text echoed from a
+subprocess passes through :func:`redact`.
 """
 
 from __future__ import annotations
@@ -35,12 +31,6 @@ import re
 import subprocess
 import sys
 from typing import Callable, Iterator, List, Mapping, Optional, Sequence, Tuple
-
-try:  # the module is imported from tools/orchestration (script) or via pytest
-    from control_plane import ControlPlaneClient
-except ImportError:  # pragma: no cover - resolved on the second attempt below
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    from control_plane import ControlPlaneClient
 
 LOG_PREFIX = "[cleanup_runner]"
 
@@ -255,61 +245,6 @@ def delete_head_branch(run: Runner, remote: str, branch: str, log: Callable[[str
     raise CleanupError(f"could not delete '{branch}' on {remote}: {redact(first_line(stderr)) or f'git exited {result.returncode}'}")
 
 
-# ------------------------------------------------- legacy control plane (Supabase)
-
-def build_control_plane():
-    """Client for the legacy Supabase control plane, configured from the environment
-    (the workflow passes the secret *names* as env references).  Values are never printed."""
-    return ControlPlaneClient(url=os.environ.get("SUPABASE_URL") or None,
-                              service_key=os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or None)
-
-
-def sync_control_plane(client, branch: str, merge_sha: str, log: Callable[[str], None]) -> Optional[Callable[[], None]]:
-    """Advance the legacy task state (MERGING -> POST_MERGE_VERIFY -> CLEANUP).
-
-    Returns a callable that completes the cleanup once the branch is handled, or
-    None when there is nothing to complete.  Best effort only.
-    """
-    if client is None or not getattr(client, "url", None) or not getattr(client, "key", None):
-        log("control plane not configured; skipped legacy state transition")
-        return None
-    task = client.get_task_by_key(branch)
-    if not task:
-        log(f"no control-plane task matches branch key '{branch}'; nothing to transition")
-        return None
-    task_id, status, version = task["id"], task["status"], task["version"]
-    log(f"control-plane task {task_id} is '{status}' (v{version})")
-    if status == "MERGING":
-        code, res = client.record_merge(task_id, merge_sha, version)
-        if code in (200, 204) and isinstance(res, dict) and res.get("success"):
-            version, status = res.get("version", version + 1), "POST_MERGE_VERIFY"
-            log(f"task {task_id} -> POST_MERGE_VERIFY (v{version})")
-        else:
-            log(f"record_merge not applied (status {code})")
-    if status == "POST_MERGE_VERIFY":
-        code, res = client.start_cleanup(task_id, version)
-        if code in (200, 204) and isinstance(res, dict) and res.get("success"):
-            version, status = res.get("version", version + 1), "CLEANUP"
-            log(f"task {task_id} -> CLEANUP (v{version})")
-        elif isinstance(res, dict) and res.get("action") == "ALREADY_COMPLETED":
-            log(f"task {task_id} already completed in the control plane; continuing idempotently")
-            return None
-        else:
-            log(f"start_cleanup not applied (status {code}); continuing without it")
-            return None
-    if status != "CLEANUP":
-        return None
-
-    def complete() -> None:
-        code, res = client.complete_cleanup(task_id, version)
-        if code in (200, 204) and isinstance(res, dict) and res.get("success"):
-            log(f"task {task_id} COMPLETED in the control plane; locks released")
-        else:
-            log(f"complete_cleanup not applied (status {code})")
-
-    return complete
-
-
 # ------------------------------------------------------------------------ main
 
 def build_parser() -> argparse.ArgumentParser:
@@ -325,7 +260,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Optional[List[str]] = None, *, cwd: Optional[str] = None, run: Optional[Runner] = None,
-         control_plane_factory: Callable[[], object] = build_control_plane, out: Callable[[str], None] = print) -> int:
+         out: Callable[[str], None] = print) -> int:
     args = build_parser().parse_args(argv)
     run = run or make_runner(cwd)
 
@@ -346,19 +281,7 @@ def main(argv: Optional[List[str]] = None, *, cwd: Optional[str] = None, run: Op
         else:
             run_verification(run, log)
 
-        complete = None
-        try:
-            complete = sync_control_plane(control_plane_factory(), branch, merge_sha, log)
-        except Exception as exc:  # legacy layer: never blocks the cleanup
-            log(f"control plane unavailable ({type(exc).__name__}: {redact(str(exc))}); continuing")
-
         outcome = delete_head_branch(run, args.remote, branch, log, dry_run=args.dry_run)
-
-        if complete is not None:
-            try:
-                complete()
-            except Exception as exc:
-                log(f"control plane completion failed ({type(exc).__name__}: {redact(str(exc))})")
 
         log(f"cleanup finished: {outcome}")
         return 0
