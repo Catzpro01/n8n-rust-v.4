@@ -119,9 +119,9 @@ const MUTATIONS = [
   }, /P5-M08: implemented without a 40-hex merge SHA/],
   ['an implemented slice without evidence', (r) => { r.programs[5].slices.find((x) => x.id === 'P5-M03').evidence = null; }, /P5-M03: implemented without evidence/],
   ['an in-progress slice missing from the pointer', (r) => {
-    const slice = r.programs[5].slices.find((x) => x.id === 'P5-M09'); slice.status = 'in-progress';
-    r.executionPointer.plannedQueue = r.executionPointer.plannedQueue.filter((id) => id !== 'P5-M09');
-  }, /in-progress slice P5-M09 is neither active nor verifying/],
+    const slice = r.programs[5].slices.find((x) => x.id === 'P5-M07'); slice.status = 'in-progress';
+    r.executionPointer.plannedQueue = r.executionPointer.plannedQueue.filter((id) => id !== 'P5-M07');
+  }, /in-progress slice P5-M07 is neither active nor verifying/],
   ['a queued slice that is not planned', (r) => { r.executionPointer.plannedQueue.push('P5-M03'); }, /queued slice P5-M03 is implemented/],
   ['a blocked slice without blockedBy', (r) => { delete r.programs[5].slices.find((x) => x.id === 'P5-M10').blockedBy; }, /P5-M10 does not record blockedBy/],
   ['a blocked slice missing from blockedSlices', (r) => { r.executionPointer.blockedSlices = []; }, /blocked slice P5-M02 is missing/],
@@ -390,12 +390,15 @@ test('completion KPI is implemented/total and never counts verifying or blocked'
 test('Issue #307: two metrics, status independent, checkpoint weights only where declared', () => {
   const verifying = verifyingIndex(REGISTER);
   const metrics = headlineMetrics(REGISTER);
-  assert.equal(metrics.current.checkpointed, 1, 'exactly one slice declares checkpoints (P5-M08)');
+  // P5-M08 (implemented, all five checkpoints completed) and P5-M09 (in
+  // progress, the model declared and nothing evidenced yet).
+  assert.equal(metrics.current.checkpointed, 2, 'exactly two slices declare checkpoints (P5-M08, P5-M09)');
   // Independence, not inequality: today both read 86.3% (126/146), which is a coincidence of
   // the denominator. Reopening CP-05 must move realtime and leave slice completion untouched.
   const reopened = clone();
   reopened.programs[5].slices.find((slice) => slice.id === 'P5-M08').checkpoints[4].status = 'in-progress';
   const reopenedMetrics = headlineMetrics(reopened).current;
+  // P5-M08 drops 100 -> 87.5 (four of five checkpoints), P5-M09 stays 0.
   assert.equal(reopenedMetrics.realtime, 86.1);
   assert.equal(reopenedMetrics.sliceCompletion, metrics.current.sliceCompletion, 'completion never follows telemetry');
   assert.equal(metrics.current.withoutModel,
@@ -451,7 +454,8 @@ test('declared checkpoints move realtime progress and never slice completion or 
     slice.mergeSha = null;
     slice.checkpoints[4] = { ...slice.checkpoints[4], status: cp05Status, completedAt: cp05Status === 'completed' ? '2026-09-26T09:00:00Z' : undefined };
     register.executionPointer.latestCompletedSlice = { id: 'P5-M03', pr: 291, mergeSha: 'cf52701c91e5447f19c32377c38f6ae5eea7f3a7' };
-    register.executionPointer.activeSlices = ['P5-M08'];
+    // P5-M09 is genuinely in flight on the register, so it stays listed.
+    register.executionPointer.activeSlices = ['P5-M09', 'P5-M08'];
     assert.deepEqual(validateSliceCheckpoints(slice), []);
     assert.deepEqual(validateGovernanceRegister(register), []);
     return register;

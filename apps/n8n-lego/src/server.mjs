@@ -162,7 +162,10 @@ export async function startServer({ env = process.env } = {}) {
     // cookie), upstream `{ message }` error bodies; must win over the editor
     // SPA fallback, which would otherwise answer API clients with HTML.
     if (isPublicApiPath(pathname)) {
-      const ctx = { req, res, config, logger, store, engine, method: req.method ?? 'GET', path: pathname, query: Object.fromEntries(url.searchParams), params: {}, body: undefined, user: null };
+      // P5-M09: the credential surface needs the same backing store the editor
+      // uses — the P5.5 vault (secrets are sealed at rest, never plaintext) and
+      // the credential-type index that decides which fields are secret.
+      const ctx = { req, res, config, logger, store, engine, vault, credentialTypes, credentialTypeList: loadCatalog(config)?.credentials ?? [], method: req.method ?? 'GET', path: pathname, query: Object.fromEntries(url.searchParams), params: {}, body: undefined, user: null };
       const user = await handlePublicApiRequest(ctx);
       logAccess(req, res, pathname, started, user ?? undefined);
       return;

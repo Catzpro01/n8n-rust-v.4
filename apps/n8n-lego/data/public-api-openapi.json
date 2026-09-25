@@ -24,12 +24,20 @@
   ],
   "tags": [
     {
+      "name": "User",
+      "description": "Operations about users"
+    },
+    {
       "name": "Execution",
       "description": "Operations about executions"
     },
     {
       "name": "Workflow",
       "description": "Operations about workflows"
+    },
+    {
+      "name": "Credential",
+      "description": "Operations about credentials"
     },
     {
       "name": "Tags",
@@ -1077,6 +1085,539 @@
           }
         }
       }
+    },
+    "/credentials": {
+      "get": {
+        "operationId": "getCredentials",
+        "tags": [
+          "Credential"
+        ],
+        "summary": "List credentials",
+        "description": "Retrieve all credentials from your instance. Only available for the instance owner and admin. Credential data (secrets) is not included.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "The maximum number of items to return.",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "example": 100,
+              "default": 100,
+              "maximum": 250
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Paginate by setting the cursor parameter to the nextCursor attribute returned by the previous request's response. Default value fetches the first \"page\" of the collection. See pagination for more detail.",
+            "required": false,
+            "style": "form",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation successful.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CredentialList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createCredential",
+        "tags": [
+          "Credential"
+        ],
+        "summary": "Create a credential",
+        "description": "Creates a credential that can be used by nodes of the specified type.",
+        "requestBody": {
+          "description": "Credential to be created.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Credential"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Operation successful.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateCredentialResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid credential type or data."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "415": {
+            "description": "Unsupported media type."
+          }
+        }
+      }
+    },
+    "/credentials/{id}": {
+      "patch": {
+        "tags": [
+          "Credential"
+        ],
+        "summary": "Update credential by ID",
+        "description": "Updates an existing credential. You must be the owner of the credential.",
+        "operationId": "updateCredential",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The credential ID that needs to be updated",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Credential data to update. All fields are optional.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCredentialRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Operation successful.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateCredentialResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid credential type or data."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "The specified resource was not found."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Credential"
+        ],
+        "summary": "Delete credential by ID",
+        "description": "Deletes a credential from your instance. You must be the owner of the credentials",
+        "operationId": "deleteCredential",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The credential ID that needs to be deleted",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation successful.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Credential"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "The specified resource was not found."
+          }
+        }
+      }
+    },
+    "/credentials/schema/{credentialTypeName}": {
+      "get": {
+        "tags": [
+          "Credential"
+        ],
+        "summary": "Show credential data schema",
+        "parameters": [
+          {
+            "name": "credentialTypeName",
+            "in": "path",
+            "description": "The credential type name that you want to get the schema for",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation successful.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "examples": {
+                  "freshdeskApi": {
+                    "value": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "properties": {
+                        "apiKey": {
+                          "type": "string"
+                        },
+                        "domain": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "apiKey",
+                        "domain"
+                      ]
+                    }
+                  },
+                  "slackOAuth2Api": {
+                    "value": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "properties": {
+                        "clientId": {
+                          "type": "string"
+                        },
+                        "clientSecret": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "clientId",
+                        "clientSecret"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "The specified resource was not found."
+          }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Retrieve all users",
+        "description": "Retrieve all users from your instance. Only available for the instance owner.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "The maximum number of items to return.",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "example": 100,
+              "default": 100,
+              "maximum": 250
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Paginate by setting the cursor parameter to the nextCursor attribute returned by the previous request's response. Default value fetches the first \"page\" of the collection. See pagination for more detail.",
+            "required": false,
+            "style": "form",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "includeRole",
+            "in": "query",
+            "description": "Whether to include the user's role or not.",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "example": true,
+              "default": false
+            }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "explode": false,
+            "allowReserved": true,
+            "schema": {
+              "type": "string",
+              "example": "VmwOO9HeTEj20kxM"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation successful.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Create multiple users",
+        "description": "Create one or more users.",
+        "requestBody": {
+          "description": "Array of users to be created.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "email": {
+                      "type": "string",
+                      "format": "email"
+                    },
+                    "role": {
+                      "type": "string",
+                      "example": "global:member"
+                    }
+                  },
+                  "required": [
+                    "email"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Operation successful.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "inviteAcceptUrl": {
+                          "type": "string"
+                        },
+                        "emailSent": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Get user by ID/Email",
+        "description": "Retrieve a user from your instance. Only available for the instance owner.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID or email of the user.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "identifier"
+            }
+          },
+          {
+            "name": "includeRole",
+            "in": "query",
+            "description": "Whether to include the user's role or not.",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "example": true,
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation successful.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Delete a user",
+        "description": "Delete a user from your instance.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID or email of the user.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "identifier"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Operation successful."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "The specified resource was not found."
+          }
+        }
+      }
+    },
+    "/users/{id}/role": {
+      "patch": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Change a user's global role",
+        "description": "Change a user's global role",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID or email of the user.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "identifier"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "New role for the user",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "newRoleName": {
+                    "type": "string",
+                    "example": "global:member"
+                  }
+                },
+                "required": [
+                  "newRoleName"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Operation successful."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "The specified resource was not found."
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1138,6 +1679,163 @@
             "type": "string",
             "format": "date-time",
             "readOnly": true
+          }
+        }
+      },
+      "CreateCredentialResponse": {
+        "required": [
+          "id",
+          "name",
+          "type",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "readOnly": true,
+            "example": "vHxaz5UaCghVYl9C"
+          },
+          "name": {
+            "type": "string",
+            "example": "John's Github account"
+          },
+          "type": {
+            "type": "string",
+            "example": "githubApi"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true,
+            "example": "2022-04-29T11:02:29.842Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true,
+            "example": "2022-04-29T11:02:29.842Z"
+          }
+        }
+      },
+      "Credential": {
+        "required": [
+          "name",
+          "type",
+          "data"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "readOnly": true,
+            "example": "R2DjclaysHbqn778"
+          },
+          "name": {
+            "type": "string",
+            "example": "Joe's Github Credentials"
+          },
+          "type": {
+            "type": "string",
+            "example": "githubApi"
+          },
+          "data": {
+            "type": "object",
+            "writeOnly": true,
+            "example": {
+              "accessToken": "ada612vad6fa5df4adf5a5dsf4389adsf76da7s"
+            }
+          },
+          "isResolvable": {
+            "type": "boolean",
+            "example": false,
+            "description": "Whether this credential has resolvable fields"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true,
+            "example": "2022-04-29T11:02:29.842Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true,
+            "example": "2022-04-29T11:02:29.842Z"
+          }
+        }
+      },
+      "CredentialList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CredentialListItem"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "description": "Paginate through credentials by setting the cursor parameter to a nextCursor attribute returned by a previous request. Default value fetches the first \"page\" of the collection.",
+            "nullable": true,
+            "example": "MTIzZTQ1NjctZTg5Yi0xMmQzLWE0NTYtNDI2NjE0MTc0MDA"
+          }
+        }
+      },
+      "CredentialListItem": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/CreateCredentialResponse"
+          },
+          {
+            "type": "object",
+            "required": [
+              "shared"
+            ],
+            "properties": {
+              "shared": {
+                "type": "array",
+                "description": "Shared entries (project id, name, role, createdAt, updatedAt) from the credential's shared relation",
+                "items": {
+                  "$ref": "#/components/schemas/CredentialSharedItem"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "CredentialSharedItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "role",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Project ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Project name"
+          },
+          "role": {
+            "type": "string",
+            "description": "Role of the credential in this project (e.g. credential:owner)"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the credential was shared with this project"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the sharing was last updated"
           }
         }
       },
@@ -1456,6 +2154,116 @@
           }
         }
       },
+      "UpdateCredentialRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Updated Credential Name",
+            "description": "The name of the credential"
+          },
+          "type": {
+            "type": "string",
+            "example": "githubApi",
+            "description": "The credential type. If changing type, data must also be provided."
+          },
+          "data": {
+            "type": "object",
+            "writeOnly": true,
+            "example": {
+              "accessToken": "new_token_value"
+            },
+            "description": "The credential data. Required when changing credential type."
+          },
+          "isGlobal": {
+            "type": "boolean",
+            "example": false,
+            "description": "Whether this credential is available globally"
+          },
+          "isResolvable": {
+            "type": "boolean",
+            "example": false,
+            "description": "Whether this credential has resolvable fields"
+          },
+          "isPartialData": {
+            "type": "boolean",
+            "example": false,
+            "default": false,
+            "description": "If true, unredacts and merges existing credential data with the provided data. If false, replaces the entire data object."
+          }
+        }
+      },
+      "User": {
+        "required": [
+          "email"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "readOnly": true,
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "john.doe@company.com"
+          },
+          "firstName": {
+            "maxLength": 32,
+            "type": "string",
+            "description": "User's first name",
+            "readOnly": true,
+            "example": "john"
+          },
+          "lastName": {
+            "maxLength": 32,
+            "type": "string",
+            "description": "User's last name",
+            "readOnly": true,
+            "example": "Doe"
+          },
+          "isPending": {
+            "type": "boolean",
+            "description": "Whether the user finished setting up their account in response to the invitation (true) or not (false).",
+            "readOnly": true
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "Time the user was created.",
+            "format": "date-time",
+            "readOnly": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "description": "Last time the user was updated.",
+            "format": "date-time",
+            "readOnly": true
+          },
+          "role": {
+            "type": "string",
+            "example": "global:owner",
+            "readOnly": true
+          }
+        }
+      },
+      "UserList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/User"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "description": "Paginate through users by setting the cursor parameter to a nextCursor attribute returned by a previous request. Default value fetches the first \"page\" of the collection.",
+            "nullable": true,
+            "example": "MTIzZTQ1NjctZTg5Yi0xMmQzLWE0NTYtNDI2NjE0MTc0MDA"
+          }
+        }
+      },
       "Variable": {
         "type": "object",
         "additionalProperties": false,
@@ -1734,6 +2542,6 @@
   "x-n8n-lego": {
     "source": "reference/n8n/packages/cli/src/public-api/v1/openapi.yml (n8n 2.9.4)",
     "note": "Only the operations this build mounts; shared schemas under components.schemas, other relative $refs inlined.",
-    "operations": 21
+    "operations": 31
   }
 }

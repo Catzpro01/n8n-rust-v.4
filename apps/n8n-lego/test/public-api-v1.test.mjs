@@ -335,8 +335,14 @@ describe('workflows resource', () => {
 describe('pure pieces', () => {
   test('every mounted operation is guarded by a scope from the pinned API-key vocabulary', () => {
     const vocabulary = new Set(loadApiKeyScopes({}).all);
-    for (const op of PUBLIC_API_OPERATIONS) assert.ok(vocabulary.has(op.scope), `${op.method} ${op.path} -> ${op.scope}`);
-    assert.equal(PUBLIC_API_OPERATIONS.length, 21, 'P5-M03 workflows (9) + P5-M08 tags (5), variables (4), executions (3)');
+    for (const op of PUBLIC_API_OPERATIONS) {
+      // `public` is the one operation upstream mounts with no scope guard at
+      // all: GET /credentials/schema/{type} publishes a schema, never a secret.
+      if (op.scope === 'public') continue;
+      assert.ok(vocabulary.has(op.scope), `${op.method} ${op.path} -> ${op.scope}`);
+    }
+    assert.equal(PUBLIC_API_OPERATIONS.length, 31,
+      'P5-M03 workflows (9) + P5-M08 tags (5), variables (4), executions (3) + P5-M09 credentials (5), users (5)');
   });
 
   test('cursor encoding matches upstream encodeNextCursor', () => {
@@ -350,8 +356,13 @@ describe('pure pieces', () => {
 
   test('route matcher distinguishes 404 from 405', () => {
     assert.equal(matchPublicApiRoute('GET', '/workflows/abc').params.id, 'abc');
-    assert.throws(() => matchPublicApiRoute('GET', '/credentials'), (e) => e.status === 404);
+    assert.throws(() => matchPublicApiRoute('GET', '/projects'), (e) => e.status === 404);
     assert.throws(() => matchPublicApiRoute('PATCH', '/workflows/abc'), (e) => e.status === 405);
+    // A known path with an unmounted method is 405, not 404: upstream mounts
+    // no GET on /credentials/{id}, and no PUT either (the update is PATCH).
+    assert.throws(() => matchPublicApiRoute('GET', '/credentials/abc'), (e) => e.status === 405);
+    assert.throws(() => matchPublicApiRoute('PUT', '/credentials/abc'), (e) => e.status === 405);
+    assert.equal(matchPublicApiRoute('PATCH', '/credentials/abc').params.id, 'abc');
   });
 
   test('schema validation of nodes', () => {
