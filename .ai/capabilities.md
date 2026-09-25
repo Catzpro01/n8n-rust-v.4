@@ -73,6 +73,7 @@
 | `lego.error-contract` | `lego-foundation` |
 | `lego.interaction-model` | `lego-foundation` |
 | `lego.operation-envelope` | `lego-foundation` |
+| `node-registry.admission` | `node-registry` |
 | `node-registry.catalog` | `node-registry` |
 | `node-registry.community-node-type-detail` | `node-registry` |
 | `node-registry.community-packages` | `node-registry` |
@@ -277,6 +278,9 @@ this table instead of guessing from a URL shape.
 | `node-registry.catalog.describe` | `node-registry` | call | `node:read` | yes | implemented |
 | `node-registry.catalog.list` | `node-registry` | call | `node:read` | yes | implemented |
 | `node-registry.icons.read` | `node-registry` | call | `node:read` | yes | implemented |
+| `node-registry.community-packages.list` | `node-registry` | call | `node:read` | yes | implemented |
+| `node-registry.community-packages.detail` | `node-registry` | call | `node:read` | yes | implemented |
+| `node-registry.community-node-type-detail.detail` | `node-registry` | call | `node:read` | yes | implemented |
 | `node-registry.portability.canPort` | `node-registry` | call | `node:portability:validate` | yes | implemented |
 | `node-registry.portability.select` | `node-registry` | call | `node:portability:select` | yes | implemented |
 | `node-registry.portability.describePortability` | `node-registry` | call | `node:read` | yes | implemented |
@@ -285,6 +289,8 @@ this table instead of guessing from a URL shape.
 | `node-registry.creator.validate` | `node-registry` | call | `node:creator:validate` | yes | implemented |
 | `node-registry.creator.preview` | `node-registry` | call | `node:read` | yes | implemented |
 | `node-registry.creator.approvalStatus` | `node-registry` | call | `node:read` | yes | implemented |
+| `node-registry.admission.admit` | `node-registry` | call | `node:read` | yes | implemented |
+| `node-registry.admission.describe` | `node-registry` | call | `node:read` | yes | implemented |
 | `dynamic-parameters.resolve.resolve` | `dynamic-parameters` | call | `node:read` | no | unsupported |
 | `webhook.ingress.receive` | `webhook` | call | `webhook:receive` | no | planned |
 | `webhook.trigger-activation.activate` | `webhook` | call | `workflow:write` | no | planned |

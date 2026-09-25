@@ -3730,15 +3730,32 @@
         },
         {
           "id": "node-registry.community-packages",
-          "status": "unsupported",
+          "status": "implemented",
           "restFeature": "community-packages",
-          "operations": [],
+          "operations": [
+            {
+              "name": "list",
+              "interaction": "call",
+              "permission": "node:read",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "detail",
+              "interaction": "call",
+              "permission": "node:read",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
           "interaction": [
             "call"
           ],
-          "permissions": [],
-          "lifecycle": "declared",
-          "availability": "capability-unavailable",
+          "permissions": [
+            "node:read"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
           "criticality": "optional",
           "trust": "core",
           "transport": {
@@ -3749,22 +3766,33 @@
               "remote"
             ]
           },
-          "migrationState": "not-started",
-          "degradation": "capability-unavailable",
+          "migrationState": "stable",
+          "degradation": "optional-absent",
           "replacement": "contract-preserving",
-          "resources": "low"
+          "resources": "low",
+          "note": "P6-S01 / Issue #95. Live community node installation now runs over the admission pipeline: package metadata, provenance, contract, requested capabilities, trust class and runtime locality are all resolved and asserted fail-closed before a community package is declared. Community code never inherits Core authority and never reaches a TRUSTED ceiling by virtue of being published."
         },
         {
           "id": "node-registry.community-node-type-detail",
-          "status": "unsupported",
+          "status": "implemented",
           "restFeature": "community-node-type-detail",
-          "operations": [],
+          "operations": [
+            {
+              "name": "detail",
+              "interaction": "call",
+              "permission": "node:read",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
           "interaction": [
             "call"
           ],
-          "permissions": [],
-          "lifecycle": "declared",
-          "availability": "capability-unavailable",
+          "permissions": [
+            "node:read"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
           "criticality": "optional",
           "trust": "core",
           "transport": {
@@ -3775,10 +3803,11 @@
               "remote"
             ]
           },
-          "migrationState": "not-started",
-          "degradation": "capability-unavailable",
+          "migrationState": "stable",
+          "degradation": "optional-absent",
           "replacement": "contract-preserving",
-          "resources": "low"
+          "resources": "low",
+          "note": "P6-S01 / Issue #95. Community node type detail is admitted through the same pipeline, so the consumer-facing surface (node type identity, parameters, expressions, credential bindings, UI metadata, import/export, execution semantics) is asserted unchanged. A runtime move is a policy outcome and never a contract change."
         },
         {
           "id": "node-registry.portability",
@@ -3896,6 +3925,50 @@
           "degradation": "available",
           "replacement": "contract-preserving",
           "resources": "low"
+        },
+        {
+          "id": "node-registry.admission",
+          "status": "implemented",
+          "restFeature": null,
+          "operations": [
+            {
+              "name": "admit",
+              "interaction": "call",
+              "permission": "node:read",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "describe",
+              "interaction": "call",
+              "permission": "node:read",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "node:read"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "optional-absent",
+          "replacement": "contract-preserving",
+          "resources": "low",
+          "note": "P6-S01 / Issue #95. The fail-closed admission pipeline over the P6 primitives: artifact -> identify -> verify package metadata -> verify digest/signature/provenance -> resolve node contract -> resolve requested capabilities -> resolve trust class -> resolve runtime locality -> validate resource limits -> validate compatibility -> health/self-test -> admit or reject. A node class is a policy input mapping to a trust CEILING, never a trust grant: no class maps to CORE, official does not mean unrestricted, Rust is not automatically trusted, community code does not inherit Core authority, and an AI-authored node must be SANDBOXED. The first failing stage ends the pipeline and names itself. Admission grants no capability; the runtime choice never changes the consumer-facing node contract."
         }
       ],
       "notes": "Node internals must never reach into the credential persistence implementation \u2014 declared as a hard direction rule.",
