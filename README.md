@@ -39,7 +39,7 @@ Status is not progress. Both percentages below are generated from [`docs/n8n-leg
 
 `██████████████████░░ 89.0%`
 
-Checkpoint-weighted earned points / current-delivery points: 13000 / 14600. Denominator: programs P0–P11 only (146 active slices). Future programs are excluded. 3 slice(s) declare checkpoints. 127 implemented slice(s) have no checkpoint list and contribute 100 each. 16 slice(s) have no checkpoint model and contribute 0. A 0 from a missing model is not a measured fraction of that slice.
+Checkpoint-weighted earned points / current-delivery points: 13000 / 14600. Denominator: programs P0–P11 only (146 active slices). Future programs are excluded. 4 slice(s) declare checkpoints. 127 implemented slice(s) have no checkpoint list and contribute 100 each. 15 slice(s) have no checkpoint model and contribute 0. A 0 from a missing model is not a measured fraction of that slice.
 
 ### Slice Completion
 
@@ -102,7 +102,7 @@ A program state of `complete` is not numeric 100%. Read the two percentage colum
 The queue is `executionPointer` only. Historical `P2.27` is not the next slice, and there is no `P2.28`.
 
 ```text
- 1. `P4-S01` planned; realtime 0.0%; completion contribution 0.0%
+ 1. `P4-S01` planned; realtime 0.0%; completion contribution 0.0%; updated 2026-09-25T21:30:25Z
  2. `P6-S01` planned; realtime 0.0%; completion contribution 0.0%
  3. `P6-S02` planned; realtime 0.0%; completion contribution 0.0%
  4. `P2-S02` planned; realtime 0.0%; completion contribution 0.0%
@@ -258,7 +258,7 @@ Not authorized: planned is not authorized: the Manager starts a queued slice by 
 - **Slice Completion:** **90.0%** (9 / 10 implemented). Remaining 1. 9 implemented, 1 planned.
 - **Program status:** complete. Program status is not a percentage and is not 100% just because the word is complete.
 - **Purpose:** Trigger model, webhook ingress, forms, schedules, event ingress, bounded ingress queues, safe admission, trigger observability and failure behavior (#90, #99).
-- **Checkpoint model:** 0 slice(s) declare checkpoints; 9 implemented slice(s) use the legacy 100 rule; 1 slice(s) have no checkpoint model and stay at 0.0%.
+- **Checkpoint model:** 1 slice(s) declare checkpoints; 9 implemented slice(s) use the legacy 100 rule; 0 slice(s) have no checkpoint model and stay at 0.0%.
 
 <details><summary>Slices (10)</summary>
 
@@ -273,7 +273,7 @@ Not authorized: planned is not authorized: the Manager starts a queued slice by 
 | `P4.7` | Recovery / reconciliation / race safety | Recovery / reconciliation / race safety (journal, lease, recovery plan) | ✅ Implemented | 100.0% | 100.0% | none declared | legacy implemented (100, no checkpoint list) | — |
 | `P4.8` | Advanced ingress efficiency | route atlas + atomic swap, adaptive clamp, payload capsule, burst fusion, brownout QoS, flight recorder | ✅ Implemented | 100.0% | 100.0% | none declared | legacy implemented (100, no checkpoint list) | — |
 | `P4.9` | Compatibility + performance acceptance | compat matrix, deterministic replay capsule, acceptance suite | ✅ Implemented | 100.0% | 100.0% | none declared | legacy implemented (100, no checkpoint list) | — |
-| `P4-S01` | Ingress innovation remainder | predictive admission controller (full), shadow compatibility path, P4 self-profiling, dedicated webhook/ingress plane | 🟡 Planned | 0.0% | 0.0% | none declared | none declared | — |
+| `P4-S01` | Ingress innovation remainder | predictive admission controller (full), shadow compatibility path, P4 self-profiling, dedicated webhook/ingress plane | 🟡 Planned | 0.0% | 0.0% | — | — | — |
 
 </details>
 
@@ -545,7 +545,7 @@ Excluded from the current-delivery denominator. Realtime **0.0%**. Slice complet
 - **Live progress (DEC-0021, LIVE-MILESTONE EXCEPTION):** checkpoint progress, checkpoint status, checkpoint evidence, current checkpoint, slice / program / overall progress and the milestone evidence of a slice still in flight are operational telemetry. The Manager may reconcile them straight to `main` in a `governance(progress):` commit, without a governance PR, with `node tools/lego/progress-event.mjs record --slice <id> --checkpoint <CP-nn> --status <status> --evidence <reference>`. The tool runs the whole atomic chain: validate evidence and weights → write the register → regenerate `README.md` and `.ai` → run `npm run lego:ai:check` → commit → push → verify `main`. One measurable event is one commit; live progress is never batched and a partial state is never published. The Manager never types a percentage: `resolve` derives the state from evidence — `--fetch` reads the DEC-0015 jobs and the runner availability from the GitHub API, `--jobs <file.json>` reads an export, and `verify --cmd` derives completed / blocked from a verification command's exit code. A checkpoint that declares `requires` is earned only when every named check has passed; an absent self-hosted check is never PASS and `WAITING_RUNNER` is never PASS, so a head that never ran the suite cannot look green. Two paths, never mixed: delivery state is implementation → delivery PR → merge → post-merge verification → one governance PR reconciling status, merge SHA, evidence and projections; telemetry is evidence → checkpoint update → register → README → .ai → a `governance(progress):` commit → main. A slice status becoming `implemented` is delivery state and is never telemetry. The exception never covers source code, tests, runtime behaviour, API / frontend / backend / contract / schema implementation, dependencies, packages, Rust code, CI workflows, security policy, permissions, infrastructure, database schema or production configuration — those still go through a delivery PR. Live telemetry never bypasses a completion gate: 100% realtime progress with a completion contribution of 0% is a legitimate state, and only `implemented` (DEC-0014 + DEC-0015) moves Slice Completion.
 - **Rule:** Milestone truth is main-owned. A milestone design found or developed in Manager memory becomes authoritative only when reconciled into main through a PR. arena-manager is not an alternate milestone authority, and its docs/ tree is a stale snapshot that is never copied over main.
 - **Pending reconciliation:** A milestone change that exists only on arena-manager, a local worktree, a handoff, an issue, a PR body or chat is a proposal (pending reconciliation), never authoritative truth. A PR proposes a milestone state; only the merged state on main is authoritative.
-- **Freshness:** generated by `npm run lego:ai` from register 2.3.0 (fingerprint `f61e5fcc9e442a5e`); `npm run lego:ai:check` fails when this section, the `.ai` pack or the register disagree.
+- **Freshness:** generated by `npm run lego:ai` from register 2.3.0 (fingerprint `20a4fa289576a444`); `npm run lego:ai:check` fails when this section, the `.ai` pack or the register disagree.
 - **Progress model (Issue #307):** Realtime Delivery Progress is checkpoint-weighted across P0-P11. Slice Completion is implemented / active in that same denominator. Future programs stay visible and are excluded from the current-delivery denominator. Illustrations of the status/progress split are not register measurements and must not be copied into slice checkpoints. The generator counts only weights declared on slice.checkpoints. It does not invent weights. A completed checkpoint requires evidence. Weights on a slice must sum to 100. A slice with no checkpoint model stays at 0 unless it is implemented, in which case the legacy rule contributes 100. This projection is not canonical until the change is on main.
 - **Completion KPI:** Slice Completion is implemented slices / active slices in P0–P11. A verifying or blocked slice never increases that numerator. Realtime Delivery Progress is a separate checkpoint-weighted figure and can move while Slice Completion stays still.
 - **Purpose field:** a slice purpose is `slice.purpose` when present, otherwise the text after the first `: ` in the canonical title, otherwise the title. No purpose is invented.
