@@ -5,6 +5,10 @@
  *   node tools/lego/progress-event.mjs record --slice P5-M08 --checkpoint CP-03 \
  *          --status in-progress --evidence "<what proves it>" [--commit] [--push]
  *   node tools/lego/progress-event.mjs record --slice P5-M08 --init-file <checkpoints.json> [--commit] [--push]
+ *   node tools/lego/progress-event.mjs resolve --slice P5-M08 --checkpoint CP-05 \
+ *          --jobs jobs.json [--head <sha>] [--commit] [--push]
+ *   node tools/lego/progress-event.mjs verify --slice P5-M08 --checkpoint CP-04 \
+ *          --cmd "npm run lego:capabilities" [--on-fail blocked|keep] [--commit] [--push]
  *   node tools/lego/progress-event.mjs show [--slice P5-M08]
  *   node tools/lego/progress-event.mjs classify [-- <path> ...]
  *
@@ -30,6 +34,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { classifyChecks } from '../workforce/src/checks.mjs';
 import {
   CHECKPOINT_STATUSES,
   LIVE_PROGRESS_MODEL,
@@ -154,6 +159,78 @@ function normalizeCheckpoint(checkpoint, sliceId) {
   }
   if (!CHECKPOINT_ID.test(nonEmpty(normalized.id))) throw new Error(`record: ${sliceId} checkpoint id "${normalized.id}" must look like CP-01`);
   return normalized;
+}
+
+/* --------------------------------------------- evidence -> checkpoint state */
+
+/**
+ * DEC-0021 §5/§6: the Manager submits evidence identity, never a percentage.
+ * `deriveCheckpointState` turns operational evidence into a checkpoint state:
+ *
+ *   - every required self-hosted check green        -> completed
+ *   - a self-hosted check failed                    -> blocked (with the failure)
+ *   - anything still queued / running / waiting     -> in-progress (not earned)
+ *
+ * The classification itself is DEC-0015's (`tools/workforce/src/checks.mjs`), so
+ * WAITING_RUNNER is never PASS and an absent self-hosted check is never success.
+ * PURE: jobs come from the GitHub Actions jobs API ({ name, status, conclusion,
+ * labels, runner_name, run_id }).
+ */
+export function deriveCheckpointState(jobs = [], { onlineRunners, head } = {}) {
+  const verdict = classifyChecks(jobs, { onlineRunners });
+  const where = head ? ` on ${head}` : '';
+  const selfHosted = verdict.selfHosted;
+  const passed = selfHosted.pass.map((name) => jobLabel(jobs, name)).filter(Boolean);
+  if (verdict.verdict === 'BLOCKED' && selfHosted.fail.length) {
+    return {
+      status: 'blocked',
+      evidence: `DEC-0015 self-hosted verification FAILED${where}: ${selfHosted.fail.join(', ')} (${verdict.reasons.join('; ')})`,
+      blockedBy: `self-hosted verification failed${where}: ${selfHosted.fail.join(', ')} — classify the failure before recording it as environmental or an implementation regression`,
+      verdict,
+    };
+  }
+  if (verdict.verdict === 'PENDING' || verdict.verdict === 'ALLOWED_BY_DEC-0015' || !selfHosted.pass.length) {
+    const waiting = [...selfHosted.running, ...selfHosted.waitingRunner, ...verdict.hosted.pending];
+    return {
+      status: 'in-progress',
+      evidence: `DEC-0015 verification not finished${where}: ${waiting.length ? waiting.join(', ') : verdict.reasons.join('; ')}. WAITING_RUNNER is never PASS, so the checkpoint is not earned.`,
+      verdict,
+    };
+  }
+  return {
+    status: 'completed',
+    evidence: `DEC-0015 self-hosted verification PASS${where}: ${passed.join('; ')}. Verdict ${verdict.verdict} (${formatChecksSummary(verdict)}).`,
+    verdict,
+  };
+}
+
+function jobLabel(jobs, name) {
+  const job = jobs.find((item) => item.name === name);
+  if (!job) return name;
+  const runner = job.runner_name ? ` on ${job.runner_name}` : '';
+  const run = job.run_id ? ` (run ${job.run_id})` : '';
+  return `${name}${runner}${run}`;
+}
+
+function formatChecksSummary(verdict) {
+  const sh = verdict.selfHosted;
+  return `GitHub-hosted ${verdict.hosted.pass.length} pass, self-hosted ${sh.pass.length} pass / ${sh.fail.length} fail / ${sh.waitingRunner.length} waiting`;
+}
+
+/**
+ * Run a verification command and derive the checkpoint state from its exit code.
+ * Returns the state without writing anything; the caller decides.
+ */
+export function deriveCommandState(command, { output = '', code = 0 } = {}) {
+  if (code === 0) {
+    return { status: 'completed', evidence: `\`${command}\` exited 0 (local verification at ${nowIso()})`, blockedBy: undefined };
+  }
+  const tail = String(output).trim().split('\n').slice(-6).join(' ').slice(0, 600);
+  return {
+    status: 'blocked',
+    evidence: `\`${command}\` exited ${code} (local verification at ${nowIso()}): ${tail}`,
+    blockedBy: `verification command failed: \`${command}\` exited ${code}: ${tail}`,
+  };
 }
 
 /* ------------------------------------------------- register text (surgical) */
@@ -327,6 +404,15 @@ function record(argv) {
     return 1;
   }
 
+  // DEC-0021: telemetry never carries delivery state. A slice status transition
+  // (in particular to `implemented`) is reconciled by one governance PR.
+  const statusBefore = findSlice(before.register, event.slice)?.slice.status;
+  const statusAfter = findSlice(applied.register, event.slice)?.slice.status;
+  if (statusBefore !== statusAfter) {
+    process.stderr.write(`record: refusing to move ${event.slice} from ${statusBefore} to ${statusAfter} in a telemetry commit — delivery state is reconciled by a governance PR (DEC-0020 + DEC-0021)\n`);
+    return 1;
+  }
+
   const sync = syncSliceText(before.raw, event.slice, applied.slice);
   if (!sync.ok) {
     process.stderr.write(`${sync.reason}\n`);
@@ -413,6 +499,98 @@ function defaultMessage(event) {
   return `update ${event.slice} ${event.checkpoint} → ${event.status}`;
 }
 
+/**
+ * Evidence identity in, checkpoint state out. The Manager supplies a jobs export
+ * (the GitHub Actions jobs API for the runs that matter) and, optionally, the
+ * head SHA they ran on; the DEC-0015 classifier decides the state.
+ */
+function resolveCommand(argv) {
+  const flags = parseFlags(argv);
+  const sliceId = nonEmpty(flags.slice);
+  const checkpointId = nonEmpty(flags.checkpoint);
+  if (!sliceId || !checkpointId) {
+    process.stderr.write('resolve: --slice and --checkpoint are required\n');
+    return 2;
+  }
+  let jobs = [];
+  try {
+    const raw = readFileSync(resolve(REPO_ROOT, flags.jobs), 'utf8');
+    const parsed = JSON.parse(raw);
+    jobs = Array.isArray(parsed) ? parsed : parsed.jobs ?? [];
+  } catch (error) {
+    process.stderr.write(`resolve: cannot read --jobs: ${error.message}\n`);
+    return 2;
+  }
+  let onlineRunners;
+  if (flags.runners) {
+    try {
+      const parsed = JSON.parse(readFileSync(resolve(REPO_ROOT, flags.runners), 'utf8'));
+      onlineRunners = parsed.runners ?? parsed;
+    } catch (error) {
+      process.stderr.write(`resolve: cannot read --runners: ${error.message}\n`);
+      return 2;
+    }
+  }
+  const derived = deriveCheckpointState(jobs, { onlineRunners, head: flags.head });
+  process.stdout.write([
+    `DEC-0015 verdict: ${derived.verdict.verdict} — ${formatChecksSummary(derived.verdict)}`,
+    `derived state for ${sliceId} ${checkpointId}: ${derived.status}`,
+    `  evidence: ${derived.evidence}`,
+    derived.blockedBy ? `  blocker: ${derived.blockedBy}` : '',
+    derived.verdict.selfHosted.waitingRunner.length ? 'WAITING_RUNNER is never PASS: the checkpoint stays unearned.' : '',
+  ].filter(Boolean).join('\n'));
+
+  return record([...argv.filter((token) => !token.startsWith('--jobs') && !token.startsWith('--head') && !token.startsWith('--runners')),
+    '--status', derived.status,
+    '--evidence', derived.evidence,
+    ...(derived.blockedBy ? ['--blocked-by', derived.blockedBy] : []),
+    ...(flags.dryRun ? ['--dry-run'] : []),
+    ...(flags.commit ? ['--commit'] : []),
+    ...(flags.push ? ['--push'] : []),
+    ...(flags.message ? ['--message', flags.message] : []),
+  ]);
+}
+
+/** Run a verification command and record the state its exit code implies. */
+function verify(argv) {
+  const flags = parseFlags(argv);
+  const command = nonEmpty(flags.cmd);
+  if (!command) {
+    process.stderr.write('verify: --cmd is required\n');
+    return 2;
+  }
+  const onFail = nonEmpty(flags.onFail) || 'blocked';
+  if (!['blocked', 'keep'].includes(onFail)) {
+    process.stderr.write('verify: --on-fail must be blocked or keep\n');
+    return 2;
+  }
+  process.stdout.write(`running: ${command}\n`);
+  let code = 0;
+  let output = '';
+  try {
+    output = execFileSync('sh', ['-c', command], { cwd: REPO_ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+  } catch (error) {
+    code = typeof error.status === 'number' ? error.status : 1;
+    output = `${error.stdout ?? ''}${error.stderr ?? ''}`;
+  }
+  const derived = deriveCommandState(command, { output, code });
+  process.stdout.write(`exit ${code} -> ${derived.status}\n  evidence: ${derived.evidence}\n`);
+  if (derived.status === 'blocked' && onFail === 'keep') {
+    process.stdout.write('--on-fail keep: nothing was recorded. Fix the failure or record the blocker explicitly.\n');
+    return 1;
+  }
+  return record([
+    '--slice', flags.slice, '--checkpoint', flags.checkpoint,
+    '--status', derived.status,
+    '--evidence', derived.evidence,
+    ...(derived.blockedBy ? ['--blocked-by', derived.blockedBy] : []),
+    ...(flags.commit ? ['--commit'] : []),
+    ...(flags.push ? ['--push'] : []),
+    ...(flags.dryRun ? ['--dry-run'] : []),
+    ...(flags.message ? ['--message', flags.message] : []),
+  ]);
+}
+
 function show(argv) {
   const flags = parseFlags(argv);
   const { register } = readRegister();
@@ -478,10 +656,17 @@ function parseFlags(argv) {
 
 const USAGE = `usage: progress-event.mjs <command>
 
-  record --slice <id> (--checkpoint <CP-nn> | --init-file <file>) [--status <status>]
-         [--evidence <ref>] [--reference <ref>] [--blocked-by <text>] [--reason <text>]
-         [--weight <int>] [--title <text>] [--purpose <text>] [--completed-at <iso>]
-         [--latest-update <text>] [--message <text>] [--commit] [--push] [--dry-run]
+  record --slice <id> --checkpoint <CP-nn> [--status <status>] [--evidence <ref>]
+         [--reference <ref>] [--blocked-by <text>] [--reason <text>] [--weight <int>]
+         [--title <text>] [--purpose <text>] [--completed-at <iso>] [--latest-update <text>]
+         [--message <text>] [--commit] [--push] [--dry-run]
+         (--init-file <checkpoints.json> installs a whole checkpoint model)
+  resolve --slice <id> --checkpoint <CP-nn> --jobs <file.json> [--head <sha>]
+         [--runners <file.json>] [--commit] [--push] [--dry-run]
+         derives the checkpoint state from DEC-0015 check results; no percentage is typed
+  verify --slice <id> --checkpoint <CP-nn> --cmd "<command>" [--on-fail blocked|keep]
+         [--commit] [--push] [--dry-run]
+         runs the command and derives completed / blocked from its exit code
   show [--slice <id>]
   classify [-- <path> ...]        exit 1 when a path is not pure progress telemetry
 `;
@@ -489,6 +674,8 @@ const USAGE = `usage: progress-event.mjs <command>
 function main(argv = process.argv.slice(2)) {
   const [command, ...rest] = argv;
   if (command === 'record') return record(rest);
+  if (command === 'resolve') return resolveCommand(rest);
+  if (command === 'verify') return verify(rest);
   if (command === 'show') return show(rest);
   if (command === 'classify') return classify(rest);
   process.stderr.write(USAGE);

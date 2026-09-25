@@ -40,7 +40,9 @@ repository is the shared memory; GitHub is the code authority.
     is never copied over `main`. After every delivery PR that changes milestone
     state: merge, post-merge verification, then one governance PR updates the
     register (status, evidence, `executionPointer`), the README projection and
-    `.ai`. Never batch these updates. Planning may happen on `arena-manager`,
+    `.ai`. That is the DELIVERY-STATE path and it is the only path for a slice
+    becoming `implemented`. Never batch these updates. Planning may happen on
+    `arena-manager`,
     but a milestone change there (or in a local worktree, handoff, issue, PR
     body or chat) is a proposal pending reconciliation until merged to `main`.
     Every completed Slice reconciles its milestone state and README projection
@@ -60,11 +62,15 @@ repository is the shared memory; GitHub is the code authority.
     to 100%.
 13. Live progress (DEC-0021, LIVE-MILESTONE EXCEPTION). Milestone progress
     telemetry — checkpoint progress, checkpoint status, checkpoint evidence,
-    current checkpoint, slice / program / overall progress, milestone status and
-    evidence, the README progress dashboard and the generated `.ai`
-    milestone/current-status projections — may be committed straight to `main`
-    by the Manager in a `governance(progress):` commit, with no governance PR,
-    because the repository is the live project monitor. Use
+    current checkpoint, slice / program / overall progress, the milestone
+    evidence of a slice still in flight, the README progress dashboard and the
+    generated `.ai` milestone/current-status projections — may be committed
+    straight to `main` by the Manager in a `governance(progress):` commit, with
+    no governance PR, because the repository is the live project monitor.
+    Delivery state is the other path and is never telemetry: a slice status
+    becoming `implemented`, with its merge SHA and completion evidence, is
+    reconciled by one governance PR after post-merge verification (rule 11).
+    Use
     `node tools/lego/progress-event.mjs record ...`: it validates the evidence
     and the weights, writes the register, regenerates README and `.ai`, runs
     `npm run lego:ai:check`, commits, pushes and verifies `main` as one atomic
@@ -72,7 +78,11 @@ repository is the shared memory; GitHub is the code authority.
     one commit; never batch progress. Checkpoint weights are declared once per
     slice from that slice's own scope and sum to 100; a completed checkpoint
     needs evidence, a blocked one a blocker, a skipped one a reason; every
-    percentage is computed, never typed. The exception never covers source,
+    percentage is computed, never typed — `resolve` derives a checkpoint state
+    from operational evidence (self-hosted check results through the DEC-0015
+    classifier, or a verification command's exit code) and `verify` runs that
+    command and derives completed / blocked from its result. The exception never
+    covers source,
     tests, runtime, API, frontend, backend, contracts, schemas, dependencies,
     Rust, CI workflows, security policy, permissions, infrastructure, database
     schema or production configuration — `node tools/lego/progress-event.mjs

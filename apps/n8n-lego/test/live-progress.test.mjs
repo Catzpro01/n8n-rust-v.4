@@ -12,9 +12,11 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 
 import {
   CHECKPOINT_STATUSES, LIVE_PROGRESS_MODEL, LIVE_PROGRESS_PATHS, classifyProgressCommit,
@@ -24,7 +26,9 @@ import {
   displayStatus, verifyingIndex, HISTORICAL_P2_FINGERPRINT,
 } from '../../../tools/lego/governance-register.mjs';
 import { currentStatus, milestoneRegisterDoc } from '../../../tools/lego/ai-pack.mjs';
-import { applyProgressEvent, findSlice, syncSliceText } from '../../../tools/lego/progress-event.mjs';
+import {
+  applyProgressEvent, findSlice, syncSliceText, deriveCheckpointState, deriveCommandState,
+} from '../../../tools/lego/progress-event.mjs';
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const read = (relative) => readFileSync(join(REPO_ROOT, relative), 'utf8');
@@ -263,6 +267,125 @@ test('the surgical register writer round-trips the canonical register unchanged'
   assert.deepEqual(outside(before, beforeBounds), outside(after, afterBounds), 'only the P5-M08 block may change');
   const grew = (afterBounds.end - afterBounds.start) - (beforeBounds.end - beforeBounds.start);
   assert.ok(Math.abs(grew) <= 2, `a single checkpoint event must stay surgical (block grew by ${grew} lines)`);
+});
+
+/* ------------------------------------- DEC-0021 §5/§6: evidence -> checkpoint state */
+
+const GREEN_JOBS = [
+  { name: 'Level 0 (Check & Format)', status: 'completed', conclusion: 'success', labels: ['self-hosted', 'Linux'], runner_name: 'MDMTEST-n8n-wsl', run_id: 36161486727 },
+  { name: 'Level 1 (Affected Tests)', status: 'completed', conclusion: 'success', labels: ['self-hosted', 'Linux'], runner_name: 'MDMTEST-n8n-wsl-3', run_id: 36161486727 },
+  { name: 'Level 2 Workspace Tests (linux)', status: 'completed', conclusion: 'success', labels: ['self-hosted', 'Linux'], runner_name: 'MDMTEST-n8n-wsl-4', run_id: 36161486715 },
+  { name: 'Level 2 Workspace Tests (windows)', status: 'completed', conclusion: 'success', labels: ['self-hosted', 'Windows'], runner_name: 'laptop-build-worker-4', run_id: 36161486715 },
+  { name: 'Level 2 Conformance LEGO & Node Catalog', status: 'completed', conclusion: 'success', labels: ['self-hosted', 'Linux'], runner_name: 'MDMTEST-n8n-wsl-2', run_id: 36161486715 },
+  { name: 'Backend LEGO architecture gate (P2.6)', status: 'completed', conclusion: 'success', labels: ['ubuntu-latest'], runner_name: 'GitHub Actions', run_id: 36161486772 },
+];
+
+test('evidence resolver: all-green self-hosted checks derive completed, with run and runner identity', () => {
+  const derived = deriveCheckpointState(GREEN_JOBS, { head: 'c2b519d6c7d013d7f032c34cd1d572c6c38018c8' });
+  assert.equal(derived.status, 'completed');
+  assert.equal(derived.verdict.verdict, 'ALL_GREEN');
+  for (const identity of ['MDMTEST-n8n-wsl', 'MDMTEST-n8n-wsl-2', 'MDMTEST-n8n-wsl-3', 'MDMTEST-n8n-wsl-4', 'laptop-build-worker-4']) {
+    assert.match(derived.evidence, new RegExp(identity.replace(/[-]/g, '\\-')), `evidence names ${identity}`);
+  }
+  assert.match(derived.evidence, /run 36161486727/);
+  assert.match(derived.evidence, /run 36161486715/);
+
+  const applied = applyProgressEvent(REGISTER, {
+    slice: 'P5-M08', checkpoint: 'CP-05', status: derived.status, evidence: derived.evidence, at: '2026-09-26T09:00:00Z',
+  });
+  assert.equal(sliceDeliveryProgress(applied.slice).percent, 100);
+  assert.equal(completionContribution(applied.slice), 0, 'resolver output never becomes completion by itself');
+});
+
+test('evidence resolver: WAITING_RUNNER, queued and hosted-only never derive completed (DEC-0015)', () => {
+  // No online runner can take it: DEC-0015 WAITING_RUNNER, which is never PASS.
+  const waiting = GREEN_JOBS.map((job) => (job.name.startsWith('Level 0') ? { ...job, status: 'queued', conclusion: null } : job));
+  const derivedWaiting = deriveCheckpointState(waiting, { onlineRunners: [] });
+  assert.equal(derivedWaiting.status, 'in-progress');
+  assert.match(derivedWaiting.evidence, /WAITING_RUNNER is never PASS/);
+  assert.equal(derivedWaiting.verdict.verdict, 'ALLOWED_BY_DEC-0015');
+
+  // Runner availability unknown: still not earned.
+  const unknown = deriveCheckpointState(waiting);
+  assert.equal(unknown.status, 'in-progress');
+  assert.equal(unknown.verdict.verdict, 'PENDING');
+
+  const running = GREEN_JOBS.map((job) => (job.name.startsWith('Level 2 Workspace Tests (windows)') ? { ...job, status: 'in_progress', conclusion: null } : job));
+  assert.equal(deriveCheckpointState(running).status, 'in-progress');
+
+  const hostedOnly = GREEN_JOBS.filter((job) => !job.labels.includes('self-hosted'));
+  assert.equal(deriveCheckpointState(hostedOnly).status, 'in-progress', 'a hosted-only result is not runner verification');
+  assert.equal(deriveCheckpointState([]).status, 'in-progress', 'no checks at all is never PASS');
+});
+
+test('evidence resolver: a failed self-hosted check derives blocked with the failure as blocker', () => {
+  const failed = GREEN_JOBS.map((job) => (job.name.startsWith('Level 1')
+    ? { ...job, conclusion: 'failure' }
+    : job));
+  const derived = deriveCheckpointState(failed);
+  assert.equal(derived.status, 'blocked');
+  assert.equal(derived.verdict.verdict, 'BLOCKED');
+  assert.match(derived.evidence, /Level 1 \(Affected Tests\)/);
+  assert.match(derived.blockedBy, /classify the failure/, 'the tool never relabels a failure as environmental or a regression');
+  const applied = applyProgressEvent(REGISTER, {
+    slice: 'P5-M08', checkpoint: 'CP-05', status: derived.status, evidence: derived.evidence, blockedBy: derived.blockedBy, at: '2026-09-26T09:00:00Z',
+  });
+  assert.equal(sliceDeliveryProgress(applied.slice).percent, 70, 'earned progress survives a new blocker');
+});
+
+test('command evidence: exit 0 derives completed, non-zero derives blocked, never a typed percentage', () => {
+  const passed = deriveCommandState('npm run lego:capabilities', { code: 0, output: 'ok' });
+  assert.equal(passed.status, 'completed');
+  assert.match(passed.evidence, /exited 0/);
+
+  const failed = deriveCommandState('npm run lego:arch', { code: 1, output: 'line1\nline2\nARCH VIOLATION: domain boundary' });
+  assert.equal(failed.status, 'blocked');
+  assert.match(failed.blockedBy, /exited 1/);
+  assert.match(failed.evidence, /ARCH VIOLATION/);
+
+  for (const derived of [passed, failed]) {
+    assert.doesNotMatch(JSON.stringify(derived), /\b(70|72|84|91|100)(\.\d)?%/, 'no percentage is ever derived or typed');
+  }
+});
+
+test('telemetry never carries delivery state: a slice status transition is refused', () => {
+  const mutated = clone();
+  const slice = m08(mutated);
+  slice.status = 'implemented';
+  slice.mergeSha = '600a21456213602ebdc6193229bab8432e6d1024';
+  assert.ok(validateGovernanceRegister(mutated).some((problem) => /cannot carry an incomplete checkpoint/.test(problem)),
+    'the register itself refuses implemented while a checkpoint is incomplete');
+
+  // The telemetry tool cannot move a slice status or attach a merge SHA at all.
+  const applied = applyProgressEvent(REGISTER, event({ status: 'completed', evidence: 'docs/n8n-lego/evidence/P5-M08-EVIDENCE.md §6 — PASS', at: '2026-09-26T09:00:00Z' }));
+  assert.equal(applied.slice.status, 'in-progress', 'a telemetry event cannot change a slice status');
+  assert.equal(applied.slice.mergeSha, null, 'a telemetry event cannot attach a merge SHA');
+  assert.equal(completionContribution(applied.slice), 0, 'completion still waits for the governance PR');
+});
+
+test('atomicity: a failing regeneration leaves the register byte-identical', () => {
+  const root = mkdtempSync(join(tmpdir(), 'progress-atomic-'));
+  try {
+    mkdirSync(join(root, 'docs/n8n-lego'), { recursive: true });
+    mkdirSync(join(root, 'tools/lego'), { recursive: true });
+    writeFileSync(join(root, 'docs/n8n-lego/milestones.json'), REGISTER_TEXT);
+    for (const file of ['governance-register.mjs', 'progress-event.mjs']) {
+      writeFileSync(join(root, 'tools/lego', file), readFileSync(join(REPO_ROOT, 'tools/lego', file)));
+    }
+    // A generator that fails, as a stale or broken projection would.
+    writeFileSync(join(root, 'tools/lego/ai-pack.mjs'), 'process.exit(1);\n');
+    const before = readFileSync(join(root, 'docs/n8n-lego/milestones.json'));
+    let code = 0;
+    try {
+      execFileSync('node', [join(root, 'tools/lego/progress-event.mjs'), 'record',
+        '--slice', 'P5-M08', '--checkpoint', 'CP-05', '--status', 'in-progress',
+        '--evidence', 'atomicity probe'], { cwd: root, stdio: 'pipe' });
+    } catch (error) { code = error.status; }
+    assert.notEqual(code, 0, 'a failing regeneration must fail the command');
+    assert.equal(readFileSync(join(root, 'docs/n8n-lego/milestones.json')).toString(), before.toString(), 'the register is restored byte for byte');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test('an event on an unknown slice or checkpoint is refused before anything is written', () => {
