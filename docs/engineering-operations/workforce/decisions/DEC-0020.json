@@ -1,0 +1,68 @@
+{
+  "schemaVersion": "1.0",
+  "objectType": "Decision",
+  "objectId": "DEC-0020",
+  "revision": 1,
+  "createdAt": "2026-09-25T13:11:03Z",
+  "updatedAt": "2026-09-25T13:11:03Z",
+  "events": [],
+  "state": "ACTIVE",
+  "category": "MILESTONE",
+  "title": "Milestone truth is main-owned; every milestone-changing delivery merge is followed by a governance PR on main",
+  "problem": "The Manager memory branch arena-manager carries a full repository tree, including a docs/n8n-lego/milestones.json snapshot from before P5-M01 (commit c137879b), while the current milestone design (P5-M04..M10, the P5-M02 blocker finding) was partly recorded only in the Manager handoff. README.md and docs/n8n-lego/ROADMAP.md on main stated milestone status independently (ROADMAP still showed P2.13 in progress). Two places could be read as the roadmap, which is split-brain project memory.",
+  "options": [
+    {
+      "id": "A-main-owned",
+      "summary": "main owns the canonical register docs/n8n-lego/milestones.json, including an explicit active-work pointer (executionPointer). README.md carries a generated projection of it (npm run lego:ai writes it, npm run lego:ai:check fails when stale), and ROADMAP.md points to the register instead of stating status. arena-manager is Manager memory only. Every delivery PR that changes milestone state is followed by one governance PR on main (register, evidence, README projection, .ai), never batched."
+    },
+    {
+      "id": "B-manager-branch-register",
+      "summary": "Keep the working register on arena-manager and copy it to main periodically."
+    },
+    {
+      "id": "C-status-quo",
+      "summary": "Leave README/ROADMAP hand-written and update milestones when convenient."
+    }
+  ],
+  "selectedOption": "A-main-owned",
+  "rationale": "Owner instruction in chat on 2026-09-25 (MASTER PROMPT: Milestone Governance Migration), which asks to record this rule as a permanent project decision: 'Milestone truth is Main-Owned. The latest milestone design may be developed or discovered through Manager memory, but no milestone becomes authoritative until reconciled into main. Every delivery PR that changes milestone state must be followed by a post-merge governance update on main that updates the canonical milestone register, README projection, generated .ai, and evidence references. arena-manager is not an alternate milestone authority.' Option A implements it without a second source of truth: the README block and .ai views are generated from the one register and enforced by the existing freshness gate. Option B recreates split-brain memory; option C is how ROADMAP.md went stale.",
+  "scope": {
+    "programs": [
+      "GOVERNANCE"
+    ],
+    "slices": [],
+    "domains": [],
+    "surfaces": []
+  },
+  "authority": {
+    "decidedBy": "OWNER",
+    "managerOnly": false,
+    "humanEscalation": true,
+    "proposedBy": "MANAGER-01"
+  },
+  "evidence": [],
+  "evidenceRefs": [],
+  "sources": {
+    "issues": [
+      256,
+      282
+    ],
+    "prs": [
+      304
+    ],
+    "commits": [
+      "600a21456213602ebdc6193229bab8432e6d1024"
+    ],
+    "requests": []
+  },
+  "supersedes": null,
+  "supersededBy": null,
+  "promotion": {
+    "canonical": false,
+    "mainPath": "docs/engineering-operations/workforce/decisions/DEC-0020.json",
+    "mainCommitSha": null,
+    "promotedAt": null,
+    "promotedBy": null
+  },
+  "reason": null
+}

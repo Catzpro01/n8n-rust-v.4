@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   validateGovernanceRegister, TOP_LEVEL_PROGRAMS, EXPECTED_PROGRAM_STATUS, LEGACY_FUTURE_MILESTONES, countBy,
+  README_MARKERS, renderReadmeMilestoneSection, syncReadmeMilestoneSection,
 } from '../../../tools/lego/governance-register.mjs';
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
@@ -103,6 +104,24 @@ const MUTATIONS = [
   }, /implemented without evidence/],
   ['a superseded feature without replacement', (r) => { r.features.find((x) => x.status === 'planned').status = 'superseded'; }, /without supersededBy/],
   ['a slice reference into another program', (r) => { r.features.find((x) => x.parent === 'P7').slice = 'P8-S01'; }, /belongs to P8/],
+  // DEC-0020: completion, in-progress and pointer semantics.
+  ['a P24 top-level program', (r) => { r.programs.push({ ...r.programs[7], id: 'P24' }); }, /exactly P0/],
+  ['a duplicate slice id', (r) => { r.programs[5].slices.push({ ...r.programs[5].slices.find((x) => x.id === 'P5-M09') }); }, /declared twice/],
+  ['a verifying slice recorded as implemented before post-merge verification', (r) => {
+    r.programs[5].slices.find((x) => x.id === 'P5-M08').status = 'implemented';
+  }, /P5-M08: implemented without a 40-hex merge SHA|verifying slice P5-M08 is implemented/],
+  ['an implemented slice without evidence', (r) => { r.programs[5].slices.find((x) => x.id === 'P5-M03').evidence = null; }, /P5-M03: implemented without evidence/],
+  ['an in-progress slice missing from the pointer', (r) => {
+    const slice = r.programs[5].slices.find((x) => x.id === 'P5-M09'); slice.status = 'in-progress';
+    r.executionPointer.plannedQueue = r.executionPointer.plannedQueue.filter((id) => id !== 'P5-M09');
+  }, /in-progress slice P5-M09 is neither active nor verifying/],
+  ['a queued slice that is not planned', (r) => { r.executionPointer.plannedQueue.push('P5-M03'); }, /queued slice P5-M03 is implemented/],
+  ['a blocked slice without blockedBy', (r) => { delete r.programs[5].slices.find((x) => x.id === 'P5-M10').blockedBy; }, /P5-M10 does not record blockedBy/],
+  ['a blocked slice missing from blockedSlices', (r) => { r.executionPointer.blockedSlices = []; }, /blocked slice P5-M02 is missing/],
+  ['a latest completed slice that is not implemented', (r) => { r.executionPointer.latestCompletedSlice.id = 'P5-M09'; }, /latestCompletedSlice P5-M09/],
+  ['a pointer naming an unknown slice', (r) => { r.executionPointer.plannedQueue.push('P5-M99'); }, /unknown slice P5-M99/],
+  ['a pointer whose authority is not main', (r) => { r.executionPointer.authority = 'arena-manager'; }, /authority must be main/],
+  ['a slice listed twice in the pointer', (r) => { r.executionPointer.blockedSlices.push('P5-M09'); }, /listed in both/],
 ];
 for (const [name, mutate, expected] of MUTATIONS) {
   test(`the validator rejects ${name}`, () => {
@@ -187,4 +206,76 @@ test('no polling/wait sleep above 1 second in CI workflows or operations tooling
 
 test('runtime token material from the gateway is never committable', () => {
   assert.match(read('.gitignore'), /^\.arena\/gateway_tokens\.json$/m);
+});
+
+/* ------------------------------------------ DEC-0020: milestone truth is main-owned */
+
+const README = read('README.md');
+const HISTORICAL_LADDER = ['P2.11', 'P2.12', 'P2.13', 'P2.14', 'P2.15', 'P2.16', 'P2.17', 'P2.18', 'P2.19', 'P2.20', 'P2.21', 'P2.22',
+  'P2.23', 'P2.24', 'P2.25', 'P2.26', 'P2.27', 'P2.17+'];
+const HISTORICAL_P2_SLICES = ['P2.1-P2.4', 'P2.5', 'P2.6-P2.10', 'P2.11', 'P2.12', 'P2.13', 'P2.14', 'P2.15', 'P2.16', 'P2.17', 'P2.18',
+  'P2.19', 'P2.20', 'P2.21', 'P2.22', 'P2.23', 'P2.24', 'P2.25', 'P2.26', 'P2.27', 'P2.27.0', 'P2.27.1', 'P2.27.2', 'P2.27.3', 'P2.27.4',
+  'P2.27.5', 'P2.27.6', 'P2.27.7', 'P2.27.8', 'P2.27.9', 'P2.27.10'];
+
+test('DEC-0020 is recorded as an active decision', () => {
+  const decision = JSON.parse(read('docs/engineering-operations/workforce/decisions/DEC-0020.json'));
+  assert.equal(decision.state, 'ACTIVE');
+  assert.equal(decision.selectedOption, 'A-main-owned');
+  assert.equal(REGISTER.governance.milestoneAuthority.decision, 'DEC-0020');
+  assert.match(REGISTER.governance.milestoneAuthority.rule, /main-owned/);
+  assert.match(REGISTER.governance.milestoneAuthority.rule, /arena-manager is not an alternate milestone authority/);
+});
+
+test('README carries the generated projection of the register, and it is current', () => {
+  assert.equal(README.split(README_MARKERS.begin).length, 2, 'exactly one begin marker');
+  assert.equal(README.split(README_MARKERS.end).length, 2, 'exactly one end marker');
+  const synced = syncReadmeMilestoneSection(README, REGISTER);
+  assert.equal(synced.ok, true);
+  assert.equal(synced.changed, false, 'README milestone block is stale: run npm run lego:ai');
+  const block = renderReadmeMilestoneSection(REGISTER);
+  assert.match(block, /docs\/n8n-lego\/milestones\.json/);
+  assert.match(block, /`main` is authoritative/);
+  const pointer = REGISTER.executionPointer;
+  assert.ok(block.includes(`\`${pointer.latestCompletedSlice.id}\``), 'latest completed slice');
+  for (const entry of pointer.verifyingSlices) assert.ok(block.includes(`\`${entry.id}\``), `verifying ${entry.id}`);
+  for (const id of [...pointer.activeSlices, ...pointer.plannedQueue, ...pointer.blockedSlices]) assert.ok(block.includes(`\`${id}\``), id);
+  for (const program of REGISTER.programs) assert.match(block, new RegExp(`\\| ${program.id} \\| .* \\| ${program.status} \\|`));
+});
+
+test('README states no milestone truth outside the generated block', () => {
+  const outside = README.slice(0, README.indexOf(README_MARKERS.begin)) + README.slice(README.indexOf(README_MARKERS.end));
+  const ids = outside.match(/\bP\d+(?:\.\d+|-[SM]\d{2})\b/g) ?? [];
+  assert.deepEqual(ids, [], 'milestone/slice ids belong in the generated block only');
+});
+
+test('ROADMAP.md points to the register instead of stating milestone status', () => {
+  const roadmap = read('docs/n8n-lego/ROADMAP.md');
+  assert.match(roadmap, /application roadmap/i);
+  assert.match(roadmap, /docs\/n8n-lego\/milestones\.json|\(milestones\.json\)/);
+  assert.doesNotMatch(roadmap, /\| \*\*P2\.13[^|]*\| 🔄/, 'no stale "P2.13 in progress" row');
+  assert.doesNotMatch(roadmap, /^\| (\*\*)?P\d+\.\d+[^|]*\| (🔄|⏳)/m, 'no milestone status rows');
+});
+
+test('the historical P2 ladder and P2 slices are preserved unchanged', () => {
+  assert.deepEqual(REGISTER.milestones.map((milestone) => milestone.id), HISTORICAL_LADDER);
+  for (const milestone of REGISTER.milestones.filter((m) => m.id !== 'P2.17+')) assert.equal(milestone.status, 'complete', milestone.id);
+  const p2 = REGISTER.programs.find((program) => program.id === 'P2');
+  const historical = p2.slices.filter((slice) => slice.id.startsWith('P2.'));
+  assert.deepEqual(historical.map((slice) => slice.id), HISTORICAL_P2_SLICES);
+  for (const slice of historical) assert.equal(slice.status, 'implemented', slice.id);
+  assert.equal(REGISTER.currentMilestone, REGISTER.executionPointer.historicalLastP2Milestone, 'the P2 pointer is history, not active work');
+});
+
+test('the P5 maintenance ladder is P5-M01..M10, each a separate slice with evidence-backed state', () => {
+  const p5 = new Map(REGISTER.programs.find((program) => program.id === 'P5').slices.map((slice) => [slice.id, slice]));
+  const ladder = ['P5-M01', 'P5-M02', 'P5-M03', 'P5-M04', 'P5-M05', 'P5-M06', 'P5-M07', 'P5-M08', 'P5-M09', 'P5-M10'];
+  for (const id of ladder) assert.equal(p5.get(id)?.kind, 'maintenance', id);
+  assert.deepEqual(['P5-M01', 'P5-M03'].map((id) => [p5.get(id).status, p5.get(id).mergeSha]), [
+    ['implemented', '2719109169e99714e70937767e9a15af65bd640e'], ['implemented', 'cf52701c91e5447f19c32377c38f6ae5eea7f3a7']]);
+  const m08 = p5.get('P5-M08');
+  assert.equal(m08.pr, 304);
+  const verifying = REGISTER.executionPointer.verifyingSlices.find((entry) => entry.id === 'P5-M08');
+  if (m08.status === 'in-progress') assert.ok(verifying, 'a merged, unverified slice is listed as verifying');
+  else assert.equal(m08.status, 'implemented', 'P5-M08 leaves in-progress only by post-merge verification');
+  for (const id of REGISTER.executionPointer.blockedSlices) assert.ok(p5.get(id)?.blockedBy || REGISTER.programs.some((p) => p.slices.some((x) => x.id === id && x.blockedBy)), id);
 });

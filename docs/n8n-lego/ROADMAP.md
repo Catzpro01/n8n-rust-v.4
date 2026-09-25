@@ -7,27 +7,21 @@ engine stays the execution backend and the Rust port resumes afterwards.
 
 Status legend: ✅ done · 🔄 in progress · ⏳ planned
 
-## Current granular milestone truth
+## Current milestone state
 
-The Phase A-F roadmap below remains the strategic roadmap. The Manager-owned granular
-register is `docs/n8n-lego/milestones.json` and is the only machine-readable milestone
-source. Current state:
+This file is the **application roadmap**: the strategic Phase A-F narrative below. It is **not** a
+milestone register and states no current milestone status of its own.
 
-| Milestone | Status | Meaning |
-| :--- | :--- | :--- |
-| P2.11 — reconciliation/foundation cleanup | ✅ complete | historical evidence preserved |
-| P2.12 — Skill | ✅ complete | `ai.skill@1.0.0`, four published operations, two permissions; no Skill runtime |
-| **P2.13 — Context & Session** | 🔄 in progress | bounded lifecycle, rollover, continuation and verification; Manager reconciliation still required |
-| P2.14 — Memory | ⏳ planned | separate persistent knowledge store, not part of P2.13 |
-| P2.15 — Workspace | ⏳ planned | scoped execution boundary, not part of P2.13 |
-| P2.16 — Agent Machine / execution foundation | ⏳ planned | depends on Context & Session, Memory, Workspace and approval readiness |
+Current milestone state lives only in the canonical register,
+[`docs/n8n-lego/milestones.json`](milestones.json) on `main` (DEC-0020: milestone truth is
+main-owned). Its generated projections are the *Current Milestone Governance* section of the root
+`README.md` and `.ai/master/MILESTONE_REGISTER.md`. There you find the latest completed slice, the
+active and verifying slices, the planned queue (planned ≠ authorized) and the blocked slices.
 
-P2.13 deliberately does not implement AI runtime/model inference, Agent Machine,
-Memory persistence, Workspace execution, MCP/runtime adapters, Skill execution,
-external providers, Node Creator, Translation, token providers or Rust. An agent
-branch is not a milestone: Manager reconciliation, merge validation and protected-main
-post-merge verification are separate gates. Future IDs may be refined only by Manager
-by updating the canonical register.
+> **Historical note.** An earlier version of this section listed "P2.13 — Context & Session" as in
+> progress and P2.14–P2.16 as planned. That table is superseded: the historical P2 ladder
+> P2.11–P2.27 is complete, immutable history in the register (`milestones[]`), and the generic
+> "P2.17+" label authorizes nothing.
 
 ---
 

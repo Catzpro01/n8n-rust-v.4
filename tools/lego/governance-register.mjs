@@ -135,7 +135,150 @@ export function validateGovernanceRegister(register) {
     if (feature.status === 'superseded' && !feature.supersededBy) fail(`${feature.id}: superseded without supersededBy`);
     if ((feature.status === 'rejected' || feature.status === 'retired') && !(feature.note || feature.evidence)) fail(`${feature.id}: ${feature.status} without a recorded reason`);
   }
+  errors.push(...validateExecutionPointer(register, sliceOwner));
   return errors;
+}
+
+/**
+ * DEC-0020: the active-work pointer must agree with the slice statuses it
+ * names, so the README/.ai projections can never claim a state the register
+ * does not hold.
+ */
+export function validateExecutionPointer(register, sliceOwner = null) {
+  const errors = [];
+  const fail = (message) => errors.push(`executionPointer: ${message}`);
+  const pointer = register?.executionPointer;
+  if (!pointer) return ['executionPointer: missing (DEC-0020 active-work pointer)'];
+  const all = new Map([...(register.programs ?? []), ...(register.futurePrograms ?? [])]
+    .flatMap((entity) => (entity.slices ?? []).map((slice) => [slice.id, slice])));
+  const get = (id, where) => {
+    const slice = all.get(id);
+    if (!slice) fail(`${where} names unknown slice ${id}`);
+    return slice;
+  };
+  if (!/^main\b/.test(pointer.authority ?? '')) fail('authority must be main');
+  if (pointer.historicalLastP2Milestone !== register.currentMilestone) fail('historicalLastP2Milestone must equal currentMilestone (the historical P2 pointer)');
+  if (!SHA.test(pointer.lastVerifiedMain ?? '')) fail('lastVerifiedMain must be a 40-hex SHA');
+  const latest = pointer.latestCompletedSlice;
+  const latestSlice = latest ? get(latest.id, 'latestCompletedSlice') : null;
+  if (!latest) fail('latestCompletedSlice missing');
+  else if (latestSlice && (latestSlice.status !== 'implemented' || latestSlice.mergeSha !== latest.mergeSha)) {
+    fail(`latestCompletedSlice ${latest.id} must be implemented with merge SHA ${latest.mergeSha}`);
+  }
+  const listed = new Map();
+  const claim = (id, list) => {
+    if (listed.has(id)) fail(`${id} is listed in both ${listed.get(id)} and ${list}`);
+    listed.set(id, list);
+  };
+  for (const id of pointer.activeSlices ?? []) {
+    claim(id, 'activeSlices');
+    const slice = get(id, 'activeSlices');
+    if (slice && slice.status !== 'in-progress') fail(`active slice ${id} is ${slice.status}, not in-progress`);
+  }
+  for (const entry of pointer.verifyingSlices ?? []) {
+    claim(entry.id, 'verifyingSlices');
+    const slice = get(entry.id, 'verifyingSlices');
+    if (slice && slice.status !== 'in-progress') fail(`verifying slice ${entry.id} is ${slice.status}; verifying is in-progress until post-merge verification passes`);
+    if (!Number.isInteger(entry.pr)) fail(`verifying slice ${entry.id} names no delivery PR`);
+    if (!SHA.test(entry.mergeSha ?? '') || !SHA.test(entry.headSha ?? '')) fail(`verifying slice ${entry.id} needs 40-hex headSha and mergeSha`);
+    if (!entry.pending) fail(`verifying slice ${entry.id} must say what is pending`);
+  }
+  const queue = pointer.plannedQueue ?? [];
+  for (const id of queue) {
+    claim(id, 'plannedQueue');
+    const slice = get(id, 'plannedQueue');
+    if (slice && slice.status !== 'planned') fail(`queued slice ${id} is ${slice.status}, not planned`);
+  }
+  for (const id of pointer.blockedSlices ?? []) {
+    claim(id, 'blockedSlices');
+    const slice = get(id, 'blockedSlices');
+    if (slice && slice.status !== 'blocked') fail(`blocked slice ${id} is ${slice.status}`);
+  }
+  for (const [id, slice] of all) {
+    if (slice.status === 'in-progress' && !['activeSlices', 'verifyingSlices'].includes(listed.get(id))) fail(`in-progress slice ${id} is neither active nor verifying`);
+    if (slice.status === 'blocked') {
+      if (listed.get(id) !== 'blockedSlices') fail(`blocked slice ${id} is missing from blockedSlices`);
+      if (!slice.blockedBy) fail(`blocked slice ${id} does not record blockedBy`);
+    }
+  }
+  if (sliceOwner && sliceOwner.size !== all.size) fail('slice index mismatch');
+  return errors;
+}
+
+const sliceTitle = (slice) => String(slice?.title ?? '').split(/[.:;(]/)[0].trim();
+
+/** The active-work section (MILESTONE_REGISTER.md and README.md). */
+function activeWorkLines(register) {
+  const pointer = register.executionPointer;
+  const all = new Map([...(register.programs ?? []), ...(register.futurePrograms ?? [])]
+    .flatMap((entity) => (entity.slices ?? []).map((slice) => [slice.id, slice])));
+  const latest = pointer.latestCompletedSlice;
+  const line = (id) => `\`${id}\` — ${cell(sliceTitle(all.get(id)))}`;
+  return [
+    `| Latest completed slice | ${line(latest.id)} (PR #${latest.pr}, merge ${short(latest.mergeSha)}) |`,
+    `| Active slices | ${(pointer.activeSlices ?? []).map(line).join('<br>') || '— (none)'} |`,
+    `| Verifying (merged, post-merge verification pending) | ${(pointer.verifyingSlices ?? []).map((entry) => `${line(entry.id)} (PR #${entry.pr}, merge ${short(entry.mergeSha)}): ${cell(entry.pending)}`).join('<br>') || '— (none)'} |`,
+    `| Planned queue (in order; planned ≠ authorized) | ${(pointer.plannedQueue ?? []).map((id) => `\`${id}\``).join(', ') || '—'} |`,
+    `| Blocked | ${(pointer.blockedSlices ?? []).map((id) => `\`${id}\` — blocked by ${cell(all.get(id)?.blockedBy)}`).join('<br>') || '—'} |`,
+    `| Not authorized | ${cell(pointer.notAuthorized)} |`,
+    `| Historical P2 ladder pointer | \`${pointer.historicalLastP2Milestone}\` (history, not active work) |`,
+    `| Last verified main | ${short(pointer.lastVerifiedMain)} |`,
+  ];
+}
+
+export const README_MARKERS = Object.freeze({
+  begin: '<!-- BEGIN GENERATED milestone-governance: npm run lego:ai renders this block from docs/n8n-lego/milestones.json; do not edit by hand -->',
+  end: '<!-- END GENERATED milestone-governance -->',
+});
+
+/** README.md projection of the canonical register (DEC-0020). Not a second register. */
+export function renderReadmeMilestoneSection(register) {
+  const gov = register.governance;
+  const authority = gov.milestoneAuthority;
+  const ladder = (register.milestones ?? []).filter((milestone) => milestone.status === 'complete').map((milestone) => milestone.id);
+  const generic = (register.milestones ?? []).filter((milestone) => milestone.status !== 'complete').map((milestone) => `\`${milestone.id}\` (${milestone.status})`);
+  const programs = (register.programs ?? []).map((program) => {
+    const done = program.slices.filter((slice) => slice.status === 'implemented').length;
+    return `| ${program.id} | ${cell(program.title)} | ${program.status} | ${done}/${program.slices.length} |`;
+  });
+  return `${README_MARKERS.begin}
+## Current Milestone Governance
+
+- **Canonical source:** [\`docs/n8n-lego/milestones.json\`](docs/n8n-lego/milestones.json) on \`main\`. \`main\` is authoritative (${authority.decision}): ${authority.rule}
+- **Projections:** this section, \`.ai/master/MILESTONE_REGISTER.md\` and \`.ai/master/CURRENT_STATUS.md\` are generated by \`npm run lego:ai\`; \`npm run lego:ai:check\` fails when any of them is stale.
+- **Top level:** programs P0–P11 only. There is no P12+ or P24+ and no P5.9; legacy P12–P23 are consolidated into future programs. New work is \`Pn-Snn\`, \`Pn-Mnn\` or \`FUTURE-<THEME>-Snn\`.
+- **Historical P2 ladder:** ${ladder.length} completed milestones (\`${ladder[0]}\` … \`${ladder.at(-1)}\`, with the \`P2.27.x\` sub-slices under program P2) are immutable implementation history.${generic.length ? ` The generic ${generic.join(', ')} row is a historical placeholder label; it authorizes no work.` : ''}
+
+### Active work
+
+| | |
+| --- | --- |
+${activeWorkLines(register).join('\n')}
+
+### Programs
+
+| Program | Title | Status | Slices implemented |
+| --- | --- | --- | --- |
+${programs.join('\n')}
+
+### How milestone state changes
+
+1. ${authority.postMergeSequence.join(' → ')}.
+2. ${authority.noBatching}
+3. ${gov.completionRule}
+4. One delivery PR per slice (DEC-0014); the post-merge register/README/.ai update is a separate governance PR, not a second delivery PR.
+5. Evidence lives in \`docs/n8n-lego/evidence/\`; each slice's \`evidence\` field names its file.
+${README_MARKERS.end}`;
+}
+
+/** Replace (or report) the generated block inside README.md text. */
+export function syncReadmeMilestoneSection(readme, register) {
+  const block = renderReadmeMilestoneSection(register);
+  const start = readme.indexOf(README_MARKERS.begin);
+  const end = readme.indexOf(README_MARKERS.end);
+  if (start === -1 || end === -1 || end < start) return { ok: false, text: null, reason: 'README.md has no milestone-governance markers' };
+  const text = readme.slice(0, start) + block + readme.slice(end + README_MARKERS.end.length);
+  return { ok: true, text, changed: text !== readme };
 }
 
 export function countBy(items, key) {
@@ -177,7 +320,7 @@ export function renderGovernanceSections(register) {
     return `| **${future.id}** | ${cell(future.title)} | ${future.legacyMilestones.join(', ')} | ${issues(future.legacyIssues)} | ${future.status} | ${(byParent.get(future.id) ?? []).length} | ${next ? `\`${next.id}\`` : '—'} |`;
   });
   const sliceTable = (slices) => ['| Slice | Title | Status | PR | Merge SHA | Issue |', '| --- | --- | --- | --- | --- | --- |',
-    ...slices.map((slice) => `| \`${slice.id}\` | ${cell(slice.title)} | ${slice.status} | ${slice.pr ? `#${slice.pr}` : '—'} | ${short(slice.mergeSha)} | ${slice.issue ? `#${slice.issue}` : '—'} |`)].join('\n');
+    ...slices.map((slice) => `| \`${slice.id}\` | ${cell(slice.title)}${slice.blockedBy ? ` **Blocked by:** ${cell(slice.blockedBy)}` : ''} | ${slice.status} | ${slice.pr ? `#${slice.pr}` : '—'} | ${short(slice.mergeSha)} | ${slice.issue ? `#${slice.issue}` : '—'} |`)].join('\n');
   const featureTable = (list) => ['| Feature | Title | Status | Relevance | Slice | Issues | Merge SHA |', '| --- | --- | --- | --- | --- | --- | --- |',
     ...list.map((feature) => `| \`${feature.id}\` | ${cell(feature.title)} | ${feature.status} | ${feature.relevance} | ${feature.slice ? `\`${feature.slice}\`` : '—'} | ${issues(feature.sourceIssue)} | ${short(feature.mergeSha)} |`)].join('\n');
   const detail = (entity) => {
@@ -203,7 +346,13 @@ ${list.length ? featureTable(list) : '_none_'}
 
 </details>`;
   };
-  return `## Programs P0–P11 (top level)
+  return `## Active work (executionPointer, DEC-0020)
+
+| | |
+| --- | --- |
+${activeWorkLines(register).join('\n')}
+
+## Programs P0–P11 (top level)
 
 | Program | Title | Status | Slices implemented | Features | Next slice |
 | --- | --- | --- | --- | --- | --- |
@@ -236,6 +385,7 @@ ${gov.deliveryModel ? `- **Delivery model (${gov.deliveryModel.decision}):** Sli
 - **Status vocabulary:** ${gov.statusVocabulary.map((s) => `\`${s}\``).join(', ')}. **Relevance:** ${gov.relevanceVocabulary.map((s) => `\`${s}\``).join(', ')}.
 - **Invariants:** ${gov.invariants.join('; ')}.
 - **Pointer scope:** ${gov.pointerScope}
+${gov.milestoneAuthority ? `- **Milestone authority (${gov.milestoneAuthority.decision}):** ${gov.milestoneAuthority.rule} Post-merge sequence: ${gov.milestoneAuthority.postMergeSequence.join(' → ')}. ${gov.milestoneAuthority.noBatching}\n` : ''}
 - **Branches:** ${gov.branchPolicy}
 - **Runner protocol:** ${gov.runnerProtocol}
 
