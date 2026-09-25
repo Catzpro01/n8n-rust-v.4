@@ -456,8 +456,20 @@ test('Issue #307: two metrics, status independent, checkpoint weights only where
     const slice = slices(REGISTER).find((item) => item.id === id);
     assert.equal(slice.status, 'blocked', id);
     assert.equal(completionContribution(slice), 0, id);
-    assert.equal(sliceDeliveryProgress(slice).source, 'no-checkpoint-model', id);
     assert.ok(slice.blockedBy, id);
+    // A blocked slice keeps whatever its checkpoints EARNED — the blocker stays
+    // visible and earned realtime is never discarded — while contributing
+    // nothing to completion, which is why `blocked` and `implemented` are
+    // different words. A blocked slice with no checkpoint model reports 0
+    // realtime rather than inventing a percentage. This assertion used to pin
+    // every blocked slice to `no-checkpoint-model`, which was true only because
+    // no blocked slice had ever carried a checkpoint model; P6-S01 is the first.
+    if (Array.isArray(slice.checkpoints) && slice.checkpoints.length > 0) {
+      assert.equal(sliceDeliveryProgress(slice).source, 'checkpoints', id);
+    } else {
+      assert.equal(sliceDeliveryProgress(slice).source, 'no-checkpoint-model', id);
+      assert.equal(sliceDeliveryProgress(slice).percent, 0, id);
+    }
   }
   const block = renderReadmeMilestoneSection(REGISTER);
   assert.match(block, /### Realtime Delivery Progress/);
