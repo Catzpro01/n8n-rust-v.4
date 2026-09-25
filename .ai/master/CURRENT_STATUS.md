@@ -14,7 +14,8 @@ document is right and the prose is stale.
 | Agent 1 branch | `main` |
 | Agent 2 branch | `main` |
 | **Latest completed slice** | **P5-M03** |
-| **Completion KPI** | **82.9%** (126/152 implemented; verifying contributes 0) |
+| **Realtime Delivery Progress** | **85.6%** (P0–P11 checkpoint-weighted; future programs excluded; no checkpoint model contributes 0) |
+| **Slice Completion** | **85.6%** (125/146 implemented; verifying and blocked contribute 0) |
 | **Active / verifying slices** | **P5-M08 (verifying)** |
 | Planned queue | P5-M09, P5-M07, P9-S01, P3-S01, P4-S01, P6-S01, P6-S02, P2-S02, P2-S03 |
 | Blocked slices | P5-M02, P5-M05, P5-M06, P5-M10 |

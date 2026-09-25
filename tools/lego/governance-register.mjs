@@ -90,6 +90,7 @@ export function validateGovernanceRegister(register) {
     } else if (slice.mergeSha) {
       fail(`${slice.id}: a ${slice.status} slice cannot carry a merge SHA`);
     }
+    for (const problem of validateSliceCheckpoints(slice)) fail(problem);
   };
 
   for (const program of programs) {
@@ -141,6 +142,13 @@ export function validateGovernanceRegister(register) {
   }
   errors.push(...validateExecutionPointer(register, sliceOwner));
   errors.push(...validateMilestoneAuthority(register));
+  const model = gov.progressModel;
+  if (model) {
+    if (model.legacyImplementedWithoutCheckpoints !== LEGACY_IMPLEMENTED_POINTS) fail(`progressModel.legacyImplementedWithoutCheckpoints must be ${LEGACY_IMPLEMENTED_POINTS}`);
+    if (model.noCheckpointModel !== NO_CHECKPOINT_MODEL_POINTS) fail(`progressModel.noCheckpointModel must be ${NO_CHECKPOINT_MODEL_POINTS}`);
+    if (!Array.isArray(model.completionCounts) || JSON.stringify(model.completionCounts) !== JSON.stringify(['implemented'])) fail('progressModel.completionCounts must be ["implemented"]');
+    if (model.currentDelivery !== 'P0-P11') fail('progressModel.currentDelivery must be P0-P11');
+  }
   errors.push(...validateHistoricalPointers(register));
   return errors;
 }
@@ -342,7 +350,7 @@ export const README_MARKERS = Object.freeze({
   end: '<!-- END GENERATED milestone-governance -->',
 });
 
-/** Completion KPI. Derived only from slice status. Verifying is not a status and never counts. */
+/** Completion contribution. Derived only from slice status. Verifying is not a status and never counts. */
 export function completionPercentForStatus(status) {
   if (status === 'implemented' || status === 'retired') return 100;
   return 0;
@@ -354,8 +362,12 @@ export function countsTowardCompletion(slice) {
   return slice?.status === 'implemented';
 }
 
+const OUT_OF_ACTIVE_DENOMINATOR = new Set(['superseded', 'retired', 'rejected']);
+
+/** Active denominator: superseded, retired and rejected stay out. Deferred stays in and contributes 0. */
 export function inActiveCompletionTotal(slice) {
-  if (slice?.status === 'retired' && slice?.includeInCompletion !== true) return false;
+  if (slice?.status === 'retired' && slice?.includeInCompletion === true) return true;
+  if (OUT_OF_ACTIVE_DENOMINATOR.has(slice?.status)) return false;
   return true;
 }
 
@@ -381,6 +393,7 @@ export function sliceRecords(register) {
     parentTitle: entity.title,
     parentStatus: entity.status,
     parentScope: entity.scope ?? entity.rule ?? '',
+    currentDelivery: (register.programs ?? []).includes(entity),
   })));
 }
 
@@ -416,6 +429,67 @@ export function statusLabel(status) {
   return STATUS_LABEL[status] ?? status;
 }
 
+export const CHECKPOINT_STATUSES = Object.freeze(['completed', 'in-progress', 'blocked', 'planned']);
+export const LEGACY_IMPLEMENTED_POINTS = 100;
+export const NO_CHECKPOINT_MODEL_POINTS = 0;
+
+/**
+ * Issue #307. Weights are never invented here. A slice contributes checkpoint
+ * points only when `slice.checkpoints` declares them. Otherwise an implemented
+ * slice contributes the legacy 100, and every other slice contributes 0.
+ * Verifying and blocked do not zero earned checkpoint points and do not count
+ * toward slice completion.
+ */
+export function validateSliceCheckpoints(slice) {
+  const errors = [];
+  if (!slice || slice.checkpoints == null) return errors;
+  const checkpoints = slice.checkpoints;
+  if (!Array.isArray(checkpoints) || checkpoints.length === 0) {
+    errors.push(`${slice.id}: checkpoints must be a non-empty array or omitted`);
+    return errors;
+  }
+  const seen = new Set();
+  let weight = 0;
+  for (const checkpoint of checkpoints) {
+    const id = checkpoint?.id;
+    if (!id || seen.has(id)) errors.push(`${slice.id}: checkpoint id missing or duplicate`);
+    if (id) seen.add(id);
+    if (!checkpoint?.title || !String(checkpoint.title).trim()) errors.push(`${slice.id}: checkpoint ${id ?? '?'} has no title`);
+    if (!CHECKPOINT_STATUSES.includes(checkpoint?.status)) errors.push(`${slice.id}: checkpoint ${id ?? '?'} status is not completed, in-progress, blocked or planned`);
+    if (!Number.isInteger(checkpoint?.weight) || checkpoint.weight <= 0) errors.push(`${slice.id}: checkpoint ${id ?? '?'} weight must be a positive integer`);
+    else weight += checkpoint.weight;
+    if (checkpoint?.status === 'completed' && !String(checkpoint.evidence ?? '').trim()) {
+      errors.push(`${slice.id}: completed checkpoint ${id ?? '?'} has no evidence`);
+    }
+    if (checkpoint?.status === 'blocked' && !String(checkpoint.blockedBy ?? slice.blockedBy ?? '').trim()) {
+      errors.push(`${slice.id}: blocked checkpoint ${id ?? '?'} has no blocker`);
+    }
+  }
+  if (weight !== 100) errors.push(`${slice.id}: checkpoint weights sum to ${weight}, not 100`);
+  if (slice.status === 'implemented' && checkpoints.some((checkpoint) => checkpoint?.status !== 'completed')) {
+    errors.push(`${slice.id}: an implemented slice cannot carry an incomplete checkpoint`);
+  }
+  return errors;
+}
+
+export function sliceDeliveryProgress(slice) {
+  const checkpoints = Array.isArray(slice?.checkpoints) && slice.checkpoints.length ? slice.checkpoints : null;
+  if (checkpoints) {
+    const earned = checkpoints.filter((checkpoint) => checkpoint.status === 'completed').reduce((sum, checkpoint) => sum + checkpoint.weight, 0);
+    const open = checkpoints.find((checkpoint) => checkpoint.status === 'in-progress' || checkpoint.status === 'blocked') ?? null;
+    const latestCompleted = [...checkpoints].reverse().find((checkpoint) => checkpoint.status === 'completed') ?? null;
+    return { percent: earned, earned, total: 100, source: 'checkpoints', current: open, latestCompleted };
+  }
+  if (slice?.status === 'implemented') {
+    return { percent: LEGACY_IMPLEMENTED_POINTS, earned: LEGACY_IMPLEMENTED_POINTS, total: 100, source: 'legacy-implemented', current: null, latestCompleted: null };
+  }
+  return { percent: NO_CHECKPOINT_MODEL_POINTS, earned: NO_CHECKPOINT_MODEL_POINTS, total: 100, source: 'no-checkpoint-model', current: null, latestCompleted: null };
+}
+
+export function completionContribution(slice) {
+  return countsTowardCompletion(slice) ? 100 : 0;
+}
+
 export function completionTally(slices) {
   const counted = slices.filter(inActiveCompletionTotal);
   const implemented = counted.filter(countsTowardCompletion).length;
@@ -429,19 +503,42 @@ export function completionTally(slices) {
   };
 }
 
-export function programTally(entity, verifying) {
-  const slices = entity.slices ?? [];
+function deliverySummary(slices) {
   const tally = completionTally(slices);
-  const count = (status) => slices.filter((slice) => (status === 'verifying' ? verifying.has(slice.id) : slice.status === status && !verifying.has(slice.id))).length;
+  const active = slices.filter(inActiveCompletionTotal);
+  const progress = active.map((slice) => sliceDeliveryProgress(slice));
+  const earned = progress.reduce((sum, item) => sum + item.earned, 0);
+  const points = progress.reduce((sum, item) => sum + item.total, 0);
   return {
     ...tally,
+    sliceCompletion: tally.percent,
+    realtime: percent1(earned, points),
+    earned,
+    points,
+    checkpointed: progress.filter((item) => item.source === 'checkpoints').length,
+    legacyImplemented: progress.filter((item) => item.source === 'legacy-implemented').length,
+    withoutModel: progress.filter((item) => item.source === 'no-checkpoint-model').length,
+  };
+}
+
+/** Headline metrics. Future programs are visible and excluded from both denominators. */
+export function headlineMetrics(register) {
+  const current = (register.programs ?? []).flatMap((program) => program.slices ?? []);
+  const future = (register.futurePrograms ?? []).flatMap((program) => program.slices ?? []);
+  return { current: deliverySummary(current), future: deliverySummary(future) };
+}
+
+export function programTally(entity, verifying) {
+  const slices = entity.slices ?? [];
+  const summary = deliverySummary(slices);
+  return {
+    ...summary,
     verifying: slices.filter((slice) => verifying.has(slice.id)).length,
     planned: slices.filter((slice) => slice.status === 'planned').length,
     blocked: slices.filter((slice) => slice.status === 'blocked').length,
     inProgress: slices.filter((slice) => slice.status === 'in-progress' && !verifying.has(slice.id)).length,
     proposed: slices.filter((slice) => slice.status === 'proposed').length,
-    remaining: tally.total - tally.implemented,
-    statusCount: count,
+    remaining: summary.total - summary.implemented,
   };
 }
 
@@ -453,39 +550,83 @@ function tallyLine(tally) {
   return parts.join(', ');
 }
 
-/** README.md projection of the canonical register (DEC-0020). Not a second register. */
+function checkpointText(checkpoint) {
+  if (!checkpoint) return '—';
+  const weight = Number.isInteger(checkpoint.weight) ? `, ${checkpoint.weight}` : '';
+  return `${checkpoint.id} ${checkpoint.title} (${checkpoint.status}${weight})`;
+}
+
+function checkpointColumns(slice) {
+  const progress = sliceDeliveryProgress(slice);
+  if (progress.source === 'checkpoints') {
+    return {
+      current: checkpointText(progress.current),
+      latest: progress.latestCompleted ? checkpointText(progress.latestCompleted) : '—',
+    };
+  }
+  if (progress.source === 'legacy-implemented') {
+    return { current: 'none declared', latest: 'legacy implemented (100, no checkpoint list)' };
+  }
+  return { current: 'none declared', latest: 'none declared' };
+}
+
+function progressNote(slice) {
+  const progress = sliceDeliveryProgress(slice);
+  if (progress.source === 'checkpoints') return 'Checkpoint-weighted from declared slice.checkpoints. Incomplete checkpoints contribute 0.';
+  if (progress.source === 'legacy-implemented') return 'No checkpoint list. Implemented slices contribute 100 until an evidenced checkpoint model says otherwise.';
+  return 'No checkpoint model is declared, so realtime progress stays 0.0%. That 0 is not a measured fraction of the work, and evidenced work is not converted into a percentage.';
+}
+
+/** README.md projection of the canonical register (DEC-0020, Issue #307). Not a second register. */
 export function renderReadmeMilestoneSection(register) {
   const gov = register.governance;
   const authority = gov.milestoneAuthority;
   const verifying = verifyingIndex(register);
   const records = sliceRecords(register);
-  const overall = completionTally(records.map((record) => record.slice));
+  const byId = new Map(records.map((record) => [record.slice.id, record]));
+  const metrics = headlineMetrics(register);
+  const current = metrics.current;
+  const future = metrics.future;
   const programs = register.programs ?? [];
   const futures = register.futurePrograms ?? [];
+  const currentRecords = records.filter((record) => record.currentDelivery);
+  const verifyingCount = currentRecords.filter((record) => verifying.has(record.slice.id)).length;
+  const inProgressOnly = currentRecords.filter((record) => record.slice.status === 'in-progress' && !verifying.has(record.slice.id)).length;
   const programRows = programs.map((program) => {
     const tally = programTally(program, verifying);
-    return `| ${program.id} | ${cell(program.title)} | ${formatPercent(tally.percent)} | ${program.status} |`;
+    return `| ${program.id} | ${cell(program.title)} | ${formatPercent(tally.realtime)} | ${formatPercent(tally.percent)} | ${tally.implemented}/${tally.total} | ${program.status} |`;
   });
   const bars = programs.map((program) => {
     const tally = programTally(program, verifying);
-    return `${program.id.padEnd(3)} ${progressBar(tally.percent)} ${formatPercent(tally.percent).padStart(6)}  ${tally.implemented}/${tally.total}`;
+    return `${program.id.padEnd(4)} realtime ${progressBar(tally.realtime)} ${formatPercent(tally.realtime).padStart(6)}  completion ${formatPercent(tally.percent).padStart(6)}  ${tally.implemented}/${tally.total}  status ${program.status}`;
   });
   const pointer = register.executionPointer ?? {};
-  const byId = new Map(records.map((record) => [record.slice.id, record]));
   const queue = [
     ...(pointer.verifyingSlices ?? []).map((entry) => entry.id),
     ...(pointer.activeSlices ?? []),
     ...(pointer.plannedQueue ?? []),
   ];
-  const queueLines = queue.map((id, index) => `${'   '.repeat(index)}${index ? '↓ ' : ''}\`${id}\`${verifying.has(id) ? ' (verifying, completion 0%)' : ''}`);
+  const queueLines = queue.map((id, index) => {
+    const slice = byId.get(id)?.slice;
+    const shown = slice ? displayStatus(slice, verifying) : 'unknown';
+    const progress = slice ? sliceDeliveryProgress(slice) : { percent: 0 };
+    const contribution = slice ? completionContribution(slice) : 0;
+    return `${String(index + 1).padStart(2, ' ')}. \`${id}\` ${shown}; realtime ${formatPercent(progress.percent)}; completion contribution ${formatPercent(contribution)}`;
+  });
   const verifyingBlocks = (pointer.verifyingSlices ?? []).map((entry) => {
-    const record = byId.get(entry.id);
-    const slice = record?.slice;
+    const slice = byId.get(entry.id)?.slice;
+    const progress = slice ? sliceDeliveryProgress(slice) : { percent: 0, source: 'no-checkpoint-model', current: null, latestCompleted: null };
+    const columns = slice ? checkpointColumns(slice) : { current: 'none declared', latest: 'none declared' };
     return [
       `### 🟠 ${entry.id} — ${cell(sliceTitle(slice))}`,
       '',
-      `- **Status:** VERIFYING. Merged work is not implemented. Completion contribution: **0%**.`,
+      `- **Status:** VERIFYING. Status is not progress. Merged work is not implemented. Completion contribution: **0%**.`,
+      `- **Realtime Delivery Progress:** ${formatPercent(progress.percent)}. ${progressNote(slice)}`,
+      `- **Completion contribution:** **0%**.`,
+      `- **Current checkpoint:** ${cell(columns.current)}`,
+      `- **Latest checkpoint:** ${cell(columns.latest)}`,
       `- **Purpose:** ${cell(slice ? slicePurpose(slice) : '—')}`,
+      `- **Evidence:** ${cell(slice?.evidence)}`,
       `- **PR:** #${entry.pr} · **Merge:** ${short(entry.mergeSha)} · **Head:** ${entry.headSha ? short(entry.headSha) : '—'}`,
       `- **Pending:** ${cell(entry.pending)}`,
       '',
@@ -493,60 +634,93 @@ export function renderReadmeMilestoneSection(register) {
   });
   const blockedBlocks = (pointer.blockedSlices ?? []).map((id) => {
     const slice = byId.get(id)?.slice;
-    return `- 🔴 **${id}** — ${cell(sliceTitle(slice))}. Reason: ${cell(slice?.blockedBy)}. Completion contribution: 0%.`;
+    const progress = slice ? sliceDeliveryProgress(slice) : { percent: 0 };
+    const columns = slice ? checkpointColumns(slice) : { current: 'none declared', latest: 'none declared' };
+    return `- 🔴 **${id}** — ${cell(sliceTitle(slice))}. Status: BLOCKED. Realtime ${formatPercent(progress.percent)}. ${progressNote(slice)} Current checkpoint: ${cell(columns.current)}. Latest checkpoint: ${cell(columns.latest)}. Blocker: ${cell(slice?.blockedBy)}. Completion contribution: 0%.`;
   });
   const ladder = (register.milestones ?? []).filter((milestone) => milestone.status === 'complete').map((milestone) => milestone.id);
   const generic = (register.milestones ?? []).filter((milestone) => milestone.status !== 'complete').map((milestone) => `\`${milestone.id}\` (${milestone.status})`);
-  const programSections = [...programs, ...futures].map((entity) => {
-    const tally = programTally(entity, verifying);
+  const sliceTable = (entity) => {
     const rows = (entity.slices ?? []).map((slice) => {
       const shown = displayStatus(slice, verifying);
-      const progress = shown === 'verifying' ? 0 : completionPercentForStatus(slice.status);
-      return `| \`${slice.id}\` | ${cell(sliceTitle(slice))} | ${cell(slicePurpose(slice))} | ${statusLabel(shown)} | ${formatPercent(progress)} |`;
+      const progress = sliceDeliveryProgress(slice);
+      const columns = checkpointColumns(slice);
+      return `| \`${slice.id}\` | ${cell(sliceTitle(slice))} | ${cell(slicePurpose(slice))} | ${statusLabel(shown)} | ${formatPercent(progress.percent)} | ${formatPercent(completionContribution(slice))} | ${cell(columns.current)} | ${cell(columns.latest)} | ${cell(slice.blockedBy)} |`;
     });
+    return rows.join('\n');
+  };
+  const programSections = programs.map((entity) => {
+    const tally = programTally(entity, verifying);
     return `## ${entity.id} — ${cell(entity.title)}
 
-**${formatPercent(tally.percent)}**
-
-\`${progressBar(tally.percent)} ${formatPercent(tally.percent)}\`
-
-${tally.implemented} / ${tally.total} slices implemented. Remaining ${tally.remaining}. ${tallyLine(tally)}.
-
-- **Program status:** ${entity.status}. Program status is not a substitute for the percentage.
+- **Realtime Delivery Progress:** **${formatPercent(tally.realtime)}** \`${progressBar(tally.realtime)} ${formatPercent(tally.realtime)}\`
+- **Slice Completion:** **${formatPercent(tally.percent)}** (${tally.implemented} / ${tally.total} implemented). Remaining ${tally.remaining}. ${tallyLine(tally)}.
+- **Program status:** ${entity.status}. Program status is not a percentage and is not 100% just because the word is complete.
 - **Purpose:** ${cell(entity.scope ?? entity.rule ?? entity.title)}
+- **Checkpoint model:** ${tally.checkpointed} slice(s) declare checkpoints; ${tally.legacyImplemented} implemented slice(s) use the legacy 100 rule; ${tally.withoutModel} slice(s) have no checkpoint model and stay at 0.0%.
 
 <details><summary>Slices (${tally.total})</summary>
 
-| Slice | Title | Purpose | Status | Progress |
-| --- | --- | --- | --- | ---: |
-${rows.join('\n')}
+| Slice | Title | Purpose | Status | Realtime | Completion | Current checkpoint | Latest checkpoint | Blocker |
+| --- | --- | --- | --- | ---: | ---: | --- | --- | --- |
+${sliceTable(entity)}
 
 </details>`;
   });
-  const futureRows = futures.map((future) => {
-    const tally = programTally(future, verifying);
-    return `| ${future.id} | ${(future.legacyMilestones ?? []).join(', ') || '—'} | ${formatPercent(tally.percent)} | ${tally.implemented}/${tally.total} |`;
+  const futureSections = futures.map((entity) => {
+    const tally = programTally(entity, verifying);
+    return `## ${entity.id} — ${cell(entity.title)}
+
+Excluded from the current-delivery denominator. Realtime **${formatPercent(tally.realtime)}**. Slice completion **${formatPercent(tally.percent)}** (${tally.implemented} / ${tally.total}). Program status: ${entity.status}.
+
+<details><summary>Slices (${tally.total})</summary>
+
+| Slice | Title | Purpose | Status | Realtime | Completion | Current checkpoint | Latest checkpoint | Blocker |
+| --- | --- | --- | --- | ---: | ---: | --- | --- | --- |
+${sliceTable(entity)}
+
+</details>`;
   });
+  const futureRows = futures.map((item) => {
+    const tally = programTally(item, verifying);
+    return `| ${item.id} | ${(item.legacyMilestones ?? []).join(', ') || '—'} | ${formatPercent(tally.realtime)} | ${formatPercent(tally.percent)} | ${tally.implemented}/${tally.total} | ${item.status} |`;
+  });
+  const model = gov.progressModel;
+  const modelLine = model
+    ? `- **Progress model (${model.decision}):** ${model.realtimeName} is checkpoint-weighted across ${model.currentDelivery}. ${model.completionName} is implemented / active in that same denominator. ${model.futurePrograms}. ${model.examplesAreNotMeasurements} ${model.weights} This projection is not canonical until the change is on main.`
+    : '- **Progress model:** Realtime Delivery Progress is checkpoint-weighted across P0–P11. Slice Completion is implemented / active in that denominator. Future programs are excluded. Weights are never invented.';
   return `${README_MARKERS.begin}
 ## Overall Milestone Progress
 
-**${formatPercent(overall.percent)}**
+Status is not progress. Both percentages below are generated from [\`docs/n8n-lego/milestones.json\`](docs/n8n-lego/milestones.json). They are not estimated from time, PR count or lines of code. Rounding is half-up to one decimal, never a ceiling.
 
-\`${progressBar(overall.percent)} ${formatPercent(overall.percent)}\`
+### Realtime Delivery Progress
 
-**${overall.implemented} / ${overall.total} slices implemented.**
+**${formatPercent(current.realtime)}**
+
+\`${progressBar(current.realtime)} ${formatPercent(current.realtime)}\`
+
+Checkpoint-weighted earned points / current-delivery points: ${current.earned} / ${current.points}. Denominator: programs P0–P11 only (${current.total} active slices). Future programs are excluded. ${current.checkpointed} slice(s) declare checkpoints. ${current.legacyImplemented} implemented slice(s) have no checkpoint list and contribute 100 each. ${current.withoutModel} slice(s) have no checkpoint model and contribute 0. A 0 from a missing model is not a measured fraction of that slice.
+
+### Slice Completion
+
+**${formatPercent(current.sliceCompletion)}**
+
+\`${progressBar(current.sliceCompletion)} ${formatPercent(current.sliceCompletion)}\`
+
+**${current.implemented} / ${current.total} slices implemented** in the same P0–P11 denominator. Only \`implemented\` increases this numerator. Verifying, blocked, in-progress, planned, proposed and deferred contribute 0. Superseded, retired and rejected stay out of the denominator.
 
 | | |
 | --- | ---: |
-| Implemented | ${overall.implemented} |
-| Verifying | ${records.filter((record) => verifying.has(record.slice.id)).length} |
-| In progress (not verifying) | ${records.filter((record) => record.slice.status === 'in-progress' && !verifying.has(record.slice.id)).length} |
-| Planned | ${overall.byStatus.planned ?? 0} |
-| Blocked | ${overall.byStatus.blocked ?? 0} |
-| Proposed | ${overall.byStatus.proposed ?? 0} |
-| Total in the completion KPI | ${overall.total} |
-
-The percentage is \`implemented / total\` from \`docs/n8n-lego/milestones.json\`, programs P0–P11 plus future programs, rounded to one decimal. It is not estimated from time, PR count, or lines of code. Merged/verifying work is not counted as implemented. \`in-progress\` and \`verifying\` contribute 0% because the register has no objective fractional checklist.
+| Current-delivery slices | ${current.total} |
+| Implemented (completion numerator) | ${current.implemented} |
+| Verifying (display status; completion contribution 0) | ${verifyingCount} |
+| In progress, not verifying | ${inProgressOnly} |
+| Planned | ${current.byStatus.planned ?? 0} |
+| Blocked | ${current.byStatus.blocked ?? 0} |
+| Proposed | ${current.byStatus.proposed ?? 0} |
+| Deferred | ${current.byStatus.deferred ?? 0} |
+| Future-program slices excluded from both denominators | ${future.total} |
 
 \`\`\`text
 ${bars.join('\n')}
@@ -554,9 +728,11 @@ ${bars.join('\n')}
 
 ## Program Overview
 
-| Program | Focus | Progress | State |
-| --- | --- | ---: | --- |
+| Program | Focus | Realtime | Slice completion | Implemented | State |
+| --- | --- | ---: | ---: | ---: | --- |
 ${programRows.join('\n')}
+
+A program state of \`complete\` is not numeric 100%. Read the two percentage columns.
 
 ## Active Execution
 
@@ -578,22 +754,27 @@ Not authorized: ${cell(pointer.notAuthorized)}
 
 ## Status Legend
 
-- ✅ Implemented — 100% completion contribution
-- 🟠 Verifying — merged, post-merge verification not passed; 0% completion contribution
-- 🔵 In progress — not merged as complete; 0% completion contribution
-- 🟡 Planned — 0%
-- 🔴 Blocked — 0%; the blocker stays visible
-- ⚪ Proposed — 0%
+- ✅ Implemented — realtime 100% when no checkpoint list is declared; the only status that adds to Slice Completion
+- 🟠 Verifying — display status for a merged slice whose post-merge verification has not passed. Checkpoint progress is kept. Completion contribution 0%
+- 🔵 In progress — checkpoint progress if declared, otherwise 0%. Completion contribution 0%
+- 🟡 Planned — 0% until an evidenced checkpoint exists. Completion contribution 0%
+- 🔴 Blocked — last evidenced checkpoint progress is kept. The blocker stays visible. Completion contribution 0%
+- ⚪ Proposed — 0%. Completion contribution 0%
+- Deferred — prior evidenced checkpoint progress if declared, otherwise 0%. Completion contribution 0%
 
-## P0–P11 and future programs
+## P0–P11
 
 ${programSections.join('\n\n')}
 
 ## Future programs (legacy P12–P23 consolidated)
 
-| Future program | Legacy milestones | Progress | Slices implemented |
-| --- | --- | ---: | --- |
+These programs stay visible. They are not in the Realtime Delivery Progress denominator and not in the Slice Completion denominator.
+
+| Future program | Legacy milestones | Realtime | Slice completion | Slices implemented | State |
+| --- | --- | ---: | ---: | ---: | --- |
 ${futureRows.join('\n')}
+
+${futureSections.join('\n\n')}
 
 ## Historical P2 ladder
 
@@ -605,7 +786,8 @@ ${ladder.length} completed milestones (\`${ladder[0]}\` … \`${ladder.at(-1)}\`
 - **Rule:** ${authority.rule}
 - **Pending reconciliation:** ${authority.pendingReconciliation}
 - **Freshness:** generated by \`npm run lego:ai\` from register ${register.registerVersion} (fingerprint \`${registerFingerprint(register)}\`); \`npm run lego:ai:check\` fails when this section, the \`.ai\` pack or the register disagree.
-- **Completion KPI:** implemented slices / slices in the active total. A verifying or blocked slice never increases the numerator.
+${modelLine}
+- **Completion KPI:** Slice Completion is implemented slices / active slices in P0–P11. A verifying or blocked slice never increases that numerator. Realtime Delivery Progress is a separate checkpoint-weighted figure and can move while Slice Completion stays still.
 - **Purpose field:** a slice purpose is \`slice.purpose\` when present, otherwise the text after the first \`: \` in the canonical title, otherwise the title. No purpose is invented.
 - **Top level:** programs P0–P11 only. There is no P12+ or P24+ and no P5.9; legacy P12–P23 are consolidated into future programs. New work is \`Pn-Snn\`, \`Pn-Mnn\` or \`FUTURE-<THEME>-Snn\`.
 - **Post-merge sequence:** ${authority.postMergeSequence.join(' → ')}.
@@ -692,17 +874,19 @@ ${list.length ? featureTable(list) : '_none_'}
 
 </details>`;
   };
-  const progress = completionTally(sliceRecords(register).map((record) => record.slice));
+  const metrics = headlineMetrics(register);
   const progressTable = (register.programs ?? []).map((program) => {
     const tally = programTally(program, verifyingIndex(register));
-    return `| ${program.id} | ${formatPercent(tally.percent)} | ${tally.implemented}/${tally.total} | ${program.status} |`;
+    return `| ${program.id} | ${formatPercent(tally.realtime)} | ${formatPercent(tally.percent)} | ${tally.implemented}/${tally.total} | ${program.status} |`;
   }).join('\n');
-  return `## Completion progress (same KPI as README.md)
+  return `## Delivery progress (same two metrics as README.md)
 
-Overall **${formatPercent(progress.percent)}** — ${progress.implemented}/${progress.total} slices implemented. Verifying and in-progress slices contribute 0. Merged/verifying work is not counted as implemented.
+**Realtime Delivery Progress ${formatPercent(metrics.current.realtime)}** — ${metrics.current.earned}/${metrics.current.points} checkpoint-weighted points, P0–P11 only. Future programs are excluded (${metrics.future.total} slices). ${metrics.current.withoutModel} current-delivery slice(s) have no checkpoint model and contribute 0.
 
-| Program | Progress | Implemented | State |
-| --- | ---: | ---: | --- |
+**Slice Completion ${formatPercent(metrics.current.sliceCompletion)}** — ${metrics.current.implemented}/${metrics.current.total} implemented. Verifying and blocked contribute 0. Program status is not this percentage.
+
+| Program | Realtime | Slice completion | Implemented | State |
+| --- | ---: | ---: | ---: | --- |
 ${progressTable}
 
 ## Active work (executionPointer, DEC-0020)

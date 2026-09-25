@@ -1,5 +1,5 @@
 {
-  "registerVersion": "2.1.0",
+  "registerVersion": "2.2.0",
   "owner": "manager",
   "canonical": true,
   "purpose": "Granular milestone truth beneath the strategic Phase A-F roadmap, and \u2014 since the governance reset (#256) \u2014 the single canonical register of programs P0-P11, their slices, the thematic future programs and the feature registry. This is the only machine-readable milestone register. Milestones and slices may be refined by Manager only by updating this file; strategic phases are not deleted.",
@@ -135,6 +135,20 @@
       "update this register (feature + slice status)"
     ],
     "completionRule": "Immediately after merge + post-merge verification, the slice and its features become implemented with PR, merge SHA, tests and evidence; remaining debt is recorded as Pn-Mnn. An open PR means in-progress, never implemented.",
+    "progressModel": {
+      "decision": "Issue #307",
+      "reconciledToMain": false,
+      "realtimeName": "Realtime Delivery Progress",
+      "completionName": "Slice Completion",
+      "currentDelivery": "P0-P11",
+      "futurePrograms": "Future programs stay visible and are excluded from the current-delivery denominator",
+      "legacyImplementedWithoutCheckpoints": 100,
+      "noCheckpointModel": 0,
+      "completionCounts": ["implemented"],
+      "activeDenominatorExcludes": ["superseded", "retired", "rejected"],
+      "examplesAreNotMeasurements": "Illustrations of the status/progress split are not register measurements and must not be copied into slice checkpoints.",
+      "weights": "The generator counts only weights declared on slice.checkpoints. It does not invent weights. A completed checkpoint requires evidence. Weights on a slice must sum to 100. A slice with no checkpoint model stays at 0 unless it is implemented, in which case the legacy rule contributes 100."
+    },
     "deliveryModel": {
       "decision": "DEC-0014",
       "sourceIssue": 282,
