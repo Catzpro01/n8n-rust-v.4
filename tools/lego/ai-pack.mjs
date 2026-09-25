@@ -27,7 +27,7 @@ import { fileURLToPath } from 'node:url';
 import { loadRegistry, getChildren, CONTRACT_LOCK_FILE, MANIFEST_FILE } from '../../apps/n8n-lego/src/lego/registry.mjs';
 import { FOUNDATION, NODE_CONTRACT } from '../../apps/n8n-lego/src/lego/foundation.mjs';
 import { buildGraph, impactOf, TEST_TIERS } from './impact-graph.mjs';
-import { validateGovernanceRegister, renderGovernanceSections } from './governance-register.mjs';
+import { validateGovernanceRegister, renderGovernanceSections, syncReadmeMilestoneSection, validateMilestoneProjections } from './governance-register.mjs';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const AI_ROOT = join(REPO_ROOT, '.ai');
@@ -1446,7 +1446,7 @@ ${renderGovernanceSections(register)}
 
 | Field | Value |
 | --- | --- |
-| Current milestone | **${register.currentMilestone}** |
+| Current milestone (historical P2 pointer) | **${register.currentMilestone}** |
 | Previous completed milestone | **${register.previousCompletedMilestone}** |
 | Protected branch | \`${register.protectedBranch}\` |
 | Main baseline | \`${register.mainBaseline}\` |
@@ -1539,7 +1539,7 @@ The strategic phases above are intentionally preserved. The Manager-owned granul
 | --- | --- | --- | --- | --- |
 ${(register?.milestones ?? []).map((milestone) => `| \`${milestone.id}\` | ${milestone.title} | ${milestone.phase} | **${milestone.status}** | ${milestone.nextMilestone ?? '—'} |`).join('\n')}
 
-Current milestone: **${register?.currentMilestone ?? '—'}**. Previous completed: **${register?.previousCompletedMilestone ?? '—'}**.
+Historical P2 pointer: **${register?.currentMilestone ?? '—'}**. Previous completed: **${register?.previousCompletedMilestone ?? '—'}**. Active work is the executionPointer in \`docs/n8n-lego/milestones.json\` (DEC-0020).
 
 Future IDs may be refined by Manager only by updating \`docs/n8n-lego/milestones.json\`.
 
@@ -1878,8 +1878,12 @@ document is right and the prose is stale.
 | Protected main baseline | \`${milestones?.mainBaseline ?? '—'}\` |
 | Agent 1 branch | \`${milestones?.agentBranches?.agent1 ?? '—'}\` |
 | Agent 2 branch | \`${milestones?.agentBranches?.agent2 ?? '—'}\` |
-| **Current milestone** | **${milestones?.currentMilestone ?? set.currentMilestone ?? '—'}** |
-| Previous completed milestone | **${milestones?.previousCompletedMilestone ?? set.previousCompletedMilestone ?? '—'}** |
+| **Latest completed slice** | **${milestones?.executionPointer?.latestCompletedSlice?.id ?? '—'}** |
+| **Active / verifying slices** | **${[...(milestones?.executionPointer?.activeSlices ?? []), ...(milestones?.executionPointer?.verifyingSlices ?? []).map((entry) => `${entry.id} (verifying)`)].join(', ') || '—'}** |
+| Planned queue | ${(milestones?.executionPointer?.plannedQueue ?? []).join(', ') || '—'} |
+| Blocked slices | ${(milestones?.executionPointer?.blockedSlices ?? []).join(', ') || '—'} |
+| Historical P2 ladder pointer | ${milestones?.currentMilestone ?? set.currentMilestone ?? '—'} (history, not active work) |
+| Previous completed P2 milestone | ${milestones?.previousCompletedMilestone ?? set.previousCompletedMilestone ?? '—'} |
 | Current branch state | \`${milestones?.agentBranches?.agent2 ?? '—'}\` (implementation branch; not protected main) |
 | Historical reconciled state | \`${decisions?.agent1Baseline.currentRepositoryState ?? '—'}\` (historical evidence, not current main) |
 | Historical P2.11 evidence commit | \`${decisions?.agent1Baseline.historicalEvidenceCommit ?? '—'}\` |
@@ -1904,7 +1908,8 @@ is the row marked as such.
 
 ${(() => {
     const current = milestones?.milestones?.find((milestone) => milestone.id === milestones.currentMilestone);
-    return `- **Current:** \`${milestones?.currentMilestone ?? '—'}\` — ${current?.title ?? '—'} (**${current?.status ?? '—'}**)
+    return `- **Active work:** see \`MILESTONE_REGISTER.md\` → *Active work* (executionPointer, DEC-0020); canonical register \`docs/n8n-lego/milestones.json\` on \`main\`; the rows below are the historical P2 ladder.
+- **Current (historical P2 pointer):** \`${milestones?.currentMilestone ?? '—'}\` — ${current?.title ?? '—'} (**${current?.status ?? '—'}**)
 - **Previous complete:** \`${milestones?.previousCompletedMilestone ?? '—'}\`
 - **Why next:** ${(current?.dependencies ?? []).join('; ') || '—'}
 - **Owns:** ${(current?.deliverables ?? []).join('; ') || '—'}
@@ -2337,11 +2342,36 @@ function check(files) {
   return stale;
 }
 
+/**
+ * DEC-0020: README.md carries a generated projection of the canonical register
+ * between fixed markers. `lego:ai` rewrites the block; `lego:ai:check` fails
+ * when it is missing or stale, exactly like a stale .ai file.
+ */
+const README_PATH = join(REPO_ROOT, 'README.md');
+function readmeProjection() {
+  const register = JSON.parse(readFileSync(join(REPO_ROOT, 'docs', 'n8n-lego', 'milestones.json'), 'utf8'));
+  return syncReadmeMilestoneSection(readFileSync(README_PATH, 'utf8'), register);
+}
+
+/** DEC-0020: README.md and ROADMAP.md are projections / narrative of the register, never registers. */
+function projectionViolations() {
+  const register = JSON.parse(readFileSync(join(REPO_ROOT, 'docs', 'n8n-lego', 'milestones.json'), 'utf8'));
+  return validateMilestoneProjections({
+    register,
+    readme: readFileSync(README_PATH, 'utf8'),
+    roadmap: readFileSync(join(REPO_ROOT, 'docs', 'n8n-lego', 'ROADMAP.md'), 'utf8'),
+  });
+}
+
 const isCli = process.argv[1]?.endsWith('ai-pack.mjs');
 if (isCli) {
   const files = generate();
   if (process.argv.includes('--check')) {
     const stale = check(files);
+    const readme = readmeProjection();
+    if (!readme.ok) stale.push(`../README.md (${readme.reason})`);
+    else if (readme.changed) stale.push('../README.md (milestone-governance block out of date)');
+    stale.push(...projectionViolations().map((problem) => `projection: ${problem}`));
     if (stale.length === 0) {
       process.stdout.write(
         'OK — .ai/ is in sync with the manifest. '
@@ -2353,6 +2383,12 @@ if (isCli) {
     process.exit(1);
   }
   writeAll(files);
+  const readme = readmeProjection();
+  if (!readme.ok) {
+    process.stderr.write(`README.md: ${readme.reason}\n`);
+    process.exit(1);
+  }
+  if (readme.changed) writeFileSync(README_PATH, readme.text);
   process.stdout.write(
     `Generated pack: ${files.size}; curated: ${CURATED.files.length} (owner ${CURATED.owner}, preserved); `
     + `total .ai: ${files.size + CURATED.files.length}.\n`,

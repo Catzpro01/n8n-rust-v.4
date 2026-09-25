@@ -1,5 +1,5 @@
 {
-  "registerVersion": "2.0.0",
+  "registerVersion": "2.1.0",
   "owner": "manager",
   "canonical": true,
   "purpose": "Granular milestone truth beneath the strategic Phase A-F roadmap, and \u2014 since the governance reset (#256) \u2014 the single canonical register of programs P0-P11, their slices, the thematic future programs and the feature registry. This is the only machine-readable milestone register. Milestones and slices may be refined by Manager only by updating this file; strategic phases are not deleted.",
@@ -7,6 +7,45 @@
   "mainBaseline": "fc54c8c2bfc2557ddecf466e662869f197fc9595",
   "currentMilestone": "P2.27",
   "previousCompletedMilestone": "P2.26",
+  "executionPointer": {
+    "authority": "main (DEC-0020). This block, read together with the slice statuses it names, is the only active-work pointer. arena-manager is Manager memory and handoff, never a milestone source; README.md and .ai/ are generated projections of this file.",
+    "historicalLastP2Milestone": "P2.27",
+    "lastVerifiedMain": "600a21456213602ebdc6193229bab8432e6d1024",
+    "latestCompletedSlice": {
+      "id": "P5-M03",
+      "pr": 291,
+      "mergeSha": "cf52701c91e5447f19c32377c38f6ae5eea7f3a7"
+    },
+    "activeSlices": [],
+    "verifyingSlices": [
+      {
+        "id": "P5-M08",
+        "pr": 304,
+        "headSha": "c102cff9d2744831828310b9353407f0811cd3d8",
+        "mergeSha": "600a21456213602ebdc6193229bab8432e6d1024",
+        "pending": "DEC-0015 runner verification: 5 self-hosted Linux checks at the exact head (Level 0, Level 1, Level 2 linux, Level 2 conformance, post-merge cleanup) are WAITING_RUNNER, which is never PASS. GitHub-hosted 3/3 PASS, self-hosted Windows 2/2 PASS, main push 4/4 PASS, fresh-main verification PASS. The slice stays in-progress until the Linux checks pass; a failure opens a REGRESSION task."
+      }
+    ],
+    "plannedQueue": [
+      "P5-M09",
+      "P5-M07",
+      "P9-S01",
+      "P3-S01",
+      "P4-S01",
+      "P6-S01",
+      "P6-S02",
+      "P2-S02",
+      "P2-S03"
+    ],
+    "blockedSlices": [
+      "P5-M02",
+      "P5-M05",
+      "P5-M06",
+      "P5-M10"
+    ],
+    "notAuthorized": "planned is not authorized: the Manager starts a queued slice by moving it to in-progress in a PR on main. P5-M04 is planned and measure-first. P7-S01, P8-S01, P10-S01 and P11-S01 are placeholders that need a Manager Master Prompt before any work.",
+    "updateRule": "After every delivery PR that changes milestone state: merge, post-merge verification, then ONE governance PR updates this block, the slice/feature status and evidence, the README projection and the generated .ai (DEC-0020). Governance PRs are not delivery PRs (DEC-0014 keeps one delivery PR per slice)."
+  },
   "governance": {
     "anchorIssue": 256,
     "mandateIssues": [
@@ -17,7 +56,22 @@
     "resetBy": "agent-1 (full manager authority, governance reset #256)",
     "resetBaseline": "aba5a0e4a387e9a5df4313facc5fb5cae47a2db9",
     "rule": "This file is the ONE canonical register: programs P0-P11 with nested slices, thematic future programs, and the feature registry. .ai/master/MILESTONE_REGISTER.md is generated from it (npm run lego:ai) and is never edited by hand. The milestones[] array is the historical P2 granular ladder and stays immutable.",
-    "pointerScope": "currentMilestone / previousCompletedMilestone are the historical P2-ladder pointers (P2.11 -> P2.27 -> P2.17+). Program-level truth lives in programs[] and futurePrograms[]; nothing is currently authorized beyond the slices marked in-progress.",
+    "pointerScope": "currentMilestone / previousCompletedMilestone are the historical P2-ladder pointers (P2.11 -> P2.27; the generic P2.17+ label is historical and authorizes nothing), and mainBaseline is the governance-reset baseline (#257). Active work is executionPointer: latest completed slice, active and verifying slices, the planned queue and blocked slices. Program-level truth lives in programs[] and futurePrograms[]; nothing is authorized beyond the slices marked in-progress.",
+    "milestoneAuthority": {
+      "decision": "DEC-0020",
+      "milestoneTruthOwner": "main",
+      "register": "docs/n8n-lego/milestones.json",
+      "publicProjection": "README.md",
+      "generatedProjection": ".ai/master/MILESTONE_REGISTER.md",
+      "planningMemory": "arena-manager",
+      "planningMemoryIsCanonical": false,
+      "roadmapOwnsStatus": false,
+      "pendingReconciliation": "A milestone change that exists only on arena-manager, a local worktree, a handoff, an issue, a PR body or chat is a proposal (pending reconciliation), never authoritative truth. A PR proposes a milestone state; only the merged state on main is authoritative.",
+      "rule": "Milestone truth is main-owned. A milestone design found or developed in Manager memory becomes authoritative only when reconciled into main through a PR. arena-manager is not an alternate milestone authority, and its docs/ tree is a stale snapshot that is never copied over main.",
+      "postMergeSequence": ["delivery PR", "merge to main", "post-merge verification", "register status and evidence update", "README milestone projection (generated)", ".ai regeneration", "governance PR", "merge governance PR", "final main verification"],
+      "noBatching": "Every change of milestone state (planned -> in-progress, in-progress -> implemented, a split or a new blocker) is recorded on main by the next governance PR; updates are never batched into a later roadmap cleanup.",
+      "projections": ["README.md (block between the milestone-governance markers, written by npm run lego:ai)", ".ai/master/MILESTONE_REGISTER.md", ".ai/master/CURRENT_STATUS.md"]
+    },
     "programStatusVocabulary": [
       "complete",
       "in-progress",
@@ -2780,6 +2834,7 @@
           "title": "Security hardening: soft-revoke API keys and service principals (bounded tombstones, REVOKED verdict, audit row kept); REST decision cache deferred on measured evidence (P5.8 finding 1: warm hit 438 ns p50 is not faster than uncached authorize 384 ns p50)",
           "kind": "maintenance",
           "status": "implemented",
+          "pr": 289,
           "mergeSha": "2719109169e99714e70937767e9a15af65bd640e",
           "issue": 85,
           "evidence": "docs/n8n-lego/evidence/P5-M01-EVIDENCE.md",
@@ -2790,7 +2845,8 @@
           "id": "P5-M02",
           "title": "Credential runtime integration: execution path resolves credentials via SecretRef over the P2.27 broker",
           "kind": "maintenance",
-          "status": "planned",
+          "status": "blocked",
+          "blockedBy": "P6-S04 (proposed, #116): the engine has no credential-consuming node. packages/reconstructed-engine/node-registry.mjs implements only manualTrigger, start, noOp, set, code, function and functionItem, so SecretRef resolution in the execution path has no consumer (Manager finding, verified against main 600a2145)",
           "mergeSha": null,
           "issue": 85,
           "evidence": null,
@@ -2802,6 +2858,7 @@
           "title": "Public /api/v1 first surface: API-key boundary in upstream order (recorded 401 goldens), key scopes always enforced through the P5.3 kernel, offset-cursor pagination, workflows resource (9 operations). Re-planned by the Manager: email recovery moved to P5-M06, service-principal REST/UI to P5-M07, remaining /api/v1 resources to P5-M08 (one delivery PR per slice)",
           "kind": "maintenance",
           "status": "implemented",
+          "pr": 291,
           "mergeSha": "cf52701c91e5447f19c32377c38f6ae5eea7f3a7",
           "issue": 85,
           "evidence": "docs/n8n-lego/evidence/P5-M03-EVIDENCE.md",
@@ -2823,7 +2880,8 @@
           "id": "P5-M05",
           "title": "Multi-host key storage and shared session + rate-limiter state; depends on the P8 storage contract (P8-S01, not authorized)",
           "kind": "maintenance",
-          "status": "planned",
+          "status": "blocked",
+          "blockedBy": "P8-S01 (planned, not authorized): the P8 storage contract that shared key/session/rate-limiter state needs",
           "mergeSha": null,
           "issue": 85,
           "evidence": null,
@@ -2834,7 +2892,8 @@
           "id": "P5-M06",
           "title": "Email-based password recovery: needs a mail transport decision first (Node has no built-in SMTP: a dependency or an injected transport contract), then upstream /rest/forgot-password delivery over the P5 reset-token primitive (split out of P5-M03)",
           "kind": "maintenance",
-          "status": "planned",
+          "status": "blocked",
+          "blockedBy": "a mail-transport architecture decision (a dependency, or an injected transport contract); Node has no built-in SMTP",
           "mergeSha": null,
           "issue": 85,
           "evidence": null,
@@ -2857,6 +2916,7 @@
           "title": "Public /api/v1 second surface: tags (5 operations), variables (4, licence-gated 403 like the community edition), executions list/get/delete (lastId cursor), GET /api/v1/openapi.yml of exactly the mounted operations. Re-planned by the Manager: credentials, users and /docs to P5-M09; resources without a backing model to P5-M10 (one delivery PR per slice)",
           "kind": "maintenance",
           "status": "in-progress",
+          "pr": 304,
           "mergeSha": null,
           "issue": 85,
           "evidence": "docs/n8n-lego/evidence/P5-M08-EVIDENCE.md",
@@ -2878,7 +2938,8 @@
           "id": "P5-M10",
           "title": "Public /api/v1 resources that need a backing model this product does not have yet: projects, audit, source-control, data-tables, workflow and credential transfer, workflow versions, execution retry, execution tags (upstream AnnotationTag). Blocked until those models exist; split out of P5-M08",
           "kind": "maintenance",
-          "status": "planned",
+          "status": "blocked",
+          "blockedBy": "backing models this product does not have: projects/sharing, security audit, source control, data tables, workflow versions, a retry execution path, execution annotation tags (see P5-M08-EVIDENCE.md \u00a71)",
           "mergeSha": null,
           "issue": 85,
           "evidence": null,

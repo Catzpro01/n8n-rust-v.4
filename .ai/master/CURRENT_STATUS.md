@@ -13,8 +13,12 @@ document is right and the prose is stale.
 | Protected main baseline | `fc54c8c2bfc2557ddecf466e662869f197fc9595` |
 | Agent 1 branch | `main` |
 | Agent 2 branch | `main` |
-| **Current milestone** | **P2.27** |
-| Previous completed milestone | **P2.26** |
+| **Latest completed slice** | **P5-M03** |
+| **Active / verifying slices** | **P5-M08 (verifying)** |
+| Planned queue | P5-M09, P5-M07, P9-S01, P3-S01, P4-S01, P6-S01, P6-S02, P2-S02, P2-S03 |
+| Blocked slices | P5-M02, P5-M05, P5-M06, P5-M10 |
+| Historical P2 ladder pointer | P2.27 (history, not active work) |
+| Previous completed P2 milestone | P2.26 |
 | Current branch state | `main` (implementation branch; not protected main) |
 | Historical reconciled state | `c1eca8cc` (historical evidence, not current main) |
 | Historical P2.11 evidence commit | `bdd0f1d2d6c8d7bc1c1ff3d881ddc2b3bd93713d` |
@@ -37,7 +41,8 @@ is the row marked as such.
 
 ## Milestone state
 
-- **Current:** `P2.27` — Contract-Driven Pluggable Runtime & Security Foundation (**complete**)
+- **Active work:** see `MILESTONE_REGISTER.md` → *Active work* (executionPointer, DEC-0020); canonical register `docs/n8n-lego/milestones.json` on `main`; the rows below are the historical P2 ladder.
+- **Current (historical P2 pointer):** `P2.27` — Contract-Driven Pluggable Runtime & Security Foundation (**complete**)
 - **Previous complete:** `P2.26`
 - **Why next:** P2.16 Agent Machine / execution foundation; P2.17 Agent Machine Runtime Foundation; P2.18 Universal Transport & Envelope Kernel; P2.19 Artifact, Approval & Audit Foundation; P2.21 Runtime Adapter & Harness Stack; P2.22 Node Compatibility & Portability; P2.24 Token & Usage - honest accounting; P2.25 External provider integration - the first real adapters; P2.26 Provider, Workspace & GitHub Integration + Foundation Readiness
 - **Owns:** tiny Core kernel with the reserved core responsibilities (bootstrap, registries, resolvers, policy, lifecycle, supervisor, primitives); plugin registry + contract resolver + version compatibility; capability/security policy with deny-by-default permission primitive; plugin lifecycle + supervisor (DISCOVERED..QUARANTINED) with quarantine; four runtime classes: in-process, wasm, isolated-process, remote; secret broker: scoped short-lived secrets, one operation, never plugin-owned state; tenant security context + plugin resource budgets (declared and enforced); circuit breaker + deadline propagation + contract replay fixtures; side-by-side upgrade/rollback + supply-chain admission; frontend plugin boundary (public extension points vs sandboxed frame/origin + message contract)

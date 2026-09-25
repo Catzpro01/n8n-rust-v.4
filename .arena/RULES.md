@@ -29,5 +29,20 @@ repository is the shared memory; GitHub is the code authority.
    (`docs/engineering-operations/workforce/decisions/`) merged to `main`.
 10. Work produced earlier by agent sessions is credited to its author when the
     Manager delivers it.
+11. Milestone truth is main-owned (DEC-0020). The canonical register is
+    `docs/n8n-lego/milestones.json` on `main`; `README.md` and `.ai/` are
+    generated projections (`npm run lego:ai`). `arena-manager` is Manager
+    memory, never a milestone source: its `docs/` tree is a stale snapshot and
+    is never copied over `main`. After every delivery PR that changes milestone
+    state: merge, post-merge verification, then one governance PR updates the
+    register (status, evidence, `executionPointer`), the README projection and
+    `.ai`. Never batch these updates. Planning may happen on `arena-manager`,
+    but a milestone change there (or in a local worktree, handoff, issue, PR
+    body or chat) is a proposal pending reconciliation until merged to `main`.
+    Every completed Slice reconciles its milestone state and README projection
+    on `main` after merge and post-merge verification; the cycle is closed only
+    when implementation, register, README, `.ai` and evidence agree. Historical
+    milestone evidence (P2.11-P2.27.x, recorded merge SHAs) is immutable.
+    DEC-0020 complements DEC-0019.
 
 Order of authority: `main` > decision records > `arena-manager` > issue > chat.

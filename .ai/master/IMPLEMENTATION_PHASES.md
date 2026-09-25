@@ -76,7 +76,7 @@ The strategic phases above are intentionally preserved. The Manager-owned granul
 | `P2.27` | Contract-Driven Pluggable Runtime & Security Foundation | F | **complete** | P2.17+ |
 | `P2.17+` | Later capability ladder | C-F | **planned** | — |
 
-Current milestone: **P2.27**. Previous completed: **P2.26**.
+Historical P2 pointer: **P2.27**. Previous completed: **P2.26**. Active work is the executionPointer in `docs/n8n-lego/milestones.json` (DEC-0020).
 
 Future IDs may be refined by Manager only by updating `docs/n8n-lego/milestones.json`.
 
