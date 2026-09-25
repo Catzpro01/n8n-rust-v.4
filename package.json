@@ -29,6 +29,8 @@
     "lego:arch:selftest": "node tools/lego/architecture-gate.mjs --selftest",
     "lego:capabilities": "node tools/lego/capability-conformance.mjs",
     "lego:scaleout": "node tools/lego/scale-out-readiness.mjs",
+    "arena:worker": "node tools/arena-session/worker.mjs",
+    "workforce:runtime": "node tools/workforce/src/cli.mjs",
     "lego:gate": "npm run lego:arch && npm run lego:arch:selftest && npm run lego:foundation && npm run lego:foundation:selftest && npm run lego:capabilities && npm run lego:scaleout && npm run lego:ai:check && npm run lego:test && npm run frontend-lego:test",
     "lego:pack": "bash scripts/release.sh --npm-only",
     "start": "npm run lego:start",

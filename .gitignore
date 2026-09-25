@@ -59,3 +59,6 @@ dist/
 .arena/gateway_tokens.json
 # workforce control-plane operational state (DEC-0002: never committed; heartbeats/leases are runtime)
 .arena/workforce-state/
+# live worker session runtime (#295): sessions, heartbeats, envelopes, enrollment bundles — operational, never committed
+.arena/workforce-runtime/
+.arena-session/

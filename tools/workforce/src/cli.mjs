@@ -14,6 +14,19 @@
 //   decisions-check               validate the canonical decision records on disk
 //   checks <jobs.json|->          DEC-0015 merge verdict for exact-head jobs ({ jobs, onlineRunners? })
 //
+// Live worker session runtime (#295; operational state under --runtime, default .arena/workforce-runtime):
+//   worker-bootstrap [--out DIR] [--url URL] [--workspace-root DIR] [--heartbeat-interval S] [--lost-after S]
+//                    [--lease-renew-below S] [--ack-timeout S] [--rotate true]
+//                                 register missing canonical slots; write one 0600 bootstrap bundle per slot
+//   worker-register --bundle FILE --session-id ID --session-out FILE [--workspace DIR] [--kind arena-session|local-harness]
+//   worker-heartbeat --session FILE   worker-poll --session FILE   worker-claim --session FILE
+//   worker-report --session FILE --status S [--head SHA] [--pr N] [--summary TEXT]
+//   assign-ready --fill N --main SHA  reconcile, then offer READY work to live IDLE sessions only
+//   runtime-status [--json true]      slot / session / task / lease matrix + acceptance status
+//   runtime-reconcile [--main SHA] [--dry-run true]   loss detection, recovery, slot activation
+//   runtime-serve [--host H] [--port P] [--manager-loop-ms MS --main SHA --fill N]   HTTP session transport
+//   runtime-gate [--record true]      evaluate the live acceptance gate from observed runtime events
+//
 // plan / status / render accept --runners WINDOWS=n,WSL=n (observed online self-hosted pool, DEC-0015);
 // without it runner availability is unknown and runner-required work stays WAITING_RUNNER.
 //
@@ -28,6 +41,8 @@ import { classifyChecks, formatChecks } from './checks.mjs';
 import { reconcile, applySafeRecovery, snapshot } from './recovery.mjs';
 import { renderMemory, statusReport } from './render.mjs';
 import { validate, REPO_ROOT, WORKFORCE_DOCS } from './schema.mjs';
+import { WorkforceRuntime } from './assignment-runtime.mjs';
+import { createSessionServer } from '../../arena-session/transport.mjs';
 
 const BOOTSTRAP_ACTORS = [
   { id: 'MANAGER-01', type: 'MANAGER', displayName: 'Arena Manager' },
@@ -101,6 +116,7 @@ export function main(argv = process.argv.slice(2), io = { out: (s) => process.st
     }
     case 'decisions-check': { const r = checkDecisionRecords(); json({ ok: r.problems.length === 0, decisions: r.records.map((d) => `${d.objectId}:${d.state}`), problems: r.problems }); return r.problems.length ? 1 : 0; }
   }
+  if (cmd?.startsWith('worker-') || cmd?.startsWith('runtime-') || cmd === 'assign-ready') return runtimeMain(cmd, args, stateDir, io, json);
   const cp = new ControlPlane({ stateDir, now: () => now });
   const runners = parseRunners(args.runners);
   const repo = { main: args.main, arenaManager: args['arena-manager'], runners };
@@ -127,9 +143,95 @@ export function main(argv = process.argv.slice(2), io = { out: (s) => process.st
       return 0;
     }
     default:
-      io.err('usage: cli.mjs <validate-policy|decisions-check|checks|bootstrap|exec|plan|reconcile|recover|status|render> [--state DIR] [--now ISO]\n');
+      io.err('usage: cli.mjs <validate-policy|decisions-check|checks|bootstrap|exec|plan|reconcile|recover|status|render|worker-*|assign-ready|runtime-*> [--state DIR] [--now ISO]\n');
       return 2;
   }
+}
+
+function readJson(path) { return JSON.parse(readFileSync(path, 'utf8')); }
+function writePrivate(path, obj) { writeFileSync(path, `${JSON.stringify(obj, null, 2)}\n`, { mode: 0o600 }); }
+const rkey = (p) => `${p}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
+/** Text matrix for runtime-status (#295 §16). */
+export function formatRuntimeStatus(st) {
+  const cols = ['slot', 'slotState', 'sessionId', 'sessionState', 'sessionKind', 'heartbeatAgeSeconds', 'taskId', 'taskState', 'assignmentStatus', 'leaseId', 'leaseExpiresAt', 'runnerClass', 'workspace'];
+  const cell = (v) => (v === null || v === undefined ? '-' : String(v));
+  const lines = [`WORKFORCE RUNTIME ${st.runtimeVersion} @ ${st.at}`, `ACCEPTANCE: ${st.acceptance}   live sessions: ${st.liveSessions}/10 ${JSON.stringify(st.liveSessionKinds)}   pending recovery: ${st.pendingRecovery}   live gate: ${st.liveGate?.status ?? 'NOT_EVALUATED'}`];
+  if (st.integrity.length) lines.push(`INTEGRITY FINDINGS: ${JSON.stringify(st.integrity)}`);
+  lines.push(`| ${cols.join(' | ')} |`, `|${cols.map(() => '---').join('|')}|`);
+  for (const r of st.slots) lines.push(`| ${cols.map((c) => cell(r[c])).join(' | ')} |`);
+  return `${lines.join('\n')}\n`;
+}
+
+function runtimeMain(cmd, args, stateDir, io, json) {
+  const clock = args.now ? () => args.now : () => isoNow();
+  const cp = new ControlPlane({ stateDir, now: clock });
+  const rt = new WorkforceRuntime({ cp, dir: resolve(args.runtime ?? join(REPO_ROOT, '.arena', 'workforce-runtime')), now: clock });
+  const need = (k) => { if (args[k] === undefined) throw Object.assign(new Error(`--${k} is required`), { usage: true }); return args[k]; };
+  const session = () => readJson(need('session'));
+  const fail2 = (e) => { if (e.usage) { io.err(`${e.message}\n`); return 2; } json({ ok: false, error: { code: e.code ?? 'INTERNAL', message: e.message, details: e.details } }); return 1; };
+  try {
+    switch (cmd) {
+      case 'worker-bootstrap': {
+        const config = {};
+        if (args.url) config.transport = { kind: 'http', url: args.url };
+        if (args['workspace-root']) config.workspaceRoot = args['workspace-root'];
+        if (args['heartbeat-interval']) config.heartbeatIntervalSeconds = Number(args['heartbeat-interval']);
+        if (args['lost-after']) config.sessionLostSeconds = Number(args['lost-after']);
+        if (args['lease-renew-below']) config.leaseRenewBelowSeconds = Number(args['lease-renew-below']);
+        if (args['ack-timeout']) config.offerAckTimeoutSeconds = Number(args['ack-timeout']);
+        const r = rt.bootstrap({ config, rotate: args.rotate === 'true' });
+        const out = resolve(args.out ?? join(rt.store.dir, 'bootstrap'));
+        mkdirSync(out, { recursive: true, mode: 0o700 });
+        const files = [];
+        for (const b of r.bundles) { if (b.enrollment.token) { const f = join(out, `${b.agentId}.json`); writePrivate(f, b); files.push(f); } }
+        // Enrollment credentials go to 0600 files only; they are never printed.
+        json({ ok: true, slots: r.slots, bundlesWritten: files, unchanged: r.bundles.filter((b) => !b.enrollment.token).map((b) => b.agentId), note: 'bootstrap files do not make a slot ONLINE; a session must register and heartbeat' });
+        return 0;
+      }
+      case 'worker-register': {
+        const b = readJson(need('bundle'));
+        const r = rt.register({ agentId: b.agentId, sessionId: need('session-id'), enrollmentToken: b.enrollment?.token, protocolVersion: b.protocolVersion, capabilities: b.capabilities, runnerClass: args['runner-class'] ?? b.runnerClass, workspace: args.workspace ?? b.workspace, branch: b.branch, sessionKind: args.kind ?? 'local-harness', transport: 'inproc', idempotencyKey: rkey('register') });
+        writePrivate(resolve(need('session-out')), { sessionId: r.session.sessionId, agentId: r.session.agentId, sessionToken: r.sessionToken });
+        rt.ready({ sessionId: r.session.sessionId, agentId: r.session.agentId, sessionToken: r.sessionToken, idempotencyKey: rkey('ready') });
+        json({ ok: true, sessionId: r.session.sessionId, agentId: r.session.agentId, sessionState: 'IDLE', generation: r.session.generation });
+        return 0;
+      }
+      case 'worker-poll': json(rt.poll(session())); return 0;
+      case 'worker-heartbeat': {
+        const me = session();
+        const cur = rt.poll(me).assignment;
+        json(rt.heartbeat({ ...me, assignmentId: cur?.assignmentId, leaseId: cur?.leaseId, timestamp: clock(), sessionState: cur ? 'WORKING' : 'IDLE', idempotencyKey: rkey('hb') }));
+        return 0;
+      }
+      case 'worker-claim': {
+        const me = session();
+        const cur = rt.poll(me).assignment;
+        if (!cur) { json({ ok: false, error: { code: 'NOT_FOUND', message: 'no assignment is offered to this session' } }); return 1; }
+        json(rt.claim({ ...me, assignmentId: args.assignment ?? cur.assignmentId, leaseId: cur.leaseId, taskRevision: cur.taskRevision, idempotencyKey: `ack-${cur.assignmentId}` }));
+        return 0;
+      }
+      case 'worker-report': {
+        const me = session();
+        const cur = rt.poll(me).assignment;
+        if (!cur) { json({ ok: false, error: { code: 'NOT_FOUND', message: 'no active assignment for this session' } }); return 1; }
+        json(rt.report({ ...me, assignmentId: cur.assignmentId, status: need('status'), ...(args.head ? { headSha: args.head } : {}), ...(args.pr ? { prNumber: Number(args.pr) } : {}), ...(args.summary ? { summary: args.summary } : {}), idempotencyKey: rkey('report') }));
+        return 0;
+      }
+      case 'assign-ready': { const r = rt.assignReady({ fill: Number(args.fill ?? 10), mainSha: need('main'), runners: parseRunners(args.runners) }); json(r); return 0; }
+      case 'runtime-reconcile': json(rt.reconcile({ dryRun: args['dry-run'] === 'true', mainSha: args.main ?? null })); return 0;
+      case 'runtime-status': { const st = rt.status(); if (args.json === 'true') json(st); else io.out(formatRuntimeStatus(st)); return 0; }
+      case 'runtime-gate': { const g = rt.evaluateLiveGate({ record: args.record === 'true' }); json(g); return g.status === 'PASS' ? 0 : 1; }
+      case 'runtime-serve': {
+        const loopMs = args['manager-loop-ms'] ? Number(args['manager-loop-ms']) : null;
+        const server = createSessionServer({ runtime: rt, managerLoop: loopMs ? { intervalMs: loopMs, mainSha: need('main'), fill: Number(args.fill ?? 10), runners: parseRunners(args.runners) } : null, log: (o) => io.out(`${JSON.stringify({ at: clock(), ...o })}\n`) });
+        const port = Number(args.port ?? 8795);
+        server.listen(port, args.host ?? '127.0.0.1', () => io.out(`${JSON.stringify({ ok: true, listening: `${args.host ?? '127.0.0.1'}:${port}`, managerLoopMs: loopMs })}\n`));
+        return 0;
+      }
+      default: io.err(`unknown runtime command ${cmd}\n`); return 2;
+    }
+  } catch (e) { return fail2(e); }
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) process.exitCode = main();
