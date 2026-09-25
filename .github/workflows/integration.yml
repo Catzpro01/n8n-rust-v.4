@@ -1,23 +1,51 @@
-﻿name: Level 2 Integration & Conformance Suite (Laptop Worker)
+name: Level 2 Integration & Conformance Suite (Matrix Workers)
 
 on:
   pull_request:
     branches: [ main ]
     types: [ opened, synchronize, reopened ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.arena/logs/**'
+      - '.gitignore'
+
+concurrency:
+  group: integration-${{ github.workflow }}-${{ github.ref }}
+  # Cancel superseded runs on PR refs only; every push to a protected branch keeps its own run (merge evidence).
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  integration:
-    name: Level 2 Workspace & Node Conformance Tests
-    runs-on: [ self-hosted, windows, x64, rust-build, n8n-rust ]
+  integration_workspace:
+    name: Level 2 Workspace Tests (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ linux, windows ]
+    runs-on: [ self-hosted, '${{ matrix.os }}', x64, rust-build, n8n-rust ]
     if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
+          submodules: false
+          lfs: false
 
       - name: Level 2 - Full Rust Workspace Tests
         run: cargo test --workspace
+
+  conformance:
+    name: Level 2 Conformance LEGO & Node Catalog
+    runs-on: [ self-hosted, linux, x64, rust-build, n8n-rust ]
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: false
+          lfs: false
 
       - name: Level 2 - Localization & Catalog Tests
         run: node --test packages/reconstructed-engine/localization.test.mjs packages/reconstructed-engine/node-catalog.test.mjs
@@ -32,4 +60,4 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
-          python tools/orchestration/report_ci_status.py --suite integration --status ${{ job.status }} --sha $env:COMMIT_SHA
+          python3 tools/orchestration/report_ci_status.py --suite integration --status ${{ job.status }} --sha $COMMIT_SHA

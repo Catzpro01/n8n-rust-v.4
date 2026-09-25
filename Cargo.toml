@@ -24,3 +24,20 @@ thiserror = "1.0"
 anyhow = "1.0"
 petgraph = "0.6"
 indexmap = { version = "=2.2.6", features = ["serde"] }
+
+# Build profiles (recovered from arena-manager 50231cc0/c8dc8567, reviewed in TASK-0005):
+# smaller debug info for dev/test builds; optimise third-party dependencies, which compile once
+# and are cached, so test binaries run faster. split-debuginfo and codegen-units are left at the
+# platform defaults (split-debuginfo="unpacked" is not supported on windows-msvc runners; the dev
+# default of 256 codegen units already parallelises compilation).
+[profile.dev]
+debug = 1
+
+[profile.test]
+debug = 1
+
+[profile.dev.package."*"]
+opt-level = 2
+
+[profile.test.package."*"]
+opt-level = 2

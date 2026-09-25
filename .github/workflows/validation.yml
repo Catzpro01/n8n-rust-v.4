@@ -1,9 +1,14 @@
-﻿name: Level 0 & Level 1 Validation (Laptop Build Worker)
+name: Level 0 & Level 1 Validation (Parallel WSL Workers)
 
 on:
   pull_request:
     branches: [ main ]
     types: [ opened, synchronize, reopened ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.arena/logs/**'
+      - '.gitignore'
   push:
     branches:
       - 'runtime-kernel/*'
@@ -16,27 +21,63 @@ on:
       - 'performance/*'
       - 'security-sandbox/*'
       - 'infrastructure-orchestration/*'
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.arena/logs/**'
+      - '.gitignore'
+
+concurrency:
+  group: validation-${{ github.workflow }}-${{ github.ref }}
+  # Cancel superseded runs on PR refs only; every push to a protected branch keeps its own run (merge evidence).
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  validate:
-    name: Level 0 (Check & Format) + Level 1 (Affected Tests)
-    runs-on: [ self-hosted, windows, x64, rust-build, n8n-rust ]
-    # Security gate: Reject untrusted external fork PRs from executing on laptop host
+  format_and_check:
+    name: Level 0 (Check & Format)
+    runs-on: [ self-hosted, linux, x64, rust-build, n8n-rust ]
     if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push'
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
+          submodules: false
+          lfs: false
 
       - name: Level 0 - Verify Formatting
         run: cargo fmt --all -- --check
 
-      - name: Level 0 - Workspace Syntax & Type Check
+      - name: Level 0 - Fast Workspace Check
         run: cargo check --workspace
 
+  unit_tests:
+    name: Level 1 (Affected Tests)
+    runs-on: [ self-hosted, linux, x64, rust-build, n8n-rust ]
+    if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          submodules: false
+          lfs: false
+
       - name: Level 1 - Affected Crate Unit Tests
-        run: cargo test -p n8n-workflow
+        shell: bash
+        run: |
+          # HEAD~1 is the base tip for the pull_request merge ref and the previous main for a merge push,
+          # so this diff covers the whole change. n8n-workflow (the previous default set) always runs;
+          # workspace-wide inputs (Cargo.toml, Cargo.lock, n8n-common) run the whole workspace.
+          CHANGED=$(git diff --name-only HEAD~1 HEAD)
+          if echo "$CHANGED" | grep -qE '^(Cargo\.toml|Cargo\.lock|crates/n8n-common/)'; then
+            echo "Workspace-wide input changed: testing the whole workspace"
+            cargo test --workspace
+          else
+            AFFECTED=$( (echo n8n-workflow; echo "$CHANGED" | grep '^crates/' | cut -d/ -f2) | sort -u | sed 's/^/-p /' | tr '\n' ' ')
+            echo "Testing: $AFFECTED"
+            cargo test $AFFECTED
+          fi
 
       - name: Report Build & Test Status to Supabase
         if: always()
@@ -45,4 +86,4 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
-          python tools/orchestration/report_ci_status.py --suite validation --status ${{ job.status }} --sha $env:COMMIT_SHA
+          python3 tools/orchestration/report_ci_status.py --suite validation --status ${{ job.status }} --sha $COMMIT_SHA
