@@ -44,10 +44,14 @@ pub use ingress_modes::{
     WaitingVerdict,
 };
 pub use innovation::{
-    adapt_limits, coalesce_events, next_brownout, qos_apply, qos_decide, AdaptiveLimits,
-    AtlasError, AtlasSwap, BrownoutMode, CapabilityToken, CapsuleError, CoalescibleEvent,
-    FlightRecorder, FusionConfig, FusionOutput, HardLimits, PayloadCapsule, QosAction, QosDecision,
-    RouteAtlas, TelemetrySample,
+    adapt_limits, coalesce_events, compare_shadow, next_brownout, predict_admission,
+    pressure_score, qos_apply, qos_decide, run_shadow, AdaptiveLimits, AdmissionCeilings,
+    AdmissionController, AdmissionPlan, AdmissionTargets, AdmissionTelemetry, AtlasError,
+    AtlasSwap, BrownoutMode, BurstShape, CapabilityToken, CapsuleError, CoalescibleEvent,
+    DeclaredSideEffect, FlightRecorder, FusionConfig, FusionOutput, HardLimits, IngressPlane,
+    P4Profiler, PayloadCapsule, PlaneAdmission, PlaneConfig, PlaneKind, PlaneStats, PlaneTopology,
+    ProfileConfig, ProfileSample, ProfilerBackend, QosAction, QosDecision, RouteAtlas,
+    RouteProfile, ShadowMode, ShadowOutcome, ShadowReport, ShadowVerdict, TelemetrySample,
 };
 pub use recovery::{
     recovery_plan, Journal, JournalEntry, LeaderLease, LeaseError, LifecycleEvent, RecoveryAction,
