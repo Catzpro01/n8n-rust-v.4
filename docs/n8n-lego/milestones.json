@@ -3025,7 +3025,10 @@
               "title": "Credential collection routes: GET /credentials and POST /credentials",
               "purpose": "List credentials with the upstream cursor envelope (secrets never included) and create one through the vault, echoing the sanitised record. Guards: credential:list and credential:create.",
               "weight": 25,
-              "status": "planned"
+              "status": "completed",
+              "evidence": "apps/n8n-lego/test/public-api-v1-credentials-users.test.mjs \u2014 list/create: the secret appears in no response body, the stored record is sealed, data validated against the type",
+              "reference": "reference/n8n/packages/cli/src/public-api/v1/handlers/credentials/credentials.handler.ts",
+              "completedAt": "2026-09-25T19:11:57Z"
             },
             {
               "id": "CP-02",
@@ -3056,7 +3059,7 @@
               "status": "planned"
             }
           ],
-          "updatedAt": "2026-09-26T10:30:00Z",
+          "updatedAt": "2026-09-25T19:12:02Z",
           "latestUpdate": "P5-M09: public /api/v1 credentials + users over the editor's backing stores",
           "mergeSha": null,
           "issue": 85,
