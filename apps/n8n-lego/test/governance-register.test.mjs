@@ -385,21 +385,20 @@ test('completion KPI is implemented/total and never counts verifying or blocked'
   assert.notEqual(renderReadmeMilestoneSection(mutated), block);
 });
 
-test('Issue #307: two metrics, status independent, no invented checkpoint weights', () => {
+test('Issue #307: two metrics, status independent, checkpoint weights only where declared', () => {
   const verifying = verifyingIndex(REGISTER);
   const metrics = headlineMetrics(REGISTER);
-  assert.equal(metrics.current.checkpointed, 0, 'the register declares no checkpoint weights');
-  assert.equal(metrics.current.realtime, metrics.current.sliceCompletion, 'without declared checkpoints, realtime equals the legacy implemented points');
-  assert.equal(metrics.current.withoutModel, metrics.current.total - metrics.current.implemented);
+  assert.equal(metrics.current.checkpointed, 1, 'exactly one slice declares checkpoints (P5-M08)');
+  assert.notEqual(metrics.current.realtime, metrics.current.sliceCompletion, 'the two metrics are different numbers');
+  assert.equal(metrics.current.withoutModel, metrics.current.total - metrics.current.implemented - metrics.current.checkpointed);
   const p5 = REGISTER.programs.find((program) => program.id === 'P5');
   const p5Tally = programTally(p5, verifying);
   assert.equal(p5.status, 'complete');
   assert.notEqual(p5Tally.percent, 100, 'program status complete is not numeric 100%');
   assert.notEqual(p5Tally.realtime, 100);
   const m08 = p5.slices.find((slice) => slice.id === 'P5-M08');
-  assert.equal(m08.checkpoints, undefined);
-  assert.equal(sliceDeliveryProgress(m08).source, 'no-checkpoint-model');
-  assert.equal(sliceDeliveryProgress(m08).percent, 0);
+  assert.equal(sliceDeliveryProgress(m08).source, 'checkpoints');
+  assert.equal(sliceDeliveryProgress(m08).percent, 70, 'CP-01..CP-04 are evidenced; CP-05 is blocked');
   assert.equal(completionContribution(m08), 0);
   assert.equal(displayStatus(m08, verifying), 'verifying');
   for (const id of REGISTER.executionPointer.blockedSlices) {
@@ -419,8 +418,8 @@ test('Issue #307: two metrics, status independent, no invented checkpoint weight
   assert.match(block, /not register measurements/);
   assert.doesNotMatch(block, /91\.2%/);
   assert.doesNotMatch(block, /92\.0%/);
-  assert.match(block, /\| `P5-M08` \|[^\n]*🟠 Verifying \| 0\.0% \| 0\.0% \|/);
-  assert.equal(REGISTER.governance.progressModel.reconciledToMain, false);
+  assert.match(block, /\| `P5-M08` \|[^\n]*🟠 Verifying \| 70\.0% \| 0\.0% \|/);
+  assert.equal(REGISTER.governance.progressModel.reconciledToMain, true);
   assert.equal(historicalP2Fingerprint(REGISTER), HISTORICAL_P2_FINGERPRINT);
 });
 
@@ -428,13 +427,16 @@ test('declared checkpoints move realtime progress and never slice completion or 
   const before = headlineMetrics(REGISTER);
   const mutated = clone();
   const m08 = mutated.programs.find((program) => program.id === 'P5').slices.find((slice) => slice.id === 'P5-M08');
-  m08.checkpoints = [
-    { id: 'CP-01', title: 'Recorded delivery evidence', weight: 60, status: 'completed', evidence: 'docs/n8n-lego/evidence/P5-M08-EVIDENCE.md' },
-    { id: 'CP-02', title: 'Runner verification still open', weight: 40, status: 'blocked', blockedBy: 'self-hosted runner lost communication' },
-  ];
+  // The live event: the blocked runner-verification checkpoint becomes completed, with evidence.
+  m08.checkpoints[4] = {
+    ...m08.checkpoints[4],
+    status: 'completed',
+    evidence: 'docs/n8n-lego/evidence/P5-M08-EVIDENCE.md §6 — runner verification PASS on main',
+    completedAt: '2026-09-26T09:00:00Z',
+  };
   assert.deepEqual(validateSliceCheckpoints(m08), []);
   assert.deepEqual(validateGovernanceRegister(mutated), []);
-  assert.equal(sliceDeliveryProgress(m08).percent, 60);
+  assert.equal(sliceDeliveryProgress(m08).percent, 100);
   assert.equal(completionContribution(m08), 0);
   assert.equal(displayStatus(m08, verifyingIndex(mutated)), 'verifying');
   const after = headlineMetrics(mutated);
@@ -443,7 +445,8 @@ test('declared checkpoints move realtime progress and never slice completion or 
   assert.ok(after.current.realtime > before.current.realtime);
   assert.equal(after.future.realtime, before.future.realtime);
   const rendered = renderReadmeMilestoneSection(mutated);
-  assert.match(rendered, /CP-01 Recorded delivery evidence/);
+  assert.match(rendered, /CP-05 DEC-0015 self-hosted runner verification on main[^\n]*\(completed, 30\)/);
+  assert.match(rendered, /Checkpoint evidence:[^\n]*CP-05: docs\/n8n-lego\/evidence\/P5-M08-EVIDENCE\.md/);
   assert.match(rendered, /Completion contribution:\*\* \*\*0%\*\*/);
   assert.doesNotMatch(rendered, /\| `P5-M08` \|[^\n]*Implemented/);
 

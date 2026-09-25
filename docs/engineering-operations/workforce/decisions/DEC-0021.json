@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "1.0",
+  "objectType": "Decision",
+  "objectId": "DEC-0021",
+  "revision": 1,
+  "createdAt": "2026-09-25T16:17:23Z",
+  "updatedAt": "2026-09-25T16:17:23Z",
+  "events": [],
+  "state": "ACTIVE",
+  "category": "MILESTONE",
+  "title": "LIVE-MILESTONE EXCEPTION: milestone progress telemetry is reconciled straight to main by the Manager, without a governance PR",
+  "problem": "DEC-0020 made main the owner of milestone truth and required a post-merge governance PR for every milestone-state change. That is right for delivery reconciliation, but it made progress itself queue behind a PR: evidenced work (a file finished, a contract test green, a gate PASS, a slice entering verifying or blocked) was invisible on main until a delivery PR finished, so README.md and .ai described the last merged slice instead of the work in flight. A repository that is the project monitor cannot report yesterday's state. The owner asked for an exception that keeps every existing protection (DEC-0014 one delivery PR per slice, DEC-0015 runner verification, DEC-0019 Manager execution, DEC-0020 main-owned truth, the generated-projection freshness gate, the immutable P2 history) while letting progress telemetry reach main immediately.",
+  "options": [
+    {
+      "id": "A-live-telemetry-exception",
+      "summary": "Declare milestone progress telemetry an operational channel with its own path: the Manager may commit checkpoint progress, checkpoint status, checkpoint evidence, current checkpoint, slice/program/overall progress, milestone status and evidence, the README progress dashboard and the generated .ai projections directly to protected main in a governance(progress): commit, with no governance PR. Implementation of every kind still goes through a delivery PR. The atomic chain is enforced by one tool (tools/lego/progress-event.mjs): validate evidence and weights, write docs/n8n-lego/milestones.json, regenerate README.md and .ai, run npm run lego:ai:check, commit, push, verify main. A commit classifier refuses any progress commit that touches a path outside the telemetry allowlist."
+    },
+    {
+      "id": "B-keep-everything-behind-a-pr",
+      "summary": "Keep the DEC-0020 rule unchanged and batch progress into the post-merge governance PR of each slice."
+    },
+    {
+      "id": "C-hand-edit-readme",
+      "summary": "Let the Manager edit README.md and milestones.json freely, with no generated projection and no freshness gate."
+    }
+  ],
+  "selectedOption": "A-live-telemetry-exception",
+  "rationale": "Owner instruction in chat on 2026-09-25 (MASTER PROMPT — LIVE MILESTONE & README EXCEPTION), which asks that every progress event with evidence be visible on main, milestones.json, README and .ai without waiting for a delivery PR, and that the exception be recorded as a permanent project decision. Option A implements it without weakening a single existing rule: (1) the exception covers progress telemetry only — checkpoint progress, checkpoint status, checkpoint evidence, current checkpoint, slice progress, program progress, overall progress, milestone status, milestone evidence, the README progress dashboard and the generated .ai milestone/current-status projections; (2) it never covers source code, tests, runtime behaviour, API, frontend, backend, contract or schema implementation, dependency or package changes, Rust code, CI workflows, security policy, permissions, infrastructure, database schema or production configuration, which still go through a delivery PR (DEC-0014); (3) the canonical source stays docs/n8n-lego/milestones.json on main and README.md plus .ai stay generated projections, so npm run lego:ai:check still fails on a stale projection; (4) the checkpoint model is declared once per slice with weights derived from that slice's declared scope and summing to 100, and the generator computes every percentage, so no number is typed or rounded up; (5) a completed checkpoint requires evidence, a blocked checkpoint requires a blocker, a skipped checkpoint requires a reason, and a slice with checkpoints records updatedAt, so the register alone answers what is true now; (6) one measurable event is one commit and progress is never batched, which is what makes main a live monitor rather than a periodic report; (7) live telemetry never bypasses a completion gate: 100% realtime progress with a 0% completion contribution is legitimate, and only implemented (DEC-0014 plus DEC-0015) moves Slice Completion; (8) historical milestone evidence (the P2.11-P2.27.x ladder, recorded merge SHAs, the P2 fingerprint) is immutable and out of scope for the exception; (9) the tool is atomic and never publishes a partial state: a validation, regeneration or freshness failure restores the register and exits non-zero; (10) automated classification (tools/lego/progress-event.mjs classify, and classifyProgressCommit in tools/lego/governance-register.mjs) rejects a progress commit that touches anything outside the telemetry allowlist, which is how implementation is prevented from hiding in a governance(progress): commit. Option B is the queue this decision removes; option C is the split-brain drift DEC-0020 was written to end. The decision complements DEC-0020 (the post-merge governance PR still reconciles a merged delivery) and does not change DEC-0014, DEC-0015, DEC-0019 or DEC-0020.",
+  "scope": {
+    "programs": [
+      "GOVERNANCE"
+    ],
+    "slices": [],
+    "domains": [],
+    "surfaces": []
+  },
+  "authority": {
+    "decidedBy": "OWNER",
+    "managerOnly": false,
+    "humanEscalation": true,
+    "proposedBy": "MANAGER-01"
+  },
+  "evidence": [],
+  "evidenceRefs": [
+    "docs/n8n-lego/milestones.json (governance.progressModel.liveException, governance.progressModel.checkpointModel)",
+    "tools/lego/progress-event.mjs",
+    "tools/lego/governance-register.mjs (classifyProgressCommit, validateLiveProgressModel)",
+    "apps/n8n-lego/test/live-progress.test.mjs",
+    "docs/n8n-lego/evidence/P5-M08-EVIDENCE.md (the first slice to carry a checkpoint model)"
+  ],
+  "sources": {
+    "issues": [
+      307
+    ],
+    "prs": [],
+    "commits": [],
+    "requests": []
+  },
+  "supersedes": null,
+  "supersededBy": null,
+  "promotion": {
+    "canonical": false,
+    "mainPath": "docs/engineering-operations/workforce/decisions/DEC-0021.json",
+    "mainCommitSha": null,
+    "promotedAt": null,
+    "promotedBy": null
+  },
+  "reason": null
+}

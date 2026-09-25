@@ -27,7 +27,11 @@ import { fileURLToPath } from 'node:url';
 import { loadRegistry, getChildren, CONTRACT_LOCK_FILE, MANIFEST_FILE } from '../../apps/n8n-lego/src/lego/registry.mjs';
 import { FOUNDATION, NODE_CONTRACT } from '../../apps/n8n-lego/src/lego/foundation.mjs';
 import { buildGraph, impactOf, TEST_TIERS } from './impact-graph.mjs';
-import { validateGovernanceRegister, renderGovernanceSections, syncReadmeMilestoneSection, validateMilestoneProjections, headlineMetrics, formatPercent } from './governance-register.mjs';
+import {
+  validateGovernanceRegister, renderGovernanceSections, syncReadmeMilestoneSection, validateMilestoneProjections,
+  headlineMetrics, formatPercent, sliceRecords, displayStatus, sliceDeliveryProgress, completionContribution,
+  verifyingIndex,
+} from './governance-register.mjs';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const AI_ROOT = join(REPO_ROOT, '.ai');
@@ -1423,8 +1427,7 @@ Reported as: ${ai.zeroInstall.reportedAs}
 `;
 }
 
-function milestoneRegisterDoc() {
-  const register = readMilestones();
+export function milestoneRegisterDoc(register = readMilestones()) {
   if (!register) return null;
   // Governance reset (#256): never render a view from an invalid canonical register.
   const governanceErrors = validateGovernanceRegister(register);
@@ -1846,12 +1849,29 @@ ${Object.entries(governance.milestoneMergeProtocol.conflictClasses).map(([kind, 
  * Current status + blockers. The document a new agent reads first to find out
  * what is actually true today.
  */
-function currentStatus() {
+/**
+ * DEC-0021: the live checkpoint state of every slice that declares one, so the
+ * `.ai` pack answers "what is being worked on right now" without opening a PR.
+ */
+function liveProgressLines(register) {
+  if (!register) return '_no canonical register_';
+  const verifying = verifyingIndex(register);
+  const live = sliceRecords(register).filter((record) => record.slice.checkpoints);
+  if (!live.length) return '_no slice declares a checkpoint model_';
+  return live.map(({ slice, parentId }) => {
+    const progress = sliceDeliveryProgress(slice);
+    const current = progress.current ? `${progress.current.id} (${progress.current.status}, ${progress.current.weight})` : '—';
+    const latest = progress.latestCompleted ? `${progress.latestCompleted.id} (completed)` : '—';
+    return `- **${slice.id}** (${parentId}) — ${displayStatus(slice, verifying)} · realtime ${formatPercent(progress.percent)} · completion contribution ${formatPercent(completionContribution(slice))} · current checkpoint ${current} · latest completed ${latest} · updated ${slice.updatedAt ?? '—'}${slice.latestUpdate ? ` — ${slice.latestUpdate}` : ''}`;
+  }).join('\n');
+}
+
+export function currentStatus(milestones = readMilestones()) {
   const registry = loadRegistry({ reload: true });
   const set = readManifest('ai-lego-set.json');
   const governance = readGovernance();
   const decisions = readDecisions();
-  const milestones = readMilestones();
+  // Injected by the tests (DEC-0021: a checkpoint change must move this projection).
   if (!set || !governance) return null;
 
   const capabilities = registry.domains.flatMap((domain) => domain.capabilities ?? []);
@@ -1919,6 +1939,14 @@ ${(() => {
 - **Next:** \`${current?.nextMilestone ?? '—'}\`
 - **Completion gate:** ${(current?.completionCriteria ?? []).join('; ') || '—'}`;
   })()}
+
+## Live progress (DEC-0021 — LIVE-MILESTONE EXCEPTION)
+
+Every slice that declares a checkpoint model, straight from the canonical register
+\`docs/n8n-lego/milestones.json\` on \`main\`. Status is not progress: a verifying or blocked slice keeps its
+evidenced progress and contributes 0% to Slice Completion.
+
+${liveProgressLines(milestones)}
 
 ## The ${set.lego.length} AI/Agent LEGO by status
 
