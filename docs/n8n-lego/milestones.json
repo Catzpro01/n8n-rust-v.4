@@ -3045,7 +3045,10 @@
               "title": "GET /credentials/schema/{credentialTypeName} and data validation against the type",
               "purpose": "Serve the credential-type JSON schema derived from the catalog, and reject create/update bodies whose data does not satisfy that schema with the upstream 400 message. An unknown type is 404.",
               "weight": 20,
-              "status": "planned"
+              "status": "completed",
+              "evidence": "apps/n8n-lego/test/public-api-v1-credentials-users.test.mjs \u2014 schema: per-type JSON schema with options enums and if/then/else conditions, unknown field 400, missing required 400, bad enum 400, unknown type 404; the credentialTypeJsonSchema unit cases",
+              "reference": "reference/n8n/packages/cli/src/public-api/v1/handlers/credentials/credentials.middleware.ts",
+              "completedAt": "2026-09-25T19:12:18Z"
             },
             {
               "id": "CP-04",
@@ -3062,7 +3065,7 @@
               "status": "planned"
             }
           ],
-          "updatedAt": "2026-09-25T19:12:14Z",
+          "updatedAt": "2026-09-25T19:12:18Z",
           "latestUpdate": "P5-M09: public /api/v1 credentials + users over the editor's backing stores",
           "mergeSha": null,
           "issue": 85,
