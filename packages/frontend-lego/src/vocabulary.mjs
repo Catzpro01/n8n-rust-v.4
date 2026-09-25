@@ -1553,6 +1553,7 @@ export const VOCABULARIES = Object.freeze([
       'node-registry.catalog', 'node-registry.icons',
       'node-registry.community-packages', 'node-registry.community-node-type-detail',
       'node-registry.portability', 'node-registry.creator',
+      'node-registry.admission',
     ]),
     provenance: Object.freeze({
       contract: Object.freeze({ id: 'lego.domain-registry', version: '1.1.0', owner: 'manager' }),
@@ -1560,7 +1561,7 @@ export const VOCABULARIES = Object.freeze([
       file: 'apps/n8n-lego/src/lego/manifest/domains.json',
       path: 'domains#id=node-registry.capabilities',
       read: 'id',
-      note: 'six capabilities of the `node-registry` domain. `node-registry.portability` joined at P2.22 (`implemented`, three operations — the language/runtime-neutral portability foundation: canPort, select, describePortability); `node-registry.creator` joined at P2.23 (`implemented`, five operations — the bounded definition producer: create, translate, validate, preview, approvalStatus — candidate/reference output only, never publish/execute/grant)',
+      note: 'seven capabilities of the `node-registry` domain. `node-registry.portability` joined at P2.22 (`implemented`, three operations — the language/runtime-neutral portability foundation: canPort, select, describePortability); `node-registry.creator` joined at P2.23 (`implemented`, five operations — the bounded definition producer: create, translate, validate, preview, approvalStatus — candidate/reference output only, never publish/execute/grant); `node-registry.admission` joined at P6-S01 (`implemented`, two operations — the fail-closed Issue #95 pipeline: admit, describe — a registry decision that grants no capability and never maps a node class to CORE)',
     }),
   }),
   Object.freeze({

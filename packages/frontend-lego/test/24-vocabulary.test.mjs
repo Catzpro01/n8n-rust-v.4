@@ -221,9 +221,10 @@ test('the P2.22 node portability quotes are complete (classes, capabilities, per
     'NATIVE_PROCESS', 'ENVIRONMENT_SPECIFIC', 'REMOTE_BRIDGE',
   ], 'exact class vocabulary — no competing synonyms');
   const capabilities = vocabularyOf('nodeRegistryCapability');
-  assert.equal(capabilities.values.length, 6, 'the node-registry domain publishes six capabilities after P2.23');
+  assert.equal(capabilities.values.length, 7, 'the node-registry domain publishes seven capabilities after P6-S01');
   assert.ok(capabilities.values.includes('node-registry.portability'), 'and the portability foundation is one of them');
   assert.ok(capabilities.values.includes('node-registry.creator'), 'and the creator foundation is one of them');
+  assert.ok(capabilities.values.includes('node-registry.admission'), 'and the P6-S01 admission pipeline is one of them');
   const permissions = vocabularyOf('nodeRegistryPermission');
   assert.equal(permissions.values.length, 6, 'node:read, the P2.22 pair and the P2.23 creator trio');
   assert.ok(permissions.values.includes('node:portability:validate'));
