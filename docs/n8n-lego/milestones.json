@@ -2985,9 +2985,10 @@
               "title": "End-to-end proof through the real server plus contract and manifest registration",
               "purpose": "Exercise every route through startServer with a real session and CSRF, prove no response can carry a digest or a raw credential, and register the new surface on the auth domain manifest so the architecture and capability gates see it.",
               "weight": 15,
-              "status": "planned",
-              "evidence": "",
-              "reference": "apps/n8n-lego/test/service-principal-routes.test.mjs"
+              "status": "completed",
+              "evidence": "apps/n8n-lego/test/service-principal-routes.test.mjs \u2014 32 tests end to end through startServer with a real session, CSRF and cookie jar: no response body carries \"digest\", \"rawApiKey\", \"raw\", \"rawCredential\" or \"password\", nor the digest value; the DTO is a whitelist, proven by adding internalNote to a stored record and asserting its absence; every operation is 403 for global:member with the upstream MISSING_SCOPE_MESSAGE (DEC-0023); a service credential and an api key both answer 401 on /rest/*; a cross-origin write with a real session is 403 before a handler runs and stores nothing. Registration: domains.json capability auth.machine-identity gains service-principal-list and service-principal-transfer, MACHINE_AUDIT_EVENTS gains service-principal.transferred, AUDIT_FIELDS gains fromRef/toRef. Merged in 0845c25f.",
+              "reference": "apps/n8n-lego/test/service-principal-routes.test.mjs",
+              "completedAt": "2026-09-25T20:23:01Z"
             },
             {
               "id": "CP-06",
@@ -3000,7 +3001,7 @@
               "requires": ["Level 0 (Check & Format)","Level 1 (Affected Tests)","Level 2 Workspace Tests (linux)","Level 2 Workspace Tests (windows)","Level 2 Conformance LEGO & Node Catalog","Post-Merge Verification & Branch Cleanup"]
             }
           ],
-          "updatedAt": "2026-09-25T20:22:59Z",
+          "updatedAt": "2026-09-25T20:23:01Z",
           "latestUpdate": "P5-M07: service-principal REST surface mounted (create once, redacted list, revoke tombstone, transfer rotates the credential); DEC-0023 closes the member boundary",
           "checkpointWeightBasis": "Five declared route operations. CP-01 carries 15 for the read pair (list + scopes); CP-02 carries 25 because it is the only route that mints a credential and must enforce the whole P5.7 create policy; CP-03 carries 15 for the tombstone semantics; CP-04 carries 20 for the six transfer invariants; CP-05 carries 15 for the end-to-end proof and manifest registration; CP-06 carries 10 for the DEC-0015 runner gate. 15+25+15+20+15+10 = 100. The weights come from the scope declared in P5-M07-EVIDENCE.md §1, not from effort, commit count or lines of code.",
           "mergeSha": null,
