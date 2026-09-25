@@ -1,0 +1,44 @@
+{
+  "objectType": "Evidence",
+  "objectId": "EVD-0123",
+  "state": "VERIFIED",
+  "taskId": "TASK-0015",
+  "type": "RUNNER_VERIFICATION",
+  "trustLevel": "CI_VERIFIED",
+  "subject": {
+    "subjectDigest": null,
+    "repository": "Catzpro01/n8n-rust-v.4",
+    "prNumber": null,
+    "url": null,
+    "subjectType": "MAIN",
+    "subjectId": "0ad42609dfaa82bcb6ce46a77ce67b6be9a98750"
+  },
+  "result": {
+    "metrics": {},
+    "failureClass": null,
+    "status": "PASS",
+    "summary": "Runners back online: all 7 deferred self-hosted checks PASS on PR #287 head 541fdbcd (tree == merge tree 0ad42609, verified at merge). Disclosure: the separate post-merge cleanup job failed in cleanup_runner.py (shallow checkout after main advanced; its cargo check/test steps passed). Pre-existing tooling defect, tracked as TASK-0018.",
+    "checks": [
+      "Architecture, Contract & Scope Audit",
+      "Level 0 (Check & Format)",
+      "Level 1 (Affected Tests)",
+      "Level 2 Conformance LEGO & Node Catalog",
+      "Level 2 Workspace Tests (linux)",
+      "Level 2 Workspace Tests (windows)",
+      "Windows worker portability probe (runtime tests are Linux)"
+    ]
+  },
+  "producedBy": "MANAGER-01",
+  "verifiedAt": "2026-09-25T07:31:37Z",
+  "verifiedBy": "MANAGER-01",
+  "reason": null,
+  "schemaVersion": "1.0",
+  "revision": 3,
+  "createdAt": "2026-09-25T07:31:37Z",
+  "updatedAt": "2026-09-25T07:31:37Z",
+  "events": [
+    "EVT-001101",
+    "EVT-001102",
+    "EVT-001103"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:78cd34d7bc9270b0716e044d78355f43c43211d03550cd880768c15b48ed96e6",
+  "committedAt": "2026-09-25T07:26:40Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-jrn-cleanup-shallow",
+    "objectType": "JournalEntry",
+    "objectId": "JRN-0034",
+    "previousRevision": 0,
+    "newRevision": 1,
+    "resultingState": null,
+    "eventId": "EVT-001095",
+    "eventIds": [
+      "EVT-001095"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}

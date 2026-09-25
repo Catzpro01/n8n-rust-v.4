@@ -1,0 +1,44 @@
+{
+  "objectType": "Evidence",
+  "objectId": "EVD-0124",
+  "state": "VERIFIED",
+  "taskId": "TASK-0016",
+  "type": "RUNNER_VERIFICATION",
+  "trustLevel": "CI_VERIFIED",
+  "subject": {
+    "subjectDigest": null,
+    "repository": "Catzpro01/n8n-rust-v.4",
+    "prNumber": null,
+    "url": null,
+    "subjectType": "MAIN",
+    "subjectId": "08644d0cc97356cf1725c6b04c03c7c974428240"
+  },
+  "result": {
+    "metrics": {},
+    "failureClass": null,
+    "status": "PASS",
+    "summary": "Runners back online: all 7 deferred self-hosted checks PASS on PR #288 head 789c4b63 (tree == merge tree 08644d0c, verified at merge). Post-merge verification job PASS; 11/11 checks green.",
+    "checks": [
+      "Architecture, Contract & Scope Audit",
+      "Level 0 (Check & Format)",
+      "Level 1 (Affected Tests)",
+      "Level 2 Conformance LEGO & Node Catalog",
+      "Level 2 Workspace Tests (linux)",
+      "Level 2 Workspace Tests (windows)",
+      "Windows worker portability probe (runtime tests are Linux)"
+    ]
+  },
+  "producedBy": "MANAGER-01",
+  "verifiedAt": "2026-09-25T07:32:40Z",
+  "verifiedBy": "MANAGER-01",
+  "reason": null,
+  "schemaVersion": "1.0",
+  "revision": 3,
+  "createdAt": "2026-09-25T07:32:40Z",
+  "updatedAt": "2026-09-25T07:32:40Z",
+  "events": [
+    "EVT-001106",
+    "EVT-001107",
+    "EVT-001108"
+  ]
+}

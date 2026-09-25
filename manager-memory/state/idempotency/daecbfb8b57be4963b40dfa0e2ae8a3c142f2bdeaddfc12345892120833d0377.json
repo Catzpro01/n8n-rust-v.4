@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:d5105fc5a8f764036d074562750fa64d39ea19db8f72f51c75796768a42ed45a",
+  "committedAt": "2026-09-25T07:32:40Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-rv-task-0016-ver",
+    "objectType": "Evidence",
+    "objectId": "EVD-0124",
+    "previousRevision": 2,
+    "newRevision": 3,
+    "resultingState": "VERIFIED",
+    "eventId": "EVT-001108",
+    "eventIds": [
+      "EVT-001108"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}

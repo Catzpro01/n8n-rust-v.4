@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:72536355b19a16fea11bf424f89f26b26ad1618e0a42d3ac17a404dfa96f8b65",
+  "committedAt": "2026-09-25T07:26:40Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-task-cleanup-runner-shallow",
+    "objectType": "Task",
+    "objectId": "TASK-0018",
+    "previousRevision": 0,
+    "newRevision": 1,
+    "resultingState": "UNASSIGNED",
+    "eventId": "EVT-001094",
+    "eventIds": [
+      "EVT-001094"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "objectType": "JournalEntry",
+  "objectId": "JRN-0034",
+  "kind": "FACT",
+  "summary": "Observed after the runners returned: the \"Post-Merge Verification & Branch Cleanup\" job for PR #287 (job 107974478764, self-hosted WSL) failed. Its verification steps (cargo check --workspace; cargo test -p n8n-workflow on main) passed. cleanup_runner.py then aborted with \"merge commit 0ad42609 does not exist\": the job checks out main with fetch-depth 1 after main had advanced to 08644d0c (PR #288). Pre-existing CI tooling defect (queue race + shallow history), not a regression of #287; the same job passed for #288 and #289. The branch had already been deleted by ship.sh. Tracked as TASK-0018 (GOVERNANCE, unassigned).",
+  "author": "MANAGER-01",
+  "refs": [
+    "PR#287",
+    "job#107974478764",
+    "TASK-0018"
+  ],
+  "schemaVersion": "1.0",
+  "revision": 1,
+  "createdAt": "2026-09-25T07:26:40Z",
+  "updatedAt": "2026-09-25T07:26:40Z",
+  "events": [
+    "EVT-001095"
+  ]
+}

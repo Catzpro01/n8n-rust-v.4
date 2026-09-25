@@ -1,7 +1,7 @@
 {
   "objectType": "Task",
   "objectId": "TASK-0016",
-  "state": "WAITING_RUNNER",
+  "state": "COMPLETED",
   "jobId": null,
   "issue": 256,
   "program": "GOVERNANCE",
@@ -68,14 +68,9 @@
     "nextAction": "self-hosted checks WAITING_RUNNER for merge 08644d0cc973",
     "blocker": null,
     "handoffId": null,
-    "reason": {
-      "code": "RUNNER_VERIFICATION_DEFERRED",
-      "summary": "Self-hosted checks deferred: WAITING_RUNNER is not PASS (DEC-0015)",
-      "actor": "MANAGER-01",
-      "refs": []
-    },
+    "reason": null,
     "supersededBy": null,
-    "completedMainSha": null
+    "completedMainSha": "08644d0cc97356cf1725c6b04c03c7c974428240"
   },
   "history": {
     "reassignedCount": 0,
@@ -87,7 +82,7 @@
     "scopeCorrectionCount": 0
   },
   "runnerVerification": {
-    "status": "WAITING_RUNNER",
+    "status": "PASS",
     "checks": [
       "Architecture, Contract & Scope Audit",
       "Level 0 (Check & Format)",
@@ -97,16 +92,18 @@
       "Level 2 Workspace Tests (windows)",
       "Windows worker portability probe (runtime tests are Linux)"
     ],
-    "mainSha": null,
-    "evidenceId": null,
+    "mainSha": "08644d0cc97356cf1725c6b04c03c7c974428240",
+    "evidenceId": "EVD-0124",
     "regressionTaskIds": []
   },
   "schemaVersion": "1.0",
-  "revision": 2,
+  "revision": 4,
   "createdAt": "2026-09-25T06:59:11Z",
-  "updatedAt": "2026-09-25T06:59:11Z",
+  "updatedAt": "2026-09-25T07:32:40Z",
   "events": [
     "EVT-001045",
-    "EVT-001055"
+    "EVT-001055",
+    "EVT-001109",
+    "EVT-001110"
   ]
 }

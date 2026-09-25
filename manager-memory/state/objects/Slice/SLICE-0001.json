@@ -49,19 +49,20 @@
   "supersededBy": null,
   "reason": null,
   "schemaVersion": "1.0",
-  "revision": 6,
+  "revision": 7,
   "createdAt": "2026-09-25T07:01:50Z",
-  "updatedAt": "2026-09-25T07:13:19Z",
+  "updatedAt": "2026-09-25T07:27:22Z",
   "events": [
     "EVT-001057",
     "EVT-001064",
     "EVT-001078",
     "EVT-001082",
     "EVT-001090",
-    "EVT-001091"
+    "EVT-001091",
+    "EVT-001099"
   ],
   "runnerVerification": {
-    "status": "WAITING_RUNNER",
+    "status": "PASS",
     "checks": [
       "Architecture, Contract & Scope Audit",
       "Level 0 (Check & Format)",
@@ -71,8 +72,8 @@
       "Level 2 Workspace Tests (windows)",
       "Windows worker portability probe (runtime tests are Linux)"
     ],
-    "mainSha": null,
-    "evidenceId": null,
+    "mainSha": "2719109169e99714e70937767e9a15af65bd640e",
+    "evidenceId": "EVD-0122",
     "regressionTaskIds": []
   }
 }

@@ -1,13 +1,13 @@
 {
   "objectType": "Task",
-  "objectId": "TASK-0015",
-  "state": "COMPLETED",
+  "objectId": "TASK-0018",
+  "state": "UNASSIGNED",
   "jobId": null,
-  "issue": 285,
+  "issue": 256,
   "program": "GOVERNANCE",
   "milestone": null,
   "slice": null,
-  "title": "DEC-0015 two-phase execution (owner model B)",
+  "title": "CI tooling: cleanup.yml / cleanup_runner.py aborts when main has advanced past the merge commit (fetch-depth 1)",
   "description": "",
   "priority": "NORMAL",
   "risk": "NORMAL",
@@ -15,8 +15,8 @@
   "dependencies": [],
   "scope": {
     "paths": [
-      "tools/workforce/",
-      "docs/engineering-operations/workforce/"
+      ".github/workflows/cleanup.yml",
+      "tools/orchestration/cleanup_runner.py"
     ],
     "domains": [],
     "contracts": [],
@@ -65,12 +65,12 @@
   "current": {
     "headSha": null,
     "prNumber": null,
-    "nextAction": "self-hosted checks WAITING_RUNNER for merge 0ad42609dfaa",
+    "nextAction": null,
     "blocker": null,
     "handoffId": null,
     "reason": null,
     "supersededBy": null,
-    "completedMainSha": "0ad42609dfaa82bcb6ce46a77ce67b6be9a98750"
+    "completedMainSha": null
   },
   "history": {
     "reassignedCount": 0,
@@ -81,29 +81,12 @@
     "reservationConflictCount": 0,
     "scopeCorrectionCount": 0
   },
-  "runnerVerification": {
-    "status": "PASS",
-    "checks": [
-      "Architecture, Contract & Scope Audit",
-      "Level 0 (Check & Format)",
-      "Level 1 (Affected Tests)",
-      "Level 2 Conformance LEGO & Node Catalog",
-      "Level 2 Workspace Tests (linux)",
-      "Level 2 Workspace Tests (windows)",
-      "Windows worker portability probe (runtime tests are Linux)"
-    ],
-    "mainSha": "0ad42609dfaa82bcb6ce46a77ce67b6be9a98750",
-    "evidenceId": "EVD-0123",
-    "regressionTaskIds": []
-  },
+  "runnerVerification": null,
   "schemaVersion": "1.0",
-  "revision": 4,
-  "createdAt": "2026-09-25T06:52:00Z",
-  "updatedAt": "2026-09-25T07:31:37Z",
+  "revision": 1,
+  "createdAt": "2026-09-25T07:26:40Z",
+  "updatedAt": "2026-09-25T07:26:40Z",
   "events": [
-    "EVT-001033",
-    "EVT-001043",
-    "EVT-001104",
-    "EVT-001105"
+    "EVT-001094"
   ]
 }

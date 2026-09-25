@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:e11e812bc8493b47e888258036b66a38b707874af899468bc7aa9b85a0a5fc45",
+  "committedAt": "2026-09-25T07:27:22Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-rv-slice-0001-pub",
+    "objectType": "Evidence",
+    "objectId": "EVD-0122",
+    "previousRevision": 1,
+    "newRevision": 2,
+    "resultingState": "PUBLISHED",
+    "eventId": "EVT-001097",
+    "eventIds": [
+      "EVT-001097"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}
