@@ -112,8 +112,8 @@ const MUTATIONS = [
   ['a P24 top-level program', (r) => { r.programs.push({ ...r.programs[7], id: 'P24' }); }, /exactly P0/],
   ['a duplicate slice id', (r) => { r.programs[5].slices.push({ ...r.programs[5].slices.find((x) => x.id === 'P5-M09') }); }, /declared twice/],
   ['a verifying slice recorded as implemented before post-merge verification', (r) => {
-    r.programs[5].slices.find((x) => x.id === 'P5-M09').status = 'implemented';
-  }, /P5-M09: implemented without a 40-hex merge SHA/],
+    r.programs[5].slices.find((x) => x.id === 'P5-M07').status = 'implemented';
+  }, /P5-M07: implemented without a 40-hex merge SHA/],
   ['an implemented P5-M08 whose merge SHA is deleted', (r) => {
     r.programs[5].slices.find((x) => x.id === 'P5-M08').mergeSha = null;
   }, /P5-M08: implemented without a 40-hex merge SHA/],
@@ -125,10 +125,10 @@ const MUTATIONS = [
   ['a queued slice that is not planned', (r) => { r.executionPointer.plannedQueue.push('P5-M03'); }, /queued slice P5-M03 is implemented/],
   ['a blocked slice without blockedBy', (r) => { delete r.programs[5].slices.find((x) => x.id === 'P5-M10').blockedBy; }, /P5-M10 does not record blockedBy/],
   ['a blocked slice missing from blockedSlices', (r) => { r.executionPointer.blockedSlices = []; }, /blocked slice P5-M02 is missing/],
-  ['a latest completed slice that is not implemented', (r) => { r.executionPointer.latestCompletedSlice.id = 'P5-M09'; }, /latestCompletedSlice P5-M09/],
+  ['a latest completed slice that is not implemented', (r) => { r.executionPointer.latestCompletedSlice.id = 'P5-M07'; }, /latestCompletedSlice P5-M07/],
   ['a pointer naming an unknown slice', (r) => { r.executionPointer.plannedQueue.push('P5-M99'); }, /unknown slice P5-M99/],
   ['a pointer whose authority is not main', (r) => { r.executionPointer.authority = 'arena-manager'; }, /authority must be main/],
-  ['a slice listed twice in the pointer', (r) => { r.executionPointer.blockedSlices.push('P5-M09'); }, /listed in both/],
+  ['a slice listed twice in the pointer', (r) => { r.executionPointer.blockedSlices.push('P5-M07'); }, /listed in both/],
   // DEC-0020: main-owned milestone authority
   ['Main-Owned changed to Manager-Owned', (r) => { r.governance.milestoneAuthority.milestoneTruthOwner = 'arena-manager'; }, /milestoneTruthOwner must be "main"/],
   ['arena-manager declared canonical', (r) => { r.governance.milestoneAuthority.planningMemoryIsCanonical = true; }, /planningMemoryIsCanonical must be false/],
@@ -350,9 +350,11 @@ test('README projection lists current state, P5 ladder, recent slices and future
   for (let n = 1; n <= 10; n += 1) assert.match(block, new RegExp(`\\| \`P5-M${String(n).padStart(2, '0')}\` \\|`));
   assert.match(block, /Historical pointers: current `P2\.27`, previous completed `P2\.26`/);
   assert.match(block, /\| `P5-M08` \|[^\n]*✅ Implemented \| 100\.0% \| 100\.0% \|/);
+  assert.match(block, /\| `P5-M09` \|[^\n]*✅ Implemented \| 100\.0% \| 100\.0% \|/);
   assert.match(block, /_No verifying slice\._/);
-  assert.match(block, /#304/);
-  assert.match(block, /`600a2145`/);
+  // The latest completed slice is the delivery record that survives the verifying block emptying.
+  assert.match(block, /#314/);
+  assert.match(block, /`c13ba6dc`/);
   assert.doesNotMatch(block, /\| `P5-M08` \|[^\n]*Verifying/);
 });
 
@@ -362,7 +364,9 @@ test('completion KPI is implemented/total and never counts verifying or blocked'
   assert.equal(tally.implemented, slices.filter((slice) => slice.status === 'implemented').length);
   assert.equal(tally.total, slices.length);
   assert.equal(tally.percent, percent1(tally.implemented, tally.total));
-  assert.equal(tally.percent, 83.6);
+  // Pin of the reconciled register (128 implemented / 152 recorded). Refresh it when a slice's
+  // delivery state is reconciled; it exists so a silently-flipped status cannot pass unnoticed.
+  assert.equal(tally.percent, 84.2);
   const verifying = verifyingIndex(REGISTER);
   const m08 = slices.find((slice) => slice.id === 'P5-M08');
   assert.equal(displayStatus(m08, verifying), 'implemented');
@@ -372,13 +376,13 @@ test('completion KPI is implemented/total and never counts verifying or blocked'
   assert.equal(completionPercentForStatus('planned'), 0);
   const metrics = headlineMetrics(REGISTER);
   assert.equal(metrics.current.total, 146);
-  assert.equal(metrics.current.implemented, 126);
-  assert.equal(metrics.current.sliceCompletion, percent1(126, 146));
+  assert.equal(metrics.current.implemented, 127);
+  assert.equal(metrics.current.sliceCompletion, percent1(127, 146));
   assert.equal(metrics.future.total, 6);
   assert.equal(metrics.current.total + metrics.future.total, tally.total);
   const block = renderReadmeMilestoneSection(REGISTER);
   assert.match(block, new RegExp(`\\*\\*${formatPercent(metrics.current.sliceCompletion)}\\*\\*`));
-  assert.match(block, /126 \/ 146 slices implemented/);
+  assert.match(block, /127 \/ 146 slices implemented/);
   assert.match(block, /Future programs are excluded/);
   assert.doesNotMatch(block, /\*\*82\.9%\*\*/);
   for (const record of sliceRecords(REGISTER)) assert.ok(block.includes('`' + record.slice.id + '`'), record.slice.id);
@@ -390,16 +394,24 @@ test('completion KPI is implemented/total and never counts verifying or blocked'
 test('Issue #307: two metrics, status independent, checkpoint weights only where declared', () => {
   const verifying = verifyingIndex(REGISTER);
   const metrics = headlineMetrics(REGISTER);
-  // P5-M08 (implemented, all five checkpoints completed) and P5-M09 (in
-  // progress, the model declared and nothing evidenced yet).
+  // P5-M08 (implemented, all five checkpoints completed) and P5-M09 (in progress,
+  // all five checkpoints completed too — a slice can be at 100% realtime and still
+  // not be implemented, which is the whole point of keeping the two axes apart).
   assert.equal(metrics.current.checkpointed, 2, 'exactly two slices declare checkpoints (P5-M08, P5-M09)');
-  // Independence, not inequality: today both read 86.3% (126/146), which is a coincidence of
-  // the denominator. Reopening CP-05 must move realtime and leave slice completion untouched.
+  // Independence, not inequality. Reopening CP-05 must move realtime and leave slice completion
+  // untouched. The expectation is derived, not pinned: a literal number here goes stale the moment
+  // another slice's checkpoint model changes, which is exactly what happened when P5-M09's five
+  // checkpoints completed (P5-M09 no longer contributes 0, so the old 86.1 was wrong).
   const reopened = clone();
-  reopened.programs[5].slices.find((slice) => slice.id === 'P5-M08').checkpoints[4].status = 'in-progress';
+  const reopenedCheckpoints = reopened.programs[5].slices.find((slice) => slice.id === 'P5-M08').checkpoints;
+  reopenedCheckpoints[4].status = 'in-progress';
   const reopenedMetrics = headlineMetrics(reopened).current;
-  // P5-M08 drops 100 -> 87.5 (four of five checkpoints), P5-M09 stays 0.
-  assert.equal(reopenedMetrics.realtime, 86.1);
+  // P5-M08 drops 100 -> 70 (CP-05 carries 30 of the 100 points); P5-M09 is untouched, because
+  // reopening one slice's checkpoint cannot move another slice's earned points.
+  assert.equal(reopenedMetrics.realtime,
+    percent1(metrics.current.earned - reopenedCheckpoints[4].weight, metrics.current.points),
+    'reopening CP-05 must cost exactly CP-05\'s weight in realtime points');
+  assert.ok(reopenedMetrics.realtime < metrics.current.realtime, 'reopening a checkpoint must lower realtime');
   assert.equal(reopenedMetrics.sliceCompletion, metrics.current.sliceCompletion, 'completion never follows telemetry');
   assert.equal(metrics.current.withoutModel,
     metrics.current.total - metrics.current.legacyImplemented - metrics.current.checkpointed,
@@ -454,8 +466,9 @@ test('declared checkpoints move realtime progress and never slice completion or 
     slice.mergeSha = null;
     slice.checkpoints[4] = { ...slice.checkpoints[4], status: cp05Status, completedAt: cp05Status === 'completed' ? '2026-09-26T09:00:00Z' : undefined };
     register.executionPointer.latestCompletedSlice = { id: 'P5-M03', pr: 291, mergeSha: 'cf52701c91e5447f19c32377c38f6ae5eea7f3a7' };
-    // P5-M09 is genuinely in flight on the register, so it stays listed.
-    register.executionPointer.activeSlices = ['P5-M09', 'P5-M08'];
+    // Only P5-M08 is back in flight here; P5-M09 is implemented on the register, so an
+    // implemented slice must never appear in activeSlices.
+    register.executionPointer.activeSlices = ['P5-M08'];
     assert.deepEqual(validateSliceCheckpoints(slice), []);
     assert.deepEqual(validateGovernanceRegister(register), []);
     return register;
