@@ -10,7 +10,7 @@
   "executionPointer": {
     "authority": "main (DEC-0020). This block, read together with the slice statuses it names, is the only active-work pointer. arena-manager is Manager memory and handoff, never a milestone source; README.md and .ai/ are generated projections of this file.",
     "historicalLastP2Milestone": "P2.27",
-    "lastVerifiedMain": "9d514dbce3218e91f6fac346cf967f93bbfea701",
+    "lastVerifiedMain": "c5763c6d14557eac3a93e8ad834aabaa216390e3",
     "latestCompletedSlice": {
       "id": "P5-M09",
       "pr": 314,
