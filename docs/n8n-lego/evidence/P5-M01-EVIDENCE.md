@@ -2,8 +2,8 @@
 
 Slice `P5-M01` (program P5, maintenance; issue #85; debt source: `P5.8-CERTIFICATION-EVIDENCE.md` §7).
 Delivered by one PR (DEC-0014). Task executed by the Manager because no worker session was
-attached (DEC-0016). Status stays `in-progress` in the register until the Slice is COMPLETE
-(merge, fresh-main verification and, under DEC-0015, the deferred self-hosted checks passing on main).
+attached (DEC-0016). The register records P5-M01 as `implemented` only after merge, fresh-main verification and the
+DEC-0015 runner verification (see §5).
 
 ## 1. Scope decided for this Slice
 
@@ -34,3 +34,14 @@ attached (DEC-0016). Status stays `in-progress` in the register until the Slice 
 ## 4. Rollback
 
 `git revert -m 1 <merge>`. Stored tombstones are ordinary records with `revokedAt` set. Every reader filters them out already, and the older code treats them as revoked, so no data migration is needed in either direction.
+
+## 5. Delivery record
+
+| Gate | Result |
+|---|---|
+| Delivery PR | #289 (the only PR for P5-M01), head `75ac06fe48c571ec5555d43002a6af2592c423fb` |
+| Exact-head CI at merge time | GitHub-hosted PASS 3/3; self-hosted WAITING_RUNNER 7 (all 10 runners offline) -> merge ALLOWED_BY_DEC-0015 |
+| Merge | `2719109169e99714e70937767e9a15af65bd640e` (SHA-pinned; tree identical to the PR head) |
+| Fresh-main verification | workforce 104/104, gates 7/7, certification OK, backend 2400/2400, frontend 451/0 (1 skipped), 0 dirty files |
+| Runner verification (DEC-0015) | Runners back online: all 7 deferred self-hosted checks PASS on head `75ac06fe` (tree == merge tree); main push run 4/4 PASS incl. the self-hosted Windows probe; post-merge verification job PASS |
+| Process note | The store merge-queue item was authorized after the physical merge (the CI evidence was anchored to the workflow run, not the PR head). It is recorded as such in the Manager journal with real timestamps; ship.sh now runs the store gate before merging. |
