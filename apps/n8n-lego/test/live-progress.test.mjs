@@ -28,6 +28,7 @@ import {
 import { currentStatus, milestoneRegisterDoc } from '../../../tools/lego/ai-pack.mjs';
 import {
   applyProgressEvent, findSlice, syncSliceText, deriveCheckpointState, deriveCommandState,
+  fetchJobs, fetchOnlineRunners, checkpointRequires,
 } from '../../../tools/lego/progress-event.mjs';
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
@@ -178,14 +179,17 @@ test('8. weights that do not sum to 100 are rejected', () => {
 });
 
 test('9. a blocked checkpoint keeps the progress already earned', () => {
-  const applied = applyProgressEvent(REGISTER, event({ status: 'blocked', at: '2026-09-26T09:00:00Z' }));
+  const applied = applyProgressEvent(REGISTER, event({ status: 'blocked', at: '2026-09-26T09:00:00Z', blockedBy: 'self-hosted runner lost communication' }));
   assert.equal(sliceDeliveryProgress(applied.slice).percent, 70, 'earned points are never reset');
   assert.equal(sliceDeliveryProgress(applied.slice).current.status, 'blocked');
   assert.equal(completionContribution(applied.slice), 0);
   const skipped = applyProgressEvent(REGISTER, event({ status: 'skipped', reason: 'superseded by the runner retry policy', at: '2026-09-26T09:00:00Z' }));
   assert.equal(sliceDeliveryProgress(skipped.slice).percent, 70, 'a skipped checkpoint earns nothing and removes nothing');
   assert.throws(() => applyProgressEvent(REGISTER, event({ status: 'skipped', at: '2026-09-26T09:00:00Z' })), /without --reason/);
-  assert.throws(() => applyProgressEvent(REGISTER, event({ status: 'blocked', at: '2026-09-26T09:00:00Z', checkpoint: 'CP-01' })), /without --blocked-by/);
+  assert.throws(() => applyProgressEvent(REGISTER, event({ status: 'blocked', at: '2026-09-26T09:00:00Z', checkpoint: 'CP-05' })), /without --blocked-by/,
+    'the live in-progress CP-05 still needs a blocker before it can be blocked');
+  const blocked = applyProgressEvent(REGISTER, event({ status: 'blocked', at: '2026-09-26T09:00:00Z', blockedBy: 'runner lost communication' }));
+  assert.equal(sliceDeliveryProgress(blocked.slice).percent, 70, 'a new blocker keeps the points already earned');
 });
 
 test('10. verifying does not add slice completion', () => {
@@ -333,6 +337,67 @@ test('evidence resolver: a failed self-hosted check derives blocked with the fai
   assert.equal(sliceDeliveryProgress(applied.slice).percent, 70, 'earned progress survives a new blocker');
 });
 
+test('the resolver fetches its own evidence: no hand-exported jobs file, no typed state', async () => {
+  const jobs = GREEN_JOBS.map((job) => ({ ...job, runner_name: job.runner_name, run_id: 36161486727 }));
+  const fetchImpl = async (url) => {
+    if (url.includes('/actions/runs?head_sha=')) return { ok: true, status: 200, json: async () => ({ workflow_runs: [{ id: 36161486727 }] }) };
+    if (url.includes('/actions/runs/')) return { ok: true, status: 200, json: async () => ({ jobs }) };
+    if (url.includes('/actions/runners')) return { ok: true, status: 200, json: async () => ({ runners: [{ name: 'MDMTEST-n8n-wsl', busy: false, labels: ['self-hosted', 'Linux'] }] }) };
+    return { ok: false, status: 404, statusText: 'Not Found', json: async () => ({}) };
+  };
+  const fetched = await fetchJobs({ repo: 'Catzpro01/n8n-rust-v.4', head: 'c2b519d6c7d013d7f032c34cd1d572c6c38018c8', token: 't', fetchImpl });
+  assert.equal(fetched.length, jobs.length);
+  assert.equal(fetched[0].run_id, 36161486727);
+  const runners = await fetchOnlineRunners({ repo: 'Catzpro01/n8n-rust-v.4', token: 't', fetchImpl });
+  const derived = deriveCheckpointState(fetched, { onlineRunners: runners, head: 'c2b519d6c7d013d7f032c34cd1d572c6c38018c8' });
+  assert.equal(derived.status, 'completed', 'the same evidence resolves the same way however it is obtained');
+  assert.match(derived.evidence, /run 36161486727/);
+
+  await assert.rejects(() => fetchJobs({ repo: 'o/r', head: 'abc', fetchImpl: async () => ({ ok: false, status: 404, statusText: 'Not Found', json: async () => ({}) }) }), /404/);
+});
+
+test('DEC-0015 required checks: an absent check is never PASS, a declared set is earned only in full', () => {
+  const required = checkpointRequires(REGISTER, 'P5-M08', 'CP-05');
+  assert.deepEqual(required, [
+    'Level 0 (Check & Format)',
+    'Level 1 (Affected Tests)',
+    'Level 2 Workspace Tests (linux)',
+    'Level 2 Workspace Tests (windows)',
+    'Level 2 Conformance LEGO & Node Catalog',
+    'Post-Merge Verification & Branch Cleanup',
+  ], 'CP-05 declares the exact DEC-0015 checks it needs');
+
+  const oneGreen = GREEN_JOBS.filter((job) => job.name.startsWith('Level 0'));
+  const partial = deriveCheckpointState(oneGreen, { required, head: '600a2145' });
+  assert.equal(partial.status, 'in-progress', 'a green Level 0 with four checks absent is not verification');
+  assert.match(partial.evidence, /required check\(s\) have not run: Level 1/);
+  assert.match(partial.evidence, /An absent self-hosted check is never success/);
+
+  const all = required.map((name, index) => ({
+    name, status: 'completed', conclusion: 'success',
+    labels: ['self-hosted', 'Linux'], runner_name: `runner-${index}`, run_id: 36161486727,
+  }));
+  const done = deriveCheckpointState(all, { required, head: '600a2145' });
+  assert.equal(done.status, 'completed');
+  assert.match(done.evidence, /Level 2 Workspace Tests \(windows\) on runner-3/);
+  assert.match(done.evidence, /Post-Merge Verification & Branch Cleanup on runner-5/);
+
+  const broke = all.map((job, index) => (index === 3 ? { ...job, conclusion: 'failure' } : job));
+  const failed = deriveCheckpointState(broke, { required, head: '600a2145' });
+  assert.equal(failed.status, 'blocked');
+  assert.match(failed.blockedBy, /classify the failure/, 'the tool never relabels the failure');
+
+  const running = all.map((job, index) => (index === 2 ? { ...job, status: 'in_progress', conclusion: null } : job));
+  assert.equal(deriveCheckpointState(running, { required }).status, 'in-progress');
+  assert.equal(deriveCheckpointState([], { required }).status, 'in-progress', 'no checks at all is never PASS');
+
+  // The required set comes from the register, so the Manager cannot widen it.
+  const applied = applyProgressEvent(REGISTER, {
+    slice: 'P5-M08', checkpoint: 'CP-05', status: done.status, evidence: done.evidence, at: '2026-09-26T09:00:00Z',
+  });
+  assert.equal(sliceDeliveryProgress(applied.slice).percent, 100);
+});
+
 test('command evidence: exit 0 derives completed, non-zero derives blocked, never a typed percentage', () => {
   const passed = deriveCommandState('npm run lego:capabilities', { code: 0, output: 'ok' });
   assert.equal(passed.status, 'completed');
@@ -398,7 +463,8 @@ test('an event on an unknown slice or checkpoint is refused before anything is w
 test('the live state is readable from the register alone: status, checkpoint, evidence, blocker, timestamp', () => {
   const slice = m08(REGISTER);
   const rendered = renderReadmeMilestoneSection(REGISTER);
-  assert.match(rendered, new RegExp(`- \\*\\*Current checkpoint:\\*\\* CP-05[^\\n]*\\(blocked, 30\\)`));
+  assert.match(rendered, new RegExp(`- \\*\\*Current checkpoint:\\*\\* CP-05[^\\n]*\\(in-progress, 30\\)`),
+    'CP-05 is in-progress on main: the DEC-0015 retry is in flight');
   assert.match(rendered, /- \*\*Checkpoint evidence:\*\* CP-01: docs\/n8n-lego\/evidence\/P5-M08-EVIDENCE\.md/);
   assert.match(rendered, new RegExp(`- \\*\\*Last progress update:\\*\\* ${slice.updatedAt}`));
   assert.match(rendered, /- 🔴 \*\*P5-M02\*\*[^\n]*Last progress update: —/);
