@@ -91,7 +91,11 @@
 | `settings.frontend-settings` | `settings` |
 | `storage.json-collections` | `storage` |
 | `storage.sql-backend` | `storage` |
+| `webhook.admission-controller` | `webhook` |
 | `webhook.ingress` | `webhook` |
+| `webhook.ingress-plane` | `webhook` |
+| `webhook.self-profiling` | `webhook` |
+| `webhook.shadow-compatibility` | `webhook` |
 | `webhook.trigger-activation` | `webhook` |
 | `worker.orchestration` | `worker` |
 | `worker.queue-mode` | `worker` |
@@ -285,6 +289,14 @@ this table instead of guessing from a URL shape.
 | `webhook.ingress.receive` | `webhook` | call | `webhook:receive` | no | planned |
 | `webhook.trigger-activation.activate` | `webhook` | call | `workflow:write` | no | planned |
 | `webhook.trigger-activation.deactivate` | `webhook` | call | `workflow:write` | no | planned |
+| `webhook.admission-controller.observe` | `webhook` | call | `webhook:receive` | yes | implemented |
+| `webhook.admission-controller.predict` | `webhook` | call | `webhook:receive` | yes | implemented |
+| `webhook.shadow-compatibility.compare` | `webhook` | call | `webhook:receive` | yes | implemented |
+| `webhook.shadow-compatibility.run` | `webhook` | call | `webhook:receive` | yes | implemented |
+| `webhook.self-profiling.record` | `webhook` | call | `webhook:receive` | yes | implemented |
+| `webhook.self-profiling.report` | `webhook` | call | `webhook:receive` | yes | implemented |
+| `webhook.ingress-plane.admit` | `webhook` | call | `webhook:receive` | no | implemented |
+| `webhook.ingress-plane.offload` | `webhook` | call | `webhook:receive` | yes | implemented |
 | `storage.json-collections.read` | `storage` | call | `storage:read` | yes | implemented |
 | `storage.json-collections.write` | `storage` | call | `storage:write` | no | implemented |
 | `storage.json-collections.list` | `storage` | call | `storage:read` | yes | implemented |

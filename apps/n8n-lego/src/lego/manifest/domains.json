@@ -4105,6 +4105,178 @@
           "degradation": "optional-absent",
           "replacement": "contract-preserving",
           "resources": "low"
+        },
+        {
+          "id": "webhook.admission-controller",
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "observe",
+              "interaction": "call",
+              "permission": "webhook:receive",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "predict",
+              "interaction": "call",
+              "permission": "webhook:receive",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "webhook:receive"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "optional-absent",
+          "replacement": "contract-preserving",
+          "resources": "low",
+          "note": "P4-S01 / Issue #111 item 2. Predictive admission controller (full). Observes latency, queue depth, CPU/memory pressure, admission rate, completion rate, error rate and recent burst shape; adjusts ONLY per-route concurrency, per-workflow concurrency, queue budget, low-priority admission and defer threshold. Hard ceilings are immutable; stale telemetry forces a conservative fallback, never aggressive admission. AdmissionTargets carries no security/permission/authentication field, so adaptation structurally cannot widen authority or bypass authentication, and queue budget is always bounded by the observed queue capacity."
+        },
+        {
+          "id": "webhook.shadow-compatibility",
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "compare",
+              "interaction": "call",
+              "permission": "webhook:receive",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "run",
+              "interaction": "call",
+              "permission": "webhook:receive",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "webhook:receive"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "optional-absent",
+          "replacement": "contract-preserving",
+          "resources": "low",
+          "note": "P4-S01 / Issue #111 item 9. Shadow compatibility path. Compares reference (canonical) vs candidate (optimized) P4 behaviour on route selection, status, response shape, admission, error and observable ordering. Reference and candidate are pure functions; candidate side effects are always suppressed so a real external side effect is never duplicated. Default Disabled = canonical n8n behaviour."
+        },
+        {
+          "id": "webhook.self-profiling",
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "record",
+              "interaction": "call",
+              "permission": "webhook:receive",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "report",
+              "interaction": "call",
+              "permission": "webhook:receive",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "webhook:receive"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "optional-absent",
+          "replacement": "contract-preserving",
+          "resources": "low",
+          "note": "P4-S01 / Issue #111 item 10. P4 self-profiling: optional, low-overhead, off by default. Records route lookup time, admission time, queue wait, payload-copy cost, allocation pressure and slow route patterns. Collection is hard-bounded (max_samples) and derived state can be reset. eBPF is complementary on Linux only and never becomes a P4 runtime dependency."
+        },
+        {
+          "id": "webhook.ingress-plane",
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "admit",
+              "interaction": "call",
+              "permission": "webhook:receive",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
+              "name": "offload",
+              "interaction": "call",
+              "permission": "webhook:receive",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "webhook:receive"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "optional-absent",
+          "replacement": "contract-preserving",
+          "resources": "low",
+          "note": "P4-S01 / Issue #225 item 1. Dedicated webhook/ingress plane: separates webhook intake from editor/API and execution workers, with bounded request buffering, admission control and response streaming/offload. Each plane owns a separate budget so a webhook burst cannot consume control-plane capacity and the UI/API stay responsive. Full buffer rejects rather than queueing without bound."
         }
       ],
       "notes": "Ownership is provisional; Manager must confirm webhook stays with Agent 2 (workflow/execution) rather than Agent 6 (runtime).",
