@@ -5,23 +5,35 @@ on:
     branches: [ main ]
     types: [ closed ]
 
+# Deleting the PR head branch needs write access to refs; nothing else.
+permissions:
+  contents: write
+
 jobs:
   cleanup:
     name: Post-Merge Verification & Branch Cleanup
     runs-on: [ self-hosted, linux, x64, rust-build, n8n-rust ]
     if: github.event.pull_request.merged == true
     steps:
+      # Full history: when another PR merged in the meantime, main has advanced past
+      # merge_commit_sha and a depth-1 checkout no longer contains it. The runner also
+      # fetches the SHA explicitly / deepens on its own, so a shallow checkout would
+      # still work, but a complete history keeps the ancestry check conclusive.
       - name: Checkout main
         uses: actions/checkout@v4
         with:
           ref: main
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Post-Merge Main Verification (Level 0 + Level 2)
         run: |
           cargo check --workspace
           cargo test -p n8n-workflow
 
+      # The runner verifies that merge_commit_sha is on main (fetching it if main moved on),
+      # never deletes main or arena-manager (DEC-0019), and
+      # exits 0 with a clear message when the head branch is already gone.
+      # --skip-tests: the step above already ran the same cargo commands on this checkout.
       - name: Execute Cleanup & Delete Task Branch
         env:
           BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
@@ -31,4 +43,8 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python3 tools/orchestration/cleanup_runner.py --branch $BRANCH_NAME --merge-sha $MERGE_SHA --pr $PR_NUMBER
+          python3 tools/orchestration/cleanup_runner.py \
+            --branch "$BRANCH_NAME" \
+            --merge-sha "$MERGE_SHA" \
+            --pr "$PR_NUMBER" \
+            --skip-tests
