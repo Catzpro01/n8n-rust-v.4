@@ -42,6 +42,7 @@
 - `src/lego/contract-oracle.mjs`
 - `src/lego/advanced-diagnostics.mjs`
 - `src/lego/p9-acceptance.mjs`
+- `src/lego/node-cost-ledger.mjs`
 
 ## Public contract surface
 
