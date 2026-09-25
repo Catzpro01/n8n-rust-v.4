@@ -10,15 +10,13 @@
   "executionPointer": {
     "authority": "main (DEC-0020). This block, read together with the slice statuses it names, is the only active-work pointer. arena-manager is Manager memory and handoff, never a milestone source; README.md and .ai/ are generated projections of this file.",
     "historicalLastP2Milestone": "P2.27",
-    "lastVerifiedMain": "c5763c6d14557eac3a93e8ad834aabaa216390e3",
+    "lastVerifiedMain": "0845c25ff13973ccf09bda6d909be147b2681d02",
     "latestCompletedSlice": {
-      "id": "P5-M09",
-      "pr": 314,
-      "mergeSha": "c13ba6dc7bcbb81efb1ccb9786942065ab5f3c26"
+      "id": "P5-M07",
+      "pr": 317,
+      "mergeSha": "0845c25ff13973ccf09bda6d909be147b2681d02"
     },
-    "activeSlices": [
-      "P5-M07"
-    ],
+    "activeSlices": [],
     "verifyingSlices": [],
     "plannedQueue": [
       "P9-S01",
@@ -2938,7 +2936,7 @@
           "id": "P5-M07",
           "title": "Service-principal REST + UI management over the P5.7 programmatic lifecycle (create shown once, redacted list, revoke with tombstone) (split out of P5-M03)",
           "kind": "maintenance",
-          "status": "in-progress",
+          "status": "implemented",
           "checkpoints": [
             {
               "id": "CP-01",
@@ -3005,7 +3003,8 @@
           "updatedAt": "2026-09-25T20:23:35Z",
           "latestUpdate": "P5-M07: service-principal REST surface mounted (create once, redacted list, revoke tombstone, transfer rotates the credential); DEC-0023 closes the member boundary",
           "checkpointWeightBasis": "Five declared route operations. CP-01 carries 15 for the read pair (list + scopes); CP-02 carries 25 because it is the only route that mints a credential and must enforce the whole P5.7 create policy; CP-03 carries 15 for the tombstone semantics; CP-04 carries 20 for the six transfer invariants; CP-05 carries 15 for the end-to-end proof and manifest registration; CP-06 carries 10 for the DEC-0015 runner gate. 15+25+15+20+15+10 = 100. The weights come from the scope declared in P5-M07-EVIDENCE.md §1, not from effort, commit count or lines of code.",
-          "mergeSha": null,
+          "mergeSha": "0845c25ff13973ccf09bda6d909be147b2681d02",
+          "pr": 317,
           "issue": 85,
           "evidence": "docs/n8n-lego/evidence/P5-M07-EVIDENCE.md",
           "owner": "manager (unassigned)",

@@ -9,7 +9,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 
 **Realtime Delivery Progress 87.7%** — 12800/14600 checkpoint-weighted points, P0–P11 only. Future programs are excluded (6 slices). 18 current-delivery slice(s) have no checkpoint model and contribute 0.
 
-**Slice Completion 87.0%** — 127/146 implemented. Verifying and blocked contribute 0. Program status is not this percentage.
+**Slice Completion 87.7%** — 128/146 implemented. Verifying and blocked contribute 0. Program status is not this percentage.
 
 | Program | Realtime | Slice completion | Implemented | State |
 | --- | ---: | ---: | ---: | --- |
@@ -18,7 +18,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | P2 | 94.1% | 94.1% | 32/34 | complete |
 | P3 | 94.4% | 94.4% | 17/18 | complete |
 | P4 | 90.0% | 90.0% | 9/10 | complete |
-| P5 | 72.2% | 66.7% | 12/18 | complete |
+| P5 | 72.2% | 72.2% | 13/18 | complete |
 | P6 | 88.6% | 88.6% | 31/35 | complete |
 | P7 | 0.0% | 0.0% | 0/1 | planned |
 | P8 | 0.0% | 0.0% | 0/1 | planned |
@@ -30,14 +30,14 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 
 | | |
 | --- | --- |
-| Latest completed slice | `P5-M09` — Public /api/v1 credentials (PR #314, merge `c13ba6dc`) |
-| Active slices | `P5-M07` — Service-principal REST + UI management over the P5.7 programmatic lifecycle |
+| Latest completed slice | `P5-M07` — Service-principal REST + UI management over the P5.7 programmatic lifecycle (PR #317, merge `0845c25f`) |
+| Active slices | — (none) |
 | Verifying (merged, post-merge verification pending) | — (none) |
 | Planned queue (in order; planned ≠ authorized) | `P9-S01`, `P3-S01`, `P4-S01`, `P6-S01`, `P6-S02`, `P2-S02`, `P2-S03` |
 | Blocked | `P5-M02` — blocked by P6-S04 (proposed, #116): the engine has no credential-consuming node. packages/reconstructed-engine/node-registry.mjs implements only manualTrigger, start, noOp, set, code, function and functionItem, so SecretRef resolution in the execution path has no consumer (Manager finding, verified against main 600a2145)<br>`P5-M05` — blocked by P8-S01 (planned, not authorized): the P8 storage contract that shared key/session/rate-limiter state needs<br>`P5-M06` — blocked by a mail-transport architecture decision (a dependency, or an injected transport contract); Node has no built-in SMTP<br>`P5-M10` — blocked by backing models this product does not have: projects/sharing, security audit, source control, data tables, workflow versions, a retry execution path, execution annotation tags (see P5-M08-EVIDENCE.md §1) |
 | Not authorized | planned is not authorized: the Manager starts a queued slice by moving it to in-progress in a PR on main. P5-M04 is planned and measure-first. P7-S01, P8-S01, P10-S01 and P11-S01 are placeholders that need a Manager Master Prompt before any work. |
 | Historical P2 ladder pointer | `P2.27` (history, not active work) |
-| Last verified main | `c5763c6d` |
+| Last verified main | `0845c25f` |
 
 ## Programs P0–P11 (top level)
 
@@ -48,7 +48,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | **P2** | LEGO / AI / Plugin Foundation | **COMPLETE** | 32/34 | 29 | `P2-S02` (planned) |
 | **P3** | Workflow + Execution + Unlimited Nodes | **COMPLETE** | 17/18 | 24 | `P3-S01` (planned) |
 | **P4** | Trigger / Webhook / Ingress | **COMPLETE** | 9/10 | 19 | `P4-S01` (planned) |
-| **P5** | Identity / Authentication / Authorization / Credentials (Security) | **COMPLETE** | 12/18 | 20 | `P5-M07` (in-progress) |
+| **P5** | Identity / Authentication / Authorization / Credentials (Security) | **COMPLETE** | 13/18 | 20 | `P5-M04` (planned) |
 | **P6** | Node Registry / Node Runtime | **COMPLETE** | 31/35 | 67 | `P6-S01` (planned) |
 | **P7** | Dynamic Parameters / Schema Runtime | **PLANNED** | 0/1 | 29 | `P7-S01` (planned) |
 | **P8** | Storage / Data Layer | **PLANNED** | 0/1 | 5 | `P8-S01` (planned) |
@@ -376,7 +376,7 @@ Identity, sessions, authorization, credential boundary, key management, account 
 | `P5-M04` | Key-rotation work list without an O(n) scan: measure first (per-batch scan vs the O(n) replaceAll persist), index only if the scan dominates | planned | — | — | #85 |
 | `P5-M05` | Multi-host key storage and shared session + rate-limiter state; depends on the P8 storage contract (P8-S01, not authorized) **Blocked by:** P8-S01 (planned, not authorized): the P8 storage contract that shared key/session/rate-limiter state needs | blocked | — | — | #85 |
 | `P5-M06` | Email-based password recovery: needs a mail transport decision first (Node has no built-in SMTP: a dependency or an injected transport contract), then upstream /rest/forgot-password delivery over the P5 reset-token primitive (split out of P5-M03) **Blocked by:** a mail-transport architecture decision (a dependency, or an injected transport contract); Node has no built-in SMTP | blocked | — | — | #85 |
-| `P5-M07` | Service-principal REST + UI management over the P5.7 programmatic lifecycle (create shown once, redacted list, revoke with tombstone) (split out of P5-M03) | in-progress | — | — | #85 |
+| `P5-M07` | Service-principal REST + UI management over the P5.7 programmatic lifecycle (create shown once, redacted list, revoke with tombstone) (split out of P5-M03) | implemented | #317 | `0845c25f` | #85 |
 | `P5-M08` | Public /api/v1 second surface: tags (5 operations), variables (4, licence-gated 403 like the community edition), executions list/get/delete (lastId cursor), GET /api/v1/openapi.yml of exactly the mounted operations. Re-planned by the Manager: credentials, users and /docs to P5-M09; resources without a backing model to P5-M10 (one delivery PR per slice) | implemented | #304 | `600a2145` | #85 |
 | `P5-M09` | Public /api/v1 credentials (list, create, update, delete, schema; secrets never returned, data validated against the credential type) and users (list, get, create, delete, change role), plus /api/v1/docs (needs a decision on serving Swagger UI without a runtime dependency). Split out of P5-M08 | implemented | — | `c13ba6dc` | #85 |
 | `P5-M10` | Public /api/v1 resources that need a backing model this product does not have yet: projects, audit, source-control, data-tables, workflow and credential transfer, workflow versions, execution retry, execution tags (upstream AnnotationTag). Blocked until those models exist; split out of P5-M08 **Blocked by:** backing models this product does not have: projects/sharing, security audit, source control, data tables, workflow versions, a retry execution path, execution annotation tags (see P5-M08-EVIDENCE.md §1) | blocked | — | — | #85 |
