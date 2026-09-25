@@ -178,3 +178,31 @@ Attempt 1 of the self-hosted Linux jobs never started a step: the runner lost co
 | Post-Merge Verification & Branch Cleanup | 36137555071 | MDMTEST-n8n-wsl | environmental failure: runner lost communication |
 
 Classification is environmental, not an implementation regression. DEC-0015: this is not PASS. The slice stays `in-progress` / verifying and contributes 0% to the completion KPI. Runner settings and workflow files were not changed. One environmental retry remains; it was not spent because all five WSL runners were offline when this evidence was recorded.
+
+### 6.1 The environmental retry (spent, 2026-09-26)
+
+`validation.yml` (Level 0 + Level 1) and `integration.yml` (Level 2 linux + windows + conformance) have no `workflow_dispatch` and trigger only on `pull_request` with `paths-ignore: **.md, docs/**`. PR #304's head `c102cff9` never ran the suite at all — 0 workflow runs — so the retry was run through PR #310 (head `d520a7401c792bda9e49f5b4503cdc2b414d5887`, merged as `b528a19d06c6866787da934993e5cf17e9d75418`), a governance/tooling branch cut from `main` `674546f`. That head carries the P5-M08 implementation byte-identical to delivery merge `600a2145`:
+
+```
+git diff 600a2145 d520a740 -- apps/n8n-lego/src apps/n8n-lego/data apps/n8n-lego/scripts \
+    apps/n8n-lego/test/public-api-v1.test.mjs apps/n8n-lego/test/public-api-v1-resources.test.mjs \
+    crates contracts packages
+→ empty
+```
+
+The retry verified every required check on the real self-hosted runners:
+
+| Job | Run | Runner | Result |
+| --- | --- | --- | --- |
+| Level 0 (Check & Format) | 36166949165 | MDMTEST-n8n-wsl-2 | SUCCESS |
+| Level 1 (Affected Tests) | 36166949165 | MDMTEST-n8n-wsl | SUCCESS |
+| Level 2 Workspace Tests (linux) | 36166949086 | MDMTEST-n8n-wsl-3 | SUCCESS |
+| Level 2 Workspace Tests (windows) | 36166949086 | laptop-build-worker-3 | SUCCESS |
+| Level 2 Conformance LEGO & Node Catalog | 36166949086 | MDMTEST-n8n-wsl-4 | SUCCESS |
+| Post-Merge Verification & Branch Cleanup | 36167178324 | MDMTEST-n8n-wsl-3 | SUCCESS (6/6 steps) |
+
+DEC-0015 verdict: **ALL_GREEN** — GitHub-hosted 3 pass, self-hosted 7 pass / 0 fail / 0 waiting. Runner availability was read from the API at the same time (9 of 10 online and idle). The earlier failure is not relabelled: it is recorded above as an environmental runner-communication loss, and the retry is the documented environmental retry, not a third attempt.
+
+Checkpoint CP-05 was derived, not typed: `node tools/lego/progress-event.mjs resolve --slice P5-M08 --checkpoint CP-05 --head d520a740 --fetch` read the jobs and the runners from the GitHub API, applied the DEC-0015 classifier against the required set declared on CP-05, and derived `completed` with the runner identities and run IDs above. No percentage was entered by hand.
+
+With CP-01..CP-05 completed, the three conditions in the header are met: the merge (`600a2145`), fresh-main verification, and runner verification. The slice is recorded `implemented` by the governance PR that reconciles this section, not by the telemetry commits that carried CP-05.

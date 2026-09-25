@@ -112,8 +112,11 @@ const MUTATIONS = [
   ['a P24 top-level program', (r) => { r.programs.push({ ...r.programs[7], id: 'P24' }); }, /exactly P0/],
   ['a duplicate slice id', (r) => { r.programs[5].slices.push({ ...r.programs[5].slices.find((x) => x.id === 'P5-M09') }); }, /declared twice/],
   ['a verifying slice recorded as implemented before post-merge verification', (r) => {
-    r.programs[5].slices.find((x) => x.id === 'P5-M08').status = 'implemented';
-  }, /P5-M08: implemented without a 40-hex merge SHA|verifying slice P5-M08 is implemented/],
+    r.programs[5].slices.find((x) => x.id === 'P5-M09').status = 'implemented';
+  }, /P5-M09: implemented without a 40-hex merge SHA/],
+  ['an implemented P5-M08 whose merge SHA is deleted', (r) => {
+    r.programs[5].slices.find((x) => x.id === 'P5-M08').mergeSha = null;
+  }, /P5-M08: implemented without a 40-hex merge SHA/],
   ['an implemented slice without evidence', (r) => { r.programs[5].slices.find((x) => x.id === 'P5-M03').evidence = null; }, /P5-M03: implemented without evidence/],
   ['an in-progress slice missing from the pointer', (r) => {
     const slice = r.programs[5].slices.find((x) => x.id === 'P5-M09'); slice.status = 'in-progress';
@@ -141,9 +144,8 @@ const MUTATIONS = [
   ['a stale current pointer', (r) => { r.currentMilestone = 'P2.26'; }, /currentMilestone must be the last completed/],
   ['a stale previous pointer', (r) => { r.previousCompletedMilestone = 'P2.25'; }, /previousCompletedMilestone must be P2\.26/],
   ['the P2.17+ placeholder used as a pointer', (r) => { r.currentMilestone = 'P2.17+'; }, /historical placeholder/],
-  ['an implemented P5-M08 without a merge SHA', (r) => {
-    r.programs[5].slices.find((x) => x.id === 'P5-M08').status = 'implemented';
-    r.executionPointer.verifyingSlices = [];
+  ['an implemented P5-M08 whose merge SHA is dropped', (r) => {
+    r.programs[5].slices.find((x) => x.id === 'P5-M08').mergeSha = null;
   }, /P5-M08: implemented without a 40-hex merge SHA/],
   ['an invented P13 slice', (r) => { r.programs[11].slices.push({ ...r.programs[11].slices[0], id: 'P13-S01' }); }, /P13-S01 sits under P11/],
 ];
@@ -347,11 +349,11 @@ test('README projection lists current state, P5 ladder, recent slices and future
   for (const heading of ['## Overall Milestone Progress', '## Program Overview', '## Active Execution', '### Active work', '## Status Legend', '## Milestone Governance', '## P5 —']) assert.ok(block.includes(heading), heading);
   for (let n = 1; n <= 10; n += 1) assert.match(block, new RegExp(`\\| \`P5-M${String(n).padStart(2, '0')}\` \\|`));
   assert.match(block, /Historical pointers: current `P2\.27`, previous completed `P2\.26`/);
-  assert.match(block, /P5-M08[\s\S]*Status:\*\* VERIFYING/);
-  assert.match(block, /Completion contribution: \*\*0%\*\*/);
+  assert.match(block, /\| `P5-M08` \|[^\n]*✅ Implemented \| 100\.0% \| 100\.0% \|/);
+  assert.match(block, /_No verifying slice\._/);
   assert.match(block, /#304/);
   assert.match(block, /`600a2145`/);
-  assert.doesNotMatch(block, /\| `P5-M08` \|[^\n]*Implemented/);
+  assert.doesNotMatch(block, /\| `P5-M08` \|[^\n]*Verifying/);
 });
 
 test('completion KPI is implemented/total and never counts verifying or blocked', () => {
@@ -360,37 +362,45 @@ test('completion KPI is implemented/total and never counts verifying or blocked'
   assert.equal(tally.implemented, slices.filter((slice) => slice.status === 'implemented').length);
   assert.equal(tally.total, slices.length);
   assert.equal(tally.percent, percent1(tally.implemented, tally.total));
-  assert.equal(tally.percent, 82.9);
+  assert.equal(tally.percent, 83.6);
   const verifying = verifyingIndex(REGISTER);
   const m08 = slices.find((slice) => slice.id === 'P5-M08');
-  assert.equal(displayStatus(m08, verifying), 'verifying');
-  assert.equal(completionPercentForStatus(m08.status), 0);
+  assert.equal(displayStatus(m08, verifying), 'implemented');
+  assert.equal(completionPercentForStatus(m08.status), 100);
   assert.equal(completionPercentForStatus('implemented'), 100);
   assert.equal(completionPercentForStatus('blocked'), 0);
   assert.equal(completionPercentForStatus('planned'), 0);
   const metrics = headlineMetrics(REGISTER);
   assert.equal(metrics.current.total, 146);
-  assert.equal(metrics.current.implemented, 125);
-  assert.equal(metrics.current.sliceCompletion, percent1(125, 146));
+  assert.equal(metrics.current.implemented, 126);
+  assert.equal(metrics.current.sliceCompletion, percent1(126, 146));
   assert.equal(metrics.future.total, 6);
   assert.equal(metrics.current.total + metrics.future.total, tally.total);
   const block = renderReadmeMilestoneSection(REGISTER);
   assert.match(block, new RegExp(`\\*\\*${formatPercent(metrics.current.sliceCompletion)}\\*\\*`));
-  assert.match(block, /125 \/ 146 slices implemented/);
+  assert.match(block, /126 \/ 146 slices implemented/);
   assert.match(block, /Future programs are excluded/);
   assert.doesNotMatch(block, /\*\*82\.9%\*\*/);
   for (const record of sliceRecords(REGISTER)) assert.ok(block.includes('`' + record.slice.id + '`'), record.slice.id);
   const mutated = clone();
-  mutated.programs[5].slices.find((slice) => slice.id === 'P5-M08').status = 'implemented';
-  assert.notEqual(renderReadmeMilestoneSection(mutated), block);
+  mutated.programs[5].slices.find((slice) => slice.id === 'P5-M08').status = 'planned';
+  assert.notEqual(renderReadmeMilestoneSection(mutated), block, 'the projection follows the register status');
 });
 
 test('Issue #307: two metrics, status independent, checkpoint weights only where declared', () => {
   const verifying = verifyingIndex(REGISTER);
   const metrics = headlineMetrics(REGISTER);
   assert.equal(metrics.current.checkpointed, 1, 'exactly one slice declares checkpoints (P5-M08)');
-  assert.notEqual(metrics.current.realtime, metrics.current.sliceCompletion, 'the two metrics are different numbers');
-  assert.equal(metrics.current.withoutModel, metrics.current.total - metrics.current.implemented - metrics.current.checkpointed);
+  // Independence, not inequality: today both read 86.3% (126/146), which is a coincidence of
+  // the denominator. Reopening CP-05 must move realtime and leave slice completion untouched.
+  const reopened = clone();
+  reopened.programs[5].slices.find((slice) => slice.id === 'P5-M08').checkpoints[4].status = 'in-progress';
+  const reopenedMetrics = headlineMetrics(reopened).current;
+  assert.equal(reopenedMetrics.realtime, 86.1);
+  assert.equal(reopenedMetrics.sliceCompletion, metrics.current.sliceCompletion, 'completion never follows telemetry');
+  assert.equal(metrics.current.withoutModel,
+    metrics.current.total - metrics.current.legacyImplemented - metrics.current.checkpointed,
+    'a slice that is implemented AND declares checkpoints is counted once, in checkpointed');
   const p5 = REGISTER.programs.find((program) => program.id === 'P5');
   const p5Tally = programTally(p5, verifying);
   assert.equal(p5.status, 'complete');
@@ -398,9 +408,9 @@ test('Issue #307: two metrics, status independent, checkpoint weights only where
   assert.notEqual(p5Tally.realtime, 100);
   const m08 = p5.slices.find((slice) => slice.id === 'P5-M08');
   assert.equal(sliceDeliveryProgress(m08).source, 'checkpoints');
-  assert.equal(sliceDeliveryProgress(m08).percent, 70, 'CP-01..CP-04 are evidenced; CP-05 is blocked');
-  assert.equal(completionContribution(m08), 0);
-  assert.equal(displayStatus(m08, verifying), 'verifying');
+  assert.equal(sliceDeliveryProgress(m08).percent, 100, 'CP-01..CP-05 are all evidenced');
+  assert.equal(completionContribution(m08), 100, 'an implemented slice contributes fully');
+  assert.equal(displayStatus(m08, verifying), 'implemented');
   for (const id of REGISTER.executionPointer.blockedSlices) {
     const slice = slices(REGISTER).find((item) => item.id === id);
     assert.equal(slice.status, 'blocked', id);
@@ -418,36 +428,62 @@ test('Issue #307: two metrics, status independent, checkpoint weights only where
   assert.match(block, /not register measurements/);
   assert.doesNotMatch(block, /91\.2%/);
   assert.doesNotMatch(block, /92\.0%/);
-  assert.match(block, /\| `P5-M08` \|[^\n]*🟠 Verifying \| 70\.0% \| 0\.0% \|/);
+  assert.match(block, /\| `P5-M08` \|[^\n]*✅ Implemented \| 100\.0% \| 100\.0% \|/);
   assert.equal(REGISTER.governance.progressModel.reconciledToMain, true);
   assert.equal(historicalP2Fingerprint(REGISTER), HISTORICAL_P2_FINGERPRINT);
 });
 
 test('declared checkpoints move realtime progress and never slice completion or future denominators', () => {
   const before = headlineMetrics(REGISTER);
-  const mutated = clone();
-  const m08 = mutated.programs.find((program) => program.id === 'P5').slices.find((slice) => slice.id === 'P5-M08');
-  // The live event: the blocked runner-verification checkpoint becomes completed, with evidence.
-  m08.checkpoints[4] = {
-    ...m08.checkpoints[4],
-    status: 'completed',
-    evidence: 'docs/n8n-lego/evidence/P5-M08-EVIDENCE.md §6 — runner verification PASS on main',
-    completedAt: '2026-09-26T09:00:00Z',
+  // An implemented slice cannot carry an incomplete checkpoint: that is the mechanical
+  // guarantee that a checkpoint state can never be used to inflate completion.
+  const illegal = clone();
+  illegal.programs.find((program) => program.id === 'P5').slices.find((slice) => slice.id === 'P5-M08').checkpoints[4].status = 'in-progress';
+  assert.deepEqual(validateGovernanceRegister(illegal), ['P5-M08: an implemented slice cannot carry an incomplete checkpoint']);
+  assert.equal(headlineMetrics(illegal).current.sliceCompletion, before.current.sliceCompletion, 'completion does not move');
+
+  // The same slice, consistently back in flight (status, merge SHA and pointer together), so a
+  // checkpoint change can be observed without touching delivery state.
+  const inFlight = (cp05Status) => {
+    const register = clone();
+    const slice = register.programs.find((program) => program.id === 'P5').slices.find((item) => item.id === 'P5-M08');
+    slice.status = 'in-progress';
+    slice.mergeSha = null;
+    slice.checkpoints[4] = { ...slice.checkpoints[4], status: cp05Status, completedAt: cp05Status === 'completed' ? '2026-09-26T09:00:00Z' : undefined };
+    register.executionPointer.latestCompletedSlice = { id: 'P5-M03', pr: 291, mergeSha: 'cf52701c91e5447f19c32377c38f6ae5eea7f3a7' };
+    register.executionPointer.activeSlices = ['P5-M08'];
+    assert.deepEqual(validateSliceCheckpoints(slice), []);
+    assert.deepEqual(validateGovernanceRegister(register), []);
+    return register;
   };
-  assert.deepEqual(validateSliceCheckpoints(m08), []);
-  assert.deepEqual(validateGovernanceRegister(mutated), []);
-  assert.equal(sliceDeliveryProgress(m08).percent, 100);
-  assert.equal(completionContribution(m08), 0);
-  assert.equal(displayStatus(m08, verifyingIndex(mutated)), 'verifying');
-  const after = headlineMetrics(mutated);
-  assert.equal(after.current.sliceCompletion, before.current.sliceCompletion);
-  assert.equal(after.current.implemented, before.current.implemented);
-  assert.ok(after.current.realtime > before.current.realtime);
-  assert.equal(after.future.realtime, before.future.realtime);
-  const rendered = renderReadmeMilestoneSection(mutated);
+  const open = inFlight('in-progress');
+  const done = inFlight('completed');
+  const openSlice = open.programs.find((program) => program.id === 'P5').slices.find((slice) => slice.id === 'P5-M08');
+  const doneSlice = done.programs.find((program) => program.id === 'P5').slices.find((slice) => slice.id === 'P5-M08');
+  assert.equal(sliceDeliveryProgress(openSlice).percent, 70, 'reopening CP-05 gives back its 30 points');
+  assert.equal(sliceDeliveryProgress(doneSlice).percent, 100, 'completing CP-05 earns them back');
+  assert.equal(completionContribution(openSlice), 0, 'an in-flight slice never contributes to completion');
+  assert.equal(displayStatus(openSlice, verifyingIndex(open)), 'in-progress', 'an unmerged in-flight slice is not verifying');
+
+  // The telemetry property: realtime follows the checkpoint, completion and the denominators do not.
+  const openMetrics = headlineMetrics(open).current;
+  const doneMetrics = headlineMetrics(done).current;
+  assert.equal(sliceDeliveryProgress(openSlice).source, 'checkpoints');
+  assert.ok(doneMetrics.realtime > openMetrics.realtime, `realtime ${openMetrics.realtime} → ${doneMetrics.realtime}`);
+  assert.equal(doneMetrics.sliceCompletion, openMetrics.sliceCompletion, 'completion never follows telemetry');
+  assert.equal(doneMetrics.implemented, openMetrics.implemented);
+  assert.equal(headlineMetrics(done).future.realtime, headlineMetrics(open).future.realtime, 'future programs never dilute the denominator');
+
+  // The implemented slice on main is the opposite: full completion, and telemetry cannot move it.
+  const liveSlice = clone().programs.find((program) => program.id === 'P5').slices.find((slice) => slice.id === 'P5-M08');
+  assert.equal(completionContribution(liveSlice), 100);
+  assert.equal(sliceDeliveryProgress(liveSlice).percent, 100);
+  assert.equal(headlineMetrics(open).current.realtime, before.current.realtime - 0.2, 'the fixture only moves P5-M08 realtime');
+
+  const rendered = renderReadmeMilestoneSection(done);
   assert.match(rendered, /CP-05 DEC-0015 self-hosted runner verification on main[^\n]*\(completed, 30\)/);
-  assert.match(rendered, /Checkpoint evidence:[^\n]*CP-05: docs\/n8n-lego\/evidence\/P5-M08-EVIDENCE\.md/);
-  assert.match(rendered, /Completion contribution:\*\* \*\*0%\*\*/);
+  assert.match(rendered, /\| `P5-M08` \|[^\n]*🔵 In progress \| 100\.0% \| 0\.0% \|/,
+    'an in-flight slice at 100% realtime still contributes 0% to completion');
   assert.doesNotMatch(rendered, /\| `P5-M08` \|[^\n]*Implemented/);
 
   const futureOnly = clone();
