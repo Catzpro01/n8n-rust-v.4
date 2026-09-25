@@ -7,9 +7,9 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 
 ## Delivery progress (same two metrics as README.md)
 
-**Realtime Delivery Progress 87.7%** — 12800/14600 checkpoint-weighted points, P0–P11 only. Future programs are excluded (6 slices). 18 current-delivery slice(s) have no checkpoint model and contribute 0.
+**Realtime Delivery Progress 88.4%** — 12900/14600 checkpoint-weighted points, P0–P11 only. Future programs are excluded (6 slices). 17 current-delivery slice(s) have no checkpoint model and contribute 0.
 
-**Slice Completion 87.7%** — 128/146 implemented. Verifying and blocked contribute 0. Program status is not this percentage.
+**Slice Completion 88.4%** — 129/146 implemented. Verifying and blocked contribute 0. Program status is not this percentage.
 
 | Program | Realtime | Slice completion | Implemented | State |
 | --- | ---: | ---: | ---: | --- |
@@ -22,7 +22,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | P6 | 88.6% | 88.6% | 31/35 | complete |
 | P7 | 0.0% | 0.0% | 0/1 | planned |
 | P8 | 0.0% | 0.0% | 0/1 | planned |
-| P9 | 95.7% | 95.7% | 22/23 | complete |
+| P9 | 100.0% | 100.0% | 23/23 | complete |
 | P10 | 0.0% | 0.0% | 0/1 | planned |
 | P11 | 0.0% | 0.0% | 0/1 | planned |
 
@@ -30,14 +30,14 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 
 | | |
 | --- | --- |
-| Latest completed slice | `P5-M07` — Service-principal REST + UI management over the P5.7 programmatic lifecycle (PR #317, merge `0845c25f`) |
+| Latest completed slice | `P9-S01` — Per-node execution cost/resource ledger correlated with P9 telemetry (PR #319, merge `abe81c33`) |
 | Active slices | — (none) |
 | Verifying (merged, post-merge verification pending) | — (none) |
-| Planned queue (in order; planned ≠ authorized) | `P9-S01`, `P3-S01`, `P4-S01`, `P6-S01`, `P6-S02`, `P2-S02`, `P2-S03` |
+| Planned queue (in order; planned ≠ authorized) | `P3-S01`, `P4-S01`, `P6-S01`, `P6-S02`, `P2-S02`, `P2-S03` |
 | Blocked | `P5-M02` — blocked by P6-S04 (proposed, #116): the engine has no credential-consuming node. packages/reconstructed-engine/node-registry.mjs implements only manualTrigger, start, noOp, set, code, function and functionItem, so SecretRef resolution in the execution path has no consumer (Manager finding, verified against main 600a2145)<br>`P5-M05` — blocked by P8-S01 (planned, not authorized): the P8 storage contract that shared key/session/rate-limiter state needs<br>`P5-M06` — blocked by a mail-transport architecture decision (a dependency, or an injected transport contract); Node has no built-in SMTP<br>`P5-M10` — blocked by backing models this product does not have: projects/sharing, security audit, source control, data tables, workflow versions, a retry execution path, execution annotation tags (see P5-M08-EVIDENCE.md §1) |
 | Not authorized | planned is not authorized: the Manager starts a queued slice by moving it to in-progress in a PR on main. P5-M04 is planned and measure-first. P7-S01, P8-S01, P10-S01 and P11-S01 are placeholders that need a Manager Master Prompt before any work. |
 | Historical P2 ladder pointer | `P2.27` (history, not active work) |
-| Last verified main | `0845c25f` |
+| Last verified main | `abe81c33` |
 
 ## Programs P0–P11 (top level)
 
@@ -52,7 +52,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | **P6** | Node Registry / Node Runtime | **COMPLETE** | 31/35 | 67 | `P6-S01` (planned) |
 | **P7** | Dynamic Parameters / Schema Runtime | **PLANNED** | 0/1 | 29 | `P7-S01` (planned) |
 | **P8** | Storage / Data Layer | **PLANNED** | 0/1 | 5 | `P8-S01` (planned) |
-| **P9** | Observability / Diagnostics / Operations | **COMPLETE** | 22/23 | 23 | `P9-S01` (planned) |
+| **P9** | Observability / Diagnostics / Operations | **COMPLETE** | 23/23 | 23 | — |
 | **P10** | Multi-Tenant / Isolation / Quota | **PLANNED** | 0/1 | 5 | `P10-S01` (planned) |
 | **P11** | Worker / Distributed Scaling / HA | **PLANNED** | 0/1 | 3 | `P11-S01` (planned) |
 
@@ -640,7 +640,7 @@ Logs, metrics, traces, execution diagnostics, resource-pressure telemetry, repla
 | `P9.20` | Observability Contract Oracle + Cross-Domain Acceptance (stacked on P9.19) | implemented | — | `f63a91e7` | #101 |
 | `P9.21` | Advanced Diagnostics / Incident Intelligence (stacked on P9.20) | implemented | — | `f63a91e7` | #101 |
 | `P9.22` | Full P9 Acceptance (stacked on P9.21, final slice) | implemented | — | `f63a91e7` | #101 |
-| `P9-S01` | Per-node execution cost/resource ledger correlated with P9 telemetry (#224 item 20) | planned | — | — | #224 |
+| `P9-S01` | Per-node execution cost/resource ledger correlated with P9 telemetry (#224 item 20) | implemented | — | `abe81c33` | #224 |
 
 </details>
 
