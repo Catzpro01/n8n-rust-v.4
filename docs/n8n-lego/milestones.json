@@ -2776,13 +2776,14 @@
               "title": "Dedicated webhook/ingress plane: separated planes, bounded buffering, admission control, response offload",
               "purpose": "Separate webhook intake from the editor/API control plane and from execution workers, so a sudden webhook overload cannot consume the capacity the UI and API need to stay responsive. Each plane owns its own budget; buffering is bounded so a full plane rejects rather than queueing without bound; admission follows the existing QoS policy; and responses can be streamed or offloaded out of the intake buffer so a slow client cannot hold it.",
               "weight": 22,
-              "status": "planned",
+              "status": "completed",
               "evidence": "crates/n8n-common/src/innovation.rs \u2014 6 tests in innovation::tests: plane_kinds_separate_intake_from_control_plane, webhook_overload_cannot_starve_control_plane (1000 requests against a 128-capacity webhook plane: 128 admitted, 872 rejected, editor/API headroom unchanged at 128), plane_admission_uses_qos_policy, plane_offloads_responses_out_of_the_intake_buffer, plane_response_offload_is_opt_in, plane_stats_are_observable. Merged in a32e9b80.",
-              "reference": "crates/n8n-common/src/innovation.rs (PlaneKind, PlaneConfig, IngressPlane, PlaneAdmission, PlaneStats, PlaneTopology)"
+              "reference": "crates/n8n-common/src/innovation.rs (PlaneKind, PlaneConfig, IngressPlane, PlaneAdmission, PlaneStats, PlaneTopology)",
+              "completedAt": "2026-09-26T00:08:00Z"
             }
           ],
-          "updatedAt": "2026-09-25T21:31:26Z",
-          "latestUpdate": "CP-03 complete (20%, cumulative 78%). P4 self-profiling delivered. It is optional and off by default so the cost is zero when unused, and it records all six required signals \u2014 route lookup time, admission time, queue wait, payload-copy cost, allocation pressure and slow route patterns. Collection is hard-bounded by max_samples with an overflow counter instead of unbounded memory (8 recorded / 24 dropped of 32 in the bounding test), derived state is resettable, and eBPF is proven complementary only: the internal profile keeps recording when the EbpfComplement backend is selected, so eBPF never becomes a P4 runtime dependency.",
+          "updatedAt": "2026-09-25T21:31:33Z",
+          "latestUpdate": "CP-04 complete (22%, cumulative 100%). Dedicated webhook/ingress plane delivered. Webhook intake is structurally separated from the editor/API control plane and from execution workers, each plane owns its own budget, and the isolation invariant is proven by driving 1000 requests into a 128-capacity webhook plane: 128 are admitted, 872 are rejected, and the editor/API headroom is unchanged at 128 \u2014 the UI and API stay responsive under sudden overload. Buffering is bounded so a full plane rejects rather than queueing without bound, admission follows the existing QoS policy, responses can be streamed or offloaded out of the intake buffer, and offload is opt-in.",
           "mergeSha": null,
           "issue": 111,
           "evidence": null,
