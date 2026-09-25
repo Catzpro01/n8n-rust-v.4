@@ -15,7 +15,16 @@
  *     cookies only, as upstream does.
  *
  *   service principals (workers / agents / MCP / gateway) — programmatic
- *     lifecycle: create (credential shown once), list (redacted), revoke.
+ *     lifecycle over the P5.7 model, mounted by P5-M07:
+ *     GET    /rest/service-principals          redacted list for the caller
+ *     GET    /rest/service-principals/scopes   the vocabulary the caller may attenuate to
+ *     POST   /rest/service-principals          { kind, label, scopes, expiresAt } -> record + rawApiKey ONCE
+ *     PATCH  /rest/service-principals/:id      { ownerId } -> ownership transfer
+ *     DELETE /rest/service-principals/:id      revoke -> { success: true }
+ *   all behind the same global scope `apiKey:manage` as /rest/api-keys, so a
+ *   member (global:member carries no apiKey:manage) cannot mint machine
+ *   authority at all — the P5.7 debt item "members may create service
+ *   principals" is closed by that guard, not by a new one.
  *
  * STORAGE. Keys and service principals live on their accountable owner's user
  * record (`apiKeys`, `servicePrincipals`), bounded per owner. No new store
@@ -35,7 +44,7 @@
  */
 import { randomBytes } from 'node:crypto';
 
-import { badRequest, forbidden } from '../compat/error.mjs';
+import { HttpError, badRequest, forbidden } from '../compat/error.mjs';
 import { sendData } from '../compat/response.mjs';
 import { requireUser } from '../compat/auth-context.mjs';
 import { getGlobalScopes } from '../compat/scopes.mjs';
@@ -58,11 +67,14 @@ import {
 } from './security/api-key.mjs';
 import {
   DEFAULT_TENANT_SECURITY_POLICY,
+  MACHINE_IDENTITY_LIMITS,
+  SERVICE_PRINCIPAL_KINDS,
   createServicePrincipalRecord,
   keyPolicyViolation,
   machineAuditEvent,
   machinePrincipal,
 } from './security/machine-identity.mjs';
+import { DEFAULT_TENANT } from './security/principal.mjs';
 
 /** Upstream RESPONSE_ERROR_MESSAGES.MISSING_SCOPE. */
 export const MISSING_SCOPE_MESSAGE = 'User is missing a scope required to perform this action';
@@ -100,6 +112,30 @@ function requireApiKeyScope(ctx) {
   return user;
 }
 
+/**
+ * Roles allowed to hold machine authority (DEC-0023).
+ *
+ * `apiKey:manage` cannot be reused here: pinned n8n 2.9.4 lists it inside
+ * GLOBAL_MEMBER_SCOPES as well as the admin/owner sets
+ * (reference/n8n/packages/@n8n/permissions/src/roles/scopes/global-scopes.ee.ts),
+ * so a member passes the /rest/api-keys guard and would pass this one too. A
+ * service principal is a separate identity that keeps working after the human
+ * who created it is demoted or removed, so minting one is administration, not
+ * self-service — while a member's own API key remains self-service.
+ */
+const SERVICE_PRINCIPAL_ROLES = Object.freeze(['global:owner', 'global:admin']);
+
+function requireServicePrincipalAuthority(ctx) {
+  const user = requireApiKeyScope(ctx);
+  if (!SERVICE_PRINCIPAL_ROLES.includes(user.role ?? 'global:owner')) {
+    audit(null, 'service-principal.denied', {
+      ownerRef: user.id, reason: 'role-not-permitted-to-hold-machine-authority',
+    });
+    throw forbidden(MISSING_SCOPE_MESSAGE);
+  }
+  return user;
+}
+
 function publicApiKeys(user) {
   return (user.apiKeys ?? []).filter((key) => key.audience === API_KEY_AUDIENCE.PUBLIC_API && !key.revokedAt);
 }
@@ -133,6 +169,23 @@ function validateScopeShape(scopes) {
   if (!Array.isArray(scopes) || scopes.length === 0) throw badRequest('scopes must contain at least one scope');
   for (const scope of scopes) if (typeof scope !== 'string' || !SCOPE_FORMAT.test(scope)) throw badRequest(SCOPE_FORMAT_MESSAGE);
   return scopes;
+}
+
+/**
+ * Maps a security-kernel denial to its published HTTP status, the same way
+ * `src/compat/credentials.mjs` does for the vault. Without this a refused
+ * service principal escapes as a 500, which tells an operator the server broke
+ * when in fact the request was correctly refused.
+ */
+function guarded(fn) {
+  try {
+    return fn();
+  } catch (error) {
+    if (error && error.name === 'SecurityError') {
+      throw new HttpError(error.status ?? 500, error.message, { code: error.code });
+    }
+    throw error;
+  }
 }
 
 function audit(logger, type, fields) {
@@ -246,6 +299,121 @@ export function listServicePrincipals({ store, ownerId }) {
 }
 
 /**
+ * Transfers a service principal to another accountable owner — the P5.7 debt item
+ * "no ownership transfer for service principals".
+ *
+ * The invariants are the reason this is a distinct operation rather than a field
+ * update, and each one is asserted here rather than left to the caller:
+ *
+ *   1. the authority MOVES: the record leaves the current owner's list and joins
+ *      the receiving owner's, so deleting either owner deletes exactly the
+ *      credentials that owner is accountable for;
+ *   2. the TENANT does not: a principal is bound to the tenant it was minted in,
+ *      and its scopes are only meaningful against that tenant's registry, so a
+ *      cross-tenant transfer is refused rather than re-homed;
+ *   3. the RECEIVER must be able to hold what the principal already carries:
+ *      every scope is re-attenuated against the new owner's current grant, so a
+ *      transfer to a less privileged owner narrows the principal instead of
+ *      leaving it with authority its new owner could not have granted;
+ *   4. a REVOKED principal cannot be transferred (a tombstone is not an asset);
+ *   5. the CREDENTIAL ROTATES and the record LEAVES the sender outright. This
+ *      is not cosmetic: `generateApiKey` bakes the owner id into the key so a
+ *      presented credential resolves in O(1) with no process-local index, so a
+ *      carried-over record would stop resolving the moment it moved. Rotating
+ *      also means the previous owner — who necessarily knew the raw value —
+ *      cannot keep using it, which is the only safe reading of "transfer". The
+ *      record is removed rather than tombstoned on the sender because it was
+ *      MOVED, not revoked: a tombstone would leave the sender holding a revoked
+ *      principal they no longer own, and would answer 400 where the surface's
+ *      own idiom is a silent no-op;
+ *   6. both sides are audited, because accountability changed on both.
+ *
+ * An unknown id, or one the caller does not own, is a silent no-op (false), which
+ * is the upstream `/rest/api-keys/:id` idiom: the response never confirms that an
+ * id exists, so the surface cannot be used to enumerate another owner's machine
+ * identities.
+ *
+ * @returns {{ moved: boolean, rawCredential?: string, servicePrincipal?: object }}
+ *          the new raw credential is present only when the principal moved, and
+ *          is shown exactly once, like every minted credential.
+ */
+export function transferServicePrincipal({
+  store,
+  ownerId,
+  id,
+  newOwnerId,
+  config,
+  policy = DEFAULT_TENANT_SECURITY_POLICY,
+  logger = null,
+  now = Date.now(),
+}) {
+  const owner = store.users.get(ownerId);
+  if (!owner) return { moved: false };
+  const record = (owner.servicePrincipals ?? []).find((candidate) => candidate.id === id);
+  if (!record) return { moved: false };
+  if (record.revokedAt) throw badRequest('A revoked service principal cannot be transferred');
+
+  const receiver = store.users.get(newOwnerId);
+  if (!receiver) throw badRequest('Unknown owner');
+  if (receiver.id === owner.id) throw badRequest('The service principal already belongs to this owner');
+
+  const tenant = record.tenantId ?? ownerTenantOf(owner);
+  if (tenant !== ownerTenantOf(receiver)) {
+    // Invariant 2. The tenant is part of the principal's identity, not a label.
+    throw badRequest('A service principal cannot be transferred across tenants');
+  }
+
+  // Invariant 3: the receiver must be able to hold every scope already granted.
+  const grantable = apiKeyScopesForRole(receiver.role ?? 'global:owner', config);
+  const attenuated = attenuateScopes(record.scopes, grantable);
+  if (!attenuated.ok) {
+    audit(logger, 'service-principal.denied', {
+      principalRef: `svc:${record.id}`, ownerRef: owner.id, reason: 'transfer-scope-escalation',
+      scopeCount: attenuated.escalated.length,
+    });
+    throw badRequest('The receiving owner cannot hold every scope of this service principal');
+  }
+
+  const existing = (receiver.servicePrincipals ?? []).filter((sp) => !sp.revokedAt);
+  if (existing.length >= MACHINE_IDENTITY_LIMITS.maxServicePrincipalsPerOwner) {
+    throw badRequest(`The receiving owner is at the maximum of ${MACHINE_IDENTITY_LIMITS.maxServicePrincipalsPerOwner} service principals`);
+  }
+
+  const at = new Date(now).toISOString();
+  // Scopes are narrowed to the receiver's grant. The credential is re-minted for
+  // the receiver rather than carried over, because the key embeds the owner id
+  // and the previous owner already knows the raw value.
+  const minted = generateApiKey({ ownerId: receiver.id, keyId: id });
+  const moved = Object.freeze({
+    ...record,
+    id,
+    scopes: Object.freeze(attenuated.scopes),
+    digest: minted.digest,
+    hint: minted.hint,
+    updatedAt: at,
+  });
+  // The sender's list must hold only what the sender owns. The old credential
+  // stops resolving on its own: it carries the previous owner id, so the O(1)
+  // lookup finds no record for it at all.
+  store.users.update(owner.id, {
+    servicePrincipals: (owner.servicePrincipals ?? []).filter((candidate) => candidate.id !== id),
+  });
+  store.users.update(receiver.id, {
+    servicePrincipals: [...pruneTombstones(receiver.servicePrincipals), moved],
+  });
+  audit(logger, 'service-principal.transferred', {
+    tenantId: tenant, principalRef: `svc:${id}`,
+    fromRef: owner.id, toRef: receiver.id, scopeCount: moved.scopes.length,
+  });
+  return { moved: true, rawCredential: minted.raw, servicePrincipal: servicePrincipalDto(moved, receiver.id) };
+}
+
+/** The tenant an accountable owner belongs to; `default` when unset. */
+function ownerTenantOf(owner) {
+  return typeof owner?.tenantId === 'string' && owner.tenantId !== '' ? owner.tenantId : DEFAULT_TENANT;
+}
+
+/**
  * Revocation keeps a tombstone (P5-M01): the credential then fails as REVOKED, not UNKNOWN, and the
  * record survives for audit. Revoking an unknown or already revoked id is a no-op (false).
  */
@@ -279,7 +447,7 @@ export function apiKeyRoutes({ logger, policy = DEFAULT_TENANT_SECURITY_POLICY }
       method: 'GET',
       path: '/rest/api-keys/scopes',
       handler: (ctx) => {
-        const user = requireApiKeyScope(ctx);
+        const user = requireServicePrincipalAuthority(ctx);
         sendData(ctx.res, apiKeyScopesForRole(user.role ?? 'global:owner', ctx.config));
       },
     },
@@ -350,6 +518,98 @@ export function apiKeyRoutes({ logger, policy = DEFAULT_TENANT_SECURITY_POLICY }
           audit(logger, 'api-key.updated', { keyRef: ctx.params.id, ownerRef: user.id, scopeCount: attenuated.scopes.length });
         }
         sendData(ctx.res, { success: true });
+      },
+    },
+    /* ------------------------------------------------ service principals (P5-M07) */
+    {
+      method: 'GET',
+      path: '/rest/service-principals',
+      handler: (ctx) => {
+        const user = requireServicePrincipalAuthority(ctx);
+        sendData(ctx.res, listServicePrincipals({ store: ctx.store, ownerId: user.id }));
+      },
+    },
+    {
+      // The vocabulary the caller may attenuate to. Publishing it is what keeps
+      // the create form honest: a scope the owner cannot grant is refused at the
+      // boundary rather than silently trimmed.
+      method: 'GET',
+      path: '/rest/service-principals/scopes',
+      handler: (ctx) => {
+        const user = requireServicePrincipalAuthority(ctx);
+        sendData(ctx.res, apiKeyScopesForRole(user.role ?? 'global:owner', ctx.config));
+      },
+    },
+    {
+      // The only route that mints machine authority, so it is the only response
+      // that ever carries a raw credential. There is no GET that returns it
+      // again: `rawApiKey` exists on this one response and nowhere else.
+      method: 'POST',
+      path: '/rest/service-principals',
+      handler: (ctx) => {
+        const user = requireServicePrincipalAuthority(ctx);
+        const body = ctx.body ?? {};
+        const kind = typeof body.kind === 'string' ? body.kind : '';
+        const label = validateLabel(body.label);
+        const requested = validateScopeShape(body.scopes);
+        const expiresAt = body.expiresAt === undefined ? null : body.expiresAt;
+        if (expiresAt !== null && typeof expiresAt !== 'number') throw badRequest('Expiration date must be in the future or null');
+        const violation = keyPolicyViolation(policy, { expiresAt });
+        if (violation) throw badRequest(violation);
+        // Unknown kind is a 400 naming the vocabulary, not a stored record with a
+        // kind the tenant policy never allowed.
+        if (!SERVICE_PRINCIPAL_KINDS.includes(kind)) {
+          throw badRequest(`kind must be one of ${SERVICE_PRINCIPAL_KINDS.join(', ')}`);
+        }
+        const { servicePrincipal, rawCredential } = guarded(() => createServicePrincipal({
+          store: ctx.store,
+          config: ctx.config,
+          ownerId: user.id,
+          kind,
+          label,
+          scopes: requested,
+          expiresAt,
+          policy,
+          logger,
+        }));
+        sendData(ctx.res, { ...servicePrincipal, rawApiKey: rawCredential });
+      },
+    },
+    {
+      // Ownership transfer. An id the caller does not own is a silent no-op, so
+      // the surface cannot be used to probe another owner's machine identities.
+      method: 'PATCH',
+      path: '/rest/service-principals/:id',
+      handler: (ctx) => {
+        const user = requireServicePrincipalAuthority(ctx);
+        const body = ctx.body ?? {};
+        const newOwnerId = typeof body.ownerId === 'string' ? body.ownerId : '';
+        if (newOwnerId === '') throw badRequest('ownerId is required');
+        const { moved, rawCredential, servicePrincipal } = guarded(() => transferServicePrincipal({
+          store: ctx.store,
+          ownerId: user.id,
+          id: ctx.params.id,
+          newOwnerId,
+          config: ctx.config,
+          policy,
+          logger,
+        }));
+        // The rotated credential appears here and nowhere else, exactly like a
+        // create. A transfer that did not move anything returns no credential.
+        sendData(ctx.res, moved
+          ? { success: true, ...servicePrincipal, rawApiKey: rawCredential }
+          : { success: false });
+      },
+    },
+    {
+      // Tombstone, not delete: the record stays with revokedAt so the credential
+      // is reported REVOKED and the audit row survives (P5-M01).
+      method: 'DELETE',
+      path: '/rest/service-principals/:id',
+      handler: (ctx) => {
+        const user = requireServicePrincipalAuthority(ctx);
+        const revoked = revokeServicePrincipal({ store: ctx.store, ownerId: user.id, id: ctx.params.id, logger });
+        sendData(ctx.res, { success: revoked });
       },
     },
     {

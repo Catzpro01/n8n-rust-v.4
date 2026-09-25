@@ -16,10 +16,11 @@
       "pr": 314,
       "mergeSha": "c13ba6dc7bcbb81efb1ccb9786942065ab5f3c26"
     },
-    "activeSlices": [],
+    "activeSlices": [
+      "P5-M07"
+    ],
     "verifyingSlices": [],
     "plannedQueue": [
-      "P5-M07",
       "P9-S01",
       "P3-S01",
       "P4-S01",
@@ -2937,10 +2938,70 @@
           "id": "P5-M07",
           "title": "Service-principal REST + UI management over the P5.7 programmatic lifecycle (create shown once, redacted list, revoke with tombstone) (split out of P5-M03)",
           "kind": "maintenance",
-          "status": "planned",
+          "status": "in-progress",
+          "checkpoints": [
+            {
+              "id": "CP-01",
+              "title": "Read surface: GET /rest/service-principals (redacted list) and GET /rest/service-principals/scopes (vocabulary)",
+              "purpose": "List the caller's live service principals through a DTO that can never carry a digest or a raw credential, and publish the scope vocabulary the caller may attenuate to. Both behind the apiKey:manage guard, exactly like /rest/api-keys.",
+              "weight": 15,
+              "status": "in-progress",
+              "evidence": "",
+              "reference": "apps/n8n-lego/src/auth/api-key-routes.mjs"
+            },
+            {
+              "id": "CP-02",
+              "title": "POST /rest/service-principals: create, with the credential shown exactly once",
+              "purpose": "Mint a service principal through createServicePrincipalRecord so the whole P5.7 create policy is enforced at the HTTP boundary: kind must be in SERVICE_PRINCIPAL_KINDS, the tenant is bound to the owner's tenant, requested scopes are attenuated to what the owner can grant (escalation is refused, not trimmed), the per-owner limit holds, and expiry satisfies the tenant policy. The raw credential is returned once and is never retrievable again.",
+              "weight": 25,
+              "status": "planned",
+              "evidence": "",
+              "reference": "apps/n8n-lego/src/auth/security/machine-identity.mjs (createServicePrincipalRecord)"
+            },
+            {
+              "id": "CP-03",
+              "title": "DELETE /rest/service-principals/:id: revoke with a tombstone",
+              "purpose": "Revoke a service principal keeping a tombstone, so the credential is later reported REVOKED rather than UNKNOWN and the audit row survives. Revoking an unknown or already revoked id is a silent no-op, as upstream /rest/api-keys does, so the response never confirms that an id exists.",
+              "weight": 15,
+              "status": "planned",
+              "evidence": "",
+              "reference": "apps/n8n-lego/src/auth/security/api-key.mjs (revokeWithTombstone)"
+            },
+            {
+              "id": "CP-04",
+              "title": "PATCH /rest/service-principals/:id: ownership transfer",
+              "purpose": "Transfer a service principal to another accountable owner, which is the P5.7 debt item 'no ownership transfer for service principals'. The authority moves, the tenant does not, the receiving owner must be able to hold the principal's scopes, and both sides are audited.",
+              "weight": 20,
+              "status": "planned",
+              "evidence": "",
+              "reference": "docs/n8n-lego/evidence/P5.8-CERTIFICATION-EVIDENCE.md \u00a77"
+            },
+            {
+              "id": "CP-05",
+              "title": "End-to-end proof through the real server plus contract and manifest registration",
+              "purpose": "Exercise every route through startServer with a real session and CSRF, prove no response can carry a digest or a raw credential, and register the new surface on the auth domain manifest so the architecture and capability gates see it.",
+              "weight": 15,
+              "status": "planned",
+              "evidence": "",
+              "reference": "apps/n8n-lego/test/service-principal-routes.test.mjs"
+            },
+            {
+              "id": "CP-06",
+              "title": "DEC-0015 required self-hosted runner verification",
+              "purpose": "The delivery gate: Level 0, Level 1, Level 2 linux, Level 2 windows, Level 2 conformance and post-merge verification must all pass on real self-hosted runners. Derived from the jobs and runner API, never typed.",
+              "weight": 10,
+              "status": "planned",
+              "evidence": "",
+              "reference": "tools/lego/progress-event.mjs (resolve --fetch)",
+              "requires": ["Level 0 (Check & Format)","Level 1 (Affected Tests)","Level 2 Workspace Tests (linux)","Level 2 Workspace Tests (windows)","Level 2 Conformance LEGO & Node Catalog","Post-Merge Verification & Branch Cleanup"]
+            }
+          ],
+          "updatedAt": "2026-09-26T00:00:00Z",
+          "latestUpdate": "P5-M07: service-principal REST surface mounted (create once, redacted list, revoke tombstone, transfer rotates the credential); DEC-0023 closes the member boundary",
+          "checkpointWeightBasis": "Five declared route operations. CP-01 carries 15 for the read pair (list + scopes); CP-02 carries 25 because it is the only route that mints a credential and must enforce the whole P5.7 create policy; CP-03 carries 15 for the tombstone semantics; CP-04 carries 20 for the six transfer invariants; CP-05 carries 15 for the end-to-end proof and manifest registration; CP-06 carries 10 for the DEC-0015 runner gate. 15+25+15+20+15+10 = 100. The weights come from the scope declared in P5-M07-EVIDENCE.md §1, not from effort, commit count or lines of code.",
           "mergeSha": null,
           "issue": 85,
-          "evidence": null,
+          "evidence": "docs/n8n-lego/evidence/P5-M07-EVIDENCE.md",
           "owner": "manager (unassigned)",
           "debtSource": "docs/n8n-lego/evidence/P5.8-CERTIFICATION-EVIDENCE.md \u00a77"
         },

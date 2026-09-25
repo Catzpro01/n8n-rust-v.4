@@ -16,8 +16,8 @@ document is right and the prose is stale.
 | **Latest completed slice** | **P5-M09** |
 | **Realtime Delivery Progress** | **87.0%** (P0–P11 checkpoint-weighted; future programs excluded; no checkpoint model contributes 0) |
 | **Slice Completion** | **87.0%** (127/146 implemented; verifying and blocked contribute 0) |
-| **Active / verifying slices** | **—** |
-| Planned queue | P5-M07, P9-S01, P3-S01, P4-S01, P6-S01, P6-S02, P2-S02, P2-S03 |
+| **Active / verifying slices** | **P5-M07** |
+| Planned queue | P9-S01, P3-S01, P4-S01, P6-S01, P6-S02, P2-S02, P2-S03 |
 | Blocked slices | P5-M02, P5-M05, P5-M06, P5-M10 |
 | Historical P2 ladder pointer | P2.27 (history, not active work) |
 | Previous completed P2 milestone | P2.26 |
@@ -37,7 +37,7 @@ is the row marked as such.
 | Core LEGO domains | **26** |
 | Locked contracts | 100 |
 | Declared capabilities | 97 |
-| Declared operations | 216 |
+| Declared operations | 218 |
 | Published error codes | 36 |
 | Official AI/Agent LEGO | 15 |
 
@@ -58,6 +58,7 @@ Every slice that declares a checkpoint model, straight from the canonical regist
 `docs/n8n-lego/milestones.json` on `main`. Status is not progress: a verifying or blocked slice keeps its
 evidenced progress and contributes 0% to Slice Completion.
 
+- **P5-M07** (P5) — in-progress · realtime 0.0% · completion contribution 0.0% · current checkpoint CP-01 (in-progress, 15) · latest completed — · updated 2026-09-26T00:00:00Z — P5-M07: service-principal REST surface mounted (create once, redacted list, revoke tombstone, transfer rotates the credential); DEC-0023 closes the member boundary
 - **P5-M08** (P5) — implemented · realtime 100.0% · completion contribution 100.0% · current checkpoint — · latest completed CP-05 (completed) · updated 2026-09-26T04:05:00Z — Implemented by PR #304 (merge 600a21456213602ebdc6193229bab8432e6d1024). CP-05 DEC-0015 verification PASS on head d520a740 (PR #310, merge b528a19): Level 0 on MDMTEST-n8n-wsl-2, Level 1 on MDMTEST-n8n-wsl, Level 2 linux on MDMTEST-n8n-wsl-3, Level 2 windows on laptop-build-worker-3, conformance on MDMTEST-n8n-wsl-4, post-merge verification on MDMTEST-n8n-wsl-3 (run 36167178324). This was the last documented environmental retry; the earlier failure was a runner communication loss, not an implementation regression, and the P5-M08 implementation on this head is byte-identical to delivery merge 600a2145
 - **P5-M09** (P5) — implemented · realtime 100.0% · completion contribution 100.0% · current checkpoint — · latest completed CP-05 (completed) · updated 2026-09-25T19:12:31Z — P5-M09: public /api/v1 credentials + users over the editor's backing stores
 

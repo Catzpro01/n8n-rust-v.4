@@ -119,9 +119,12 @@ const MUTATIONS = [
   }, /P5-M08: implemented without a 40-hex merge SHA/],
   ['an implemented slice without evidence', (r) => { r.programs[5].slices.find((x) => x.id === 'P5-M03').evidence = null; }, /P5-M03: implemented without evidence/],
   ['an in-progress slice missing from the pointer', (r) => {
-    const slice = r.programs[5].slices.find((x) => x.id === 'P5-M07'); slice.status = 'in-progress';
-    r.executionPointer.plannedQueue = r.executionPointer.plannedQueue.filter((id) => id !== 'P5-M07');
-  }, /in-progress slice P5-M07 is neither active nor verifying/],
+    // Whatever is queued becomes in-progress and is then dropped from every
+    // pointer list, which is the state the rule exists to catch.
+    const queued = r.executionPointer.plannedQueue[0];
+    r.programs.flatMap((program) => program.slices).find((x) => x.id === queued).status = 'in-progress';
+    r.executionPointer.plannedQueue = r.executionPointer.plannedQueue.filter((id) => id !== queued);
+  }, /is neither active nor verifying/],
   ['a queued slice that is not planned', (r) => { r.executionPointer.plannedQueue.push('P5-M03'); }, /queued slice P5-M03 is implemented/],
   ['a blocked slice without blockedBy', (r) => { delete r.programs[5].slices.find((x) => x.id === 'P5-M10').blockedBy; }, /P5-M10 does not record blockedBy/],
   ['a blocked slice missing from blockedSlices', (r) => { r.executionPointer.blockedSlices = []; }, /blocked slice P5-M02 is missing/],
@@ -394,10 +397,11 @@ test('completion KPI is implemented/total and never counts verifying or blocked'
 test('Issue #307: two metrics, status independent, checkpoint weights only where declared', () => {
   const verifying = verifyingIndex(REGISTER);
   const metrics = headlineMetrics(REGISTER);
-  // P5-M08 (implemented, all five checkpoints completed) and P5-M09 (in progress,
-  // all five checkpoints completed too — a slice can be at 100% realtime and still
-  // not be implemented, which is the whole point of keeping the two axes apart).
-  assert.equal(metrics.current.checkpointed, 2, 'exactly two slices declare checkpoints (P5-M08, P5-M09)');
+  // P5-M08 and P5-M09 (both with every checkpoint completed) plus P5-M07, which is
+  // in flight with its model installed and only CP-01 started. A slice can sit at
+  // 100% realtime and still not be implemented, which is the whole point of keeping
+  // the two axes apart.
+  assert.equal(metrics.current.checkpointed, 3, 'three slices declare checkpoints (P5-M08, P5-M09, P5-M07)');
   // Independence, not inequality. Reopening CP-05 must move realtime and leave slice completion
   // untouched. The expectation is derived, not pinned: a literal number here goes stale the moment
   // another slice's checkpoint model changes, which is exactly what happened when P5-M09's five
@@ -466,9 +470,13 @@ test('declared checkpoints move realtime progress and never slice completion or 
     slice.mergeSha = null;
     slice.checkpoints[4] = { ...slice.checkpoints[4], status: cp05Status, completedAt: cp05Status === 'completed' ? '2026-09-26T09:00:00Z' : undefined };
     register.executionPointer.latestCompletedSlice = { id: 'P5-M03', pr: 291, mergeSha: 'cf52701c91e5447f19c32377c38f6ae5eea7f3a7' };
-    // Only P5-M08 is back in flight here; P5-M09 is implemented on the register, so an
-    // implemented slice must never appear in activeSlices.
-    register.executionPointer.activeSlices = ['P5-M08'];
+    // Whatever else is in flight on the canonical register stays in flight here: an
+    // in-progress slice must be in the pointer, or the fixture is itself invalid.
+    const alsoInFlight = [...REGISTER.programs, ...REGISTER.futurePrograms]
+      .flatMap((entity) => entity.slices)
+      .filter((slice) => slice.status === 'in-progress' && slice.id !== 'P5-M08')
+      .map((slice) => slice.id);
+    register.executionPointer.activeSlices = ['P5-M08', ...alsoInFlight];
     assert.deepEqual(validateSliceCheckpoints(slice), []);
     assert.deepEqual(validateGovernanceRegister(register), []);
     return register;
