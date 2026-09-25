@@ -52,7 +52,9 @@ import {
   generateApiKey,
   lastUsedIsStale,
   parseApiKey,
+  pruneTombstones,
   redactApiKey,
+  revokeWithTombstone,
 } from '../src/auth/security/api-key.mjs';
 import {
   DEFAULT_TENANT_SECURITY_POLICY,
@@ -724,10 +726,10 @@ describe('revoked / expired keys are denied at authentication', () => {
       assert.deepEqual([...result.principal.permissions], ['user:create', 'workflow:read']);
     }));
 
-  test('revoked (DELETE) → denied, and audited without the key', () =>
+  test('revoked (DELETE) → denied as REVOKED (tombstone, P5-M01), and audited without the key', () =>
     withKey(async ({ h, b, key, auth }) => {
       assert.deepEqual((await b.call('DELETE', `/rest/api-keys/${key.id}`)).body.data, { success: true });
-      assert.deepEqual(auth(), { ok: false, verdict: API_KEY_VERDICT.UNKNOWN });
+      assert.deepEqual(auth(), { ok: false, verdict: API_KEY_VERDICT.REVOKED });
       assert.ok(h.logs.some((l) => l.includes('auth.api-key.revoked')));
       assert.ok(h.logs.some((l) => l.includes('auth.api-key.denied')));
       assert.ok(!h.logs.join('\n').includes(key.rawApiKey));
@@ -775,6 +777,70 @@ describe('revoked / expired keys are denied at authentication', () => {
       assert.notEqual(h.store.users.get(user.id).apiKeys[0].lastUsedAt, first);
       assert.ok((await b.call('GET', '/rest/api-keys')).body.data[0].lastUsedAt, 'the editor list carries last-used');
     }));
+});
+
+describe('P5-M01: revocation keeps a bounded tombstone instead of deleting', () => {
+  test('API key: DELETE keeps the record with revokedAt; hidden from the list; repeat DELETE is a silent no-op', async () => {
+    const h = await harness();
+    try {
+      const user = seedOwner(h);
+      const b = await signedIn(h);
+      const key = (await b.call('POST', '/rest/api-keys', { label: 'x', scopes: ['workflow:read'], expiresAt: null })).body.data;
+      assert.deepEqual((await b.call('DELETE', `/rest/api-keys/${key.id}`)).body.data, { success: true });
+      const stored = h.store.users.get(user.id).apiKeys.find((k) => k.id === key.id);
+      assert.ok(stored && typeof stored.revokedAt === 'string' && stored.revokedReason === 'revoked-by-owner', 'tombstone kept');
+      assert.ok(!JSON.stringify(stored).includes(key.rawApiKey), 'the raw key is never stored');
+      assert.deepEqual((await b.call('GET', '/rest/api-keys')).body.data.map((k) => k.id), []);
+      const revokedAudits = () => h.logs.filter((l) => l.includes('auth.api-key.revoked')).length;
+      const before = revokedAudits();
+      assert.deepEqual((await b.call('DELETE', `/rest/api-keys/${key.id}`)).body.data, { success: true });
+      assert.deepEqual((await b.call('DELETE', '/rest/api-keys/does-not-exist')).body.data, { success: true });
+      assert.equal(revokedAudits(), before, 'no second revocation for an already revoked or unknown id');
+      // A new key keeps the tombstone; the per-owner limit counts only live keys.
+      const next = (await b.call('POST', '/rest/api-keys', { label: 'y', scopes: ['workflow:read'], expiresAt: null })).body.data;
+      assert.deepEqual(h.store.users.get(user.id).apiKeys.map((k) => [k.id, Boolean(k.revokedAt)]), [[key.id, true], [next.id, false]]);
+    } finally {
+      await h.close();
+    }
+  });
+
+  test('service principal: revoke keeps a tombstone -> REVOKED verdict; a second revoke is false', async () => {
+    const h = await harness();
+    try {
+      const user = seedOwner(h);
+      const { servicePrincipal, rawCredential } = createServicePrincipal({ store: h.store, config: h.config, ownerId: user.id, kind: 'worker', label: 'w', scopes: ['workflow:read'] });
+      assert.equal(revokeServicePrincipal({ store: h.store, ownerId: user.id, id: servicePrincipal.id }), true);
+      const verdict = authenticateMachineCredential({ store: h.store, config: h.config, presented: rawCredential, audience: API_KEY_AUDIENCE.SERVICE });
+      assert.deepEqual(verdict, { ok: false, verdict: API_KEY_VERDICT.REVOKED });
+      assert.equal(revokeServicePrincipal({ store: h.store, ownerId: user.id, id: servicePrincipal.id }), false);
+      assert.deepEqual(listServicePrincipals({ store: h.store, ownerId: user.id }), []);
+      const again = createServicePrincipal({ store: h.store, config: h.config, ownerId: user.id, kind: 'worker', label: 'w2', scopes: ['workflow:read'] });
+      assert.deepEqual(h.store.users.get(user.id).servicePrincipals.map((sp) => [sp.id, Boolean(sp.revokedAt)]), [[servicePrincipal.id, true], [again.servicePrincipal.id, false]]);
+      // A wrong secret for a revoked id is still UNKNOWN: REVOKED is reported only for the real credential.
+      const wrong = rawCredential.slice(0, -4) + (rawCredential.endsWith('AAAA') ? 'BBBB' : 'AAAA');
+      assert.equal(authenticateMachineCredential({ store: h.store, config: h.config, presented: wrong, audience: API_KEY_AUDIENCE.SERVICE }).verdict, API_KEY_VERDICT.UNKNOWN);
+    } finally {
+      await h.close();
+    }
+  });
+
+  test('tombstones are bounded per owner: the oldest are pruned, live records are never pruned', () => {
+    const cap = API_KEY_POLICY.maxRevokedTombstonesPerOwner;
+    const iso = (i) => new Date(Date.UTC(2026, 0, 1, 0, 0, i)).toISOString();
+    const live = [{ id: 'live-1', revokedAt: null }, { id: 'live-2', revokedAt: null }];
+    const dead = Array.from({ length: cap + 5 }, (_, i) => ({ id: `dead-${i}`, revokedAt: iso(i) }));
+    const kept = pruneTombstones([...dead, ...live]);
+    assert.equal(kept.filter((r) => r.revokedAt).length, cap);
+    assert.deepEqual(kept.filter((r) => !r.revokedAt).map((r) => r.id), ['live-1', 'live-2']);
+    assert.ok(!kept.some((r) => ['dead-0', 'dead-4'].includes(r.id)) && kept.some((r) => r.id === 'dead-5'), 'oldest five pruned');
+    const full = [...dead.slice(0, cap), { id: 'k', revokedAt: null }];
+    const res = revokeWithTombstone(full, 'k', { now: Date.UTC(2027, 0, 1) });
+    assert.equal(res.records.length, cap, 'revoking at the cap prunes the oldest tombstone');
+    assert.equal(res.revoked.revokedReason, 'revoked-by-owner');
+    assert.equal(revokeWithTombstone(res.records, 'k'), null, 'already revoked');
+    assert.equal(revokeWithTombstone(res.records, 'missing'), null, 'unknown');
+    assert.equal(revokeWithTombstone(undefined, 'k'), null);
+  });
 });
 
 describe('service principal lifecycle at the storage boundary', () => {

@@ -37,6 +37,12 @@ export const API_KEY_AUDIENCE = Object.freeze({ PUBLIC_API: 'public-api', SERVIC
 export const API_KEY_POLICY = Object.freeze({
   /** Keys per owner. Bounded: a record that grows per request is an allocation an attacker can drive. */
   maxKeysPerOwner: 50,
+  /**
+   * Revoked keys are kept as tombstones (P5-M01): the record stays with `revokedAt`, so a presented
+   * revoked credential is reported REVOKED (not UNKNOWN) and the audit row survives. Bounded: at most
+   * this many tombstones per owner and credential kind; the oldest are pruned first.
+   */
+  maxRevokedTombstonesPerOwner: 50,
   /** Upstream label schema: 1..50 characters. */
   maxLabelLength: 50,
   /** Hard input bound checked before any parsing or hashing. */
@@ -163,4 +169,34 @@ export function effectiveScopes(keyScopes, ownerGrantable) {
 export function lastUsedIsStale(record, now = Date.now()) {
   const last = record?.lastUsedAt ? Date.parse(record.lastUsedAt) : 0;
   return !Number.isFinite(last) || now - last >= API_KEY_POLICY.lastUsedWriteIntervalMs;
+}
+
+/**
+ * Tombstone revocation (P5-M01). Marks the ACTIVE record `id` revoked and keeps it, pruning the
+ * oldest tombstones beyond `API_KEY_POLICY.maxRevokedTombstonesPerOwner`. Returns `null` when no
+ * active record has that id (unknown or already revoked), so callers stay idempotent and never
+ * confirm that an id exists.
+ *
+ * @param {ReadonlyArray<object>} records stored key or service-principal records of one owner
+ * @param {string} id
+ * @param {{ reason?: string, now?: number }} [options]
+ * @returns {{ records: object[], revoked: object } | null}
+ */
+export function revokeWithTombstone(records, id, { reason = 'revoked-by-owner', now = Date.now() } = {}) {
+  const list = records ?? [];
+  const target = list.find((record) => record.id === id && !record.revokedAt);
+  if (!target) return null;
+  const at = new Date(now).toISOString();
+  const revoked = { ...target, revokedAt: at, revokedReason: reason, updatedAt: at };
+  return { records: pruneTombstones(list.map((record) => (record === target ? revoked : record))), revoked };
+}
+
+/** Keeps every active record and at most the newest `maxRevokedTombstonesPerOwner` tombstones. */
+export function pruneTombstones(records) {
+  const list = records ?? [];
+  const tombstones = list.filter((record) => record.revokedAt);
+  const excess = tombstones.length - API_KEY_POLICY.maxRevokedTombstonesPerOwner;
+  if (excess <= 0) return [...list];
+  const drop = new Set([...tombstones].sort((a, b) => String(a.revokedAt).localeCompare(String(b.revokedAt))).slice(0, excess));
+  return list.filter((record) => !drop.has(record));
 }

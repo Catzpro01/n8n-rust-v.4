@@ -52,7 +52,9 @@ import {
   generateApiKey,
   lastUsedIsStale,
   parseApiKey,
+  pruneTombstones,
   redactApiKey,
+  revokeWithTombstone,
 } from './security/api-key.mjs';
 import {
   DEFAULT_TENANT_SECURITY_POLICY,
@@ -218,7 +220,7 @@ export function createServicePrincipal({ store, config, ownerId, kind, label, sc
     existing: existing.length,
     now,
   });
-  store.users.update(owner.id, { servicePrincipals: [...existing, record] });
+  store.users.update(owner.id, { servicePrincipals: [...pruneTombstones(owner.servicePrincipals), record] });
   audit(logger, 'service-principal.created', { tenantId: record.tenantId, principalRef: `svc:${record.id}`, ownerRef: owner.id, kind, scopeCount: record.scopes.length });
   return { servicePrincipal: servicePrincipalDto(record, owner.id), rawCredential: raw };
 }
@@ -243,14 +245,16 @@ export function listServicePrincipals({ store, ownerId }) {
   return (owner?.servicePrincipals ?? []).filter((sp) => !sp.revokedAt).map((sp) => servicePrincipalDto(sp, ownerId));
 }
 
-/** Revocation removes the record; the credential then fails as unknown. */
-export function revokeServicePrincipal({ store, ownerId, id, reason = 'revoked-by-owner', logger = null }) {
+/**
+ * Revocation keeps a tombstone (P5-M01): the credential then fails as REVOKED, not UNKNOWN, and the
+ * record survives for audit. Revoking an unknown or already revoked id is a no-op (false).
+ */
+export function revokeServicePrincipal({ store, ownerId, id, reason = 'revoked-by-owner', logger = null, now = Date.now() }) {
   const owner = store.users.get(ownerId);
-  const list = owner?.servicePrincipals ?? [];
-  const target = list.find((sp) => sp.id === id);
-  if (!target) return false;
-  store.users.update(owner.id, { servicePrincipals: list.filter((sp) => sp.id !== id) });
-  audit(logger, 'service-principal.revoked', { tenantId: target.tenantId, principalRef: `svc:${id}`, ownerRef: owner.id, reason });
+  const result = owner ? revokeWithTombstone(owner.servicePrincipals, id, { reason, now }) : null;
+  if (!result) return false;
+  store.users.update(owner.id, { servicePrincipals: result.records });
+  audit(logger, 'service-principal.revoked', { tenantId: result.revoked.tenantId, principalRef: `svc:${id}`, ownerRef: owner.id, reason });
   return true;
 }
 
@@ -317,7 +321,7 @@ export function apiKeyRoutes({ logger, policy = DEFAULT_TENANT_SECURITY_POLICY }
           lastUsedAt: null,
           revokedAt: null,
         };
-        ctx.store.users.update(user.id, { apiKeys: [...existing, record] });
+        ctx.store.users.update(user.id, { apiKeys: [...pruneTombstones(user.apiKeys), record] });
         audit(logger, 'api-key.created', { tenantId: record.tenantId, keyRef: id, ownerRef: user.id, scopeCount: record.scopes.length });
         sendData(ctx.res, { ...apiKeyDto(record, user.id), rawApiKey: minted.raw });
       },
@@ -353,9 +357,12 @@ export function apiKeyRoutes({ logger, policy = DEFAULT_TENANT_SECURITY_POLICY }
       path: '/rest/api-keys/:id',
       handler: (ctx) => {
         const user = requireApiKeyScope(ctx);
-        const keys = user.apiKeys ?? [];
-        if (keys.some((key) => key.id === ctx.params.id)) {
-          ctx.store.users.update(user.id, { apiKeys: keys.filter((key) => key.id !== ctx.params.id) });
+        // Tombstone, not delete (P5-M01): the record stays with revokedAt so the credential is
+        // reported REVOKED and the audit row survives. Unknown or already revoked ids are a silent
+        // no-op, as upstream: the response never confirms that a key id exists.
+        const result = revokeWithTombstone(user.apiKeys, ctx.params.id, { reason: 'revoked-by-owner' });
+        if (result) {
+          ctx.store.users.update(user.id, { apiKeys: result.records });
           audit(logger, 'api-key.revoked', { keyRef: ctx.params.id, ownerRef: user.id, reason: 'revoked-by-owner' });
         }
         sendData(ctx.res, { success: true });
