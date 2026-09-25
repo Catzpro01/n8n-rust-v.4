@@ -2717,6 +2717,20 @@
               "status": "implemented"
             },
             {
+              "name": "service-principal-list",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "service-principal-transfer",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
               "name": "delegate",
               "interaction": "call",
               "permission": "auth:session",

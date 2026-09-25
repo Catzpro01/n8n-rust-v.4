@@ -77,6 +77,7 @@ export const MACHINE_AUDIT_EVENTS = Object.freeze([
   'api-key.denied',
   'service-principal.created',
   'service-principal.revoked',
+  'service-principal.transferred',
   'service-principal.denied',
   'delegation.granted',
   'delegation.denied',
@@ -95,6 +96,9 @@ const AUDIT_FIELDS = Object.freeze([
   'outcome',
   'scopeCount',
   'approvalRef',
+  // Accountability changed on both sides of a transfer, so the audit row names
+  // both owners rather than only the new one.
+  'fromRef', 'toRef',
 ]);
 
 function deny(code, message, details) {

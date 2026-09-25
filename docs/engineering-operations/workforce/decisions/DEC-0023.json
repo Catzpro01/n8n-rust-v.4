@@ -1,0 +1,67 @@
+{
+  "schemaVersion": "1.0",
+  "objectType": "Decision",
+  "objectId": "DEC-0023",
+  "revision": 1,
+  "createdAt": "2026-09-26T00:00:00Z",
+  "updatedAt": "2026-09-26T00:00:00Z",
+  "events": [],
+  "state": "ACTIVE",
+  "category": "SECURITY",
+  "title": "Service principals are admin/owner authority: a member may manage personal API keys but may not mint machine identity",
+  "problem": "P5-M07 mounts the service-principal REST surface, which turns a programmatic lifecycle into an HTTP path. The P5.7 debt list (docs/n8n-lego/evidence/P5.8-CERTIFICATION-EVIDENCE.md §7) names the open item as 'members (not only admins) may create service principals within their own grant'. The guard the surface inherited is `apiKey:manage`, exactly the guard on /rest/api-keys — but that guard does not close the debt item, because `apiKey:manage` is NOT an admin-only scope in this product. The extracted roles.json is a faithful port of pinned n8n 2.9.4: reference/n8n/packages/@n8n/permissions/src/roles/scopes/global-scopes.ee.ts lists 'apiKey:manage' inside GLOBAL_MEMBER_SCOPES (25 scopes) as well as GLOBAL_OWNER_SCOPES and GLOBAL_ADMIN_SCOPES (121 each). So under the inherited guard a global:member can mint a service principal over HTTP. There is no upstream truth to copy for the correct answer: upstream n8n 2.9.4 has no service-principal surface at all (`grep -r service-principal reference/n8n/packages/cli/src` is empty), so the boundary is a product decision that must be recorded rather than inferred.",
+  "options": [
+    {
+      "id": "A-admin-owner-only",
+      "summary": "Service-principal create / transfer / revoke require global:admin or global:owner. Personal API keys (/rest/api-keys) keep upstream behaviour unchanged, so a member still manages their own keys."
+    },
+    {
+      "id": "B-inherit-apikey-manage",
+      "summary": "Keep the inherited apiKey:manage guard. A member may create service principals, attenuated to their own grant."
+    },
+    {
+      "id": "C-new-global-scope",
+      "summary": "Introduce a new global scope (e.g. servicePrincipal:manage) and gate the surface on it, defaulting it to admin/owner in roles.json."
+    }
+  ],
+  "selectedOption": "A-admin-owner-only",
+  "rationale": "Option A. (1) It closes the named debt item instead of documenting it: after this change a member holds no machine authority at all, which is the state the debt list asks for. (2) It is the fail-closed reading and matches how this product already treats authority that outlives a session: P5-M03 deliberately enforces API-key scopes that upstream skips without an enterprise licence, and re-intersects effective scopes with the owner's CURRENT grant, because a machine credential is authority that keeps working after the human who made it has been demoted or removed. A service principal is exactly that, and worse: it can hold scopes and act without any interactive proof. (3) The asymmetry with personal API keys is deliberate and is the reason the two surfaces stay separate: a personal API key is the member's own credential, bounded to what their role allows and revocable by them; a service principal is a separate identity whose accountability is transferred, delegated and audited, which is administration. (4) Option B leaves the debt item open and would newly expose it over HTTP, which is strictly worse than the status quo where the lifecycle is only reachable in-process. (5) Option C is the more expressive design and is the right answer if per-role service-principal policy is ever needed, but it invents a scope in the pinned vocabulary and changes roles.json for every role; that is a wider contract change than this slice's debt item requires, and it can be adopted later without disturbing the boundary this decision draws. If that happens this decision is superseded, not silently widened.",
+  "scope": {
+    "programs": ["GOVERNANCE", "P5"],
+    "slices": ["P5-M07"],
+    "domains": ["auth"],
+    "surfaces": [
+      "/rest/service-principals",
+      "/rest/service-principals/scopes",
+      "/rest/service-principals/:id"
+    ]
+  },
+  "authority": {
+    "decidedBy": "MANAGER-01",
+    "managerOnly": true,
+    "humanEscalation": false,
+    "proposedBy": "MANAGER-01"
+  },
+  "evidence": [],
+  "evidenceRefs": [
+    "docs/n8n-lego/evidence/P5.8-CERTIFICATION-EVIDENCE.md §7 (the debt item this closes)",
+    "reference/n8n/packages/@n8n/permissions/src/roles/scopes/global-scopes.ee.ts (apiKey:manage inside GLOBAL_MEMBER_SCOPES)",
+    "apps/n8n-lego/data/roles.json (the extracted port of the same three role scope sets)",
+    "apps/n8n-lego/src/auth/api-key-routes.mjs (the requireApiKeyScope guard both surfaces inherited)",
+    "apps/n8n-lego/test/service-principal-routes.test.mjs (the member 403 assertions that pin the boundary)",
+    "docs/n8n-lego/evidence/P5-M03-EVIDENCE.md (the fail-closed scope-enforcement posture this follows)"
+  ],
+  "sources": {
+    "issues": [85],
+    "prs": [],
+    "commits": [],
+    "requests": []
+  },
+  "promotion": {
+    "canonical": false,
+    "mainPath": "docs/engineering-operations/workforce/decisions/DEC-0023.json"
+  },
+  "reason": null,
+  "supersedes": null,
+  "supersededBy": null
+}

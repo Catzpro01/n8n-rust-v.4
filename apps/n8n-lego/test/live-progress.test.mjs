@@ -57,9 +57,14 @@ function reopened() {
   slice.mergeSha = null;
   slice.checkpoints[4] = { ...slice.checkpoints[4], status: 'in-progress', completedAt: undefined };
   register.executionPointer.latestCompletedSlice = { id: 'P5-M03', pr: 291, mergeSha: 'cf52701c91e5447f19c32377c38f6ae5eea7f3a7' };
-  // Only P5-M08 is back in flight here; P5-M09 is implemented on the canonical register, and an
-  // implemented slice must never appear in activeSlices.
-  register.executionPointer.activeSlices = ['P5-M08'];
+  // Whatever else is in flight on the canonical register stays in flight here: an
+  // in-progress slice must be in the pointer, so dropping one would make the fixture
+  // itself invalid and every assertion below would fail for the wrong reason.
+  const inFlight = [...REGISTER.programs, ...REGISTER.futurePrograms]
+    .flatMap((entity) => entity.slices)
+    .filter((slice) => slice.status === 'in-progress' && slice.id !== 'P5-M08')
+    .map((slice) => slice.id);
+  register.executionPointer.activeSlices = ['P5-M08', ...inFlight];
   assert.deepEqual(validateGovernanceRegister(register), []);
   return register;
 }
