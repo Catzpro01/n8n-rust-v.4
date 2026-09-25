@@ -37,7 +37,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | Blocked | `P5-M02` — blocked by P6-S04 (proposed, #116): the engine has no credential-consuming node. packages/reconstructed-engine/node-registry.mjs implements only manualTrigger, start, noOp, set, code, function and functionItem, so SecretRef resolution in the execution path has no consumer (Manager finding, verified against main 600a2145)<br>`P5-M05` — blocked by P8-S01 (planned, not authorized): the P8 storage contract that shared key/session/rate-limiter state needs<br>`P5-M06` — blocked by a mail-transport architecture decision (a dependency, or an injected transport contract); Node has no built-in SMTP<br>`P5-M10` — blocked by backing models this product does not have: projects/sharing, security audit, source control, data tables, workflow versions, a retry execution path, execution annotation tags (see P5-M08-EVIDENCE.md §1) |
 | Not authorized | planned is not authorized: the Manager starts a queued slice by moving it to in-progress in a PR on main. P5-M04 is planned and measure-first. P7-S01, P8-S01, P10-S01 and P11-S01 are placeholders that need a Manager Master Prompt before any work. |
 | Historical P2 ladder pointer | `P2.27` (history, not active work) |
-| Last verified main | `9d514dbc` |
+| Last verified main | `c5763c6d` |
 
 ## Programs P0–P11 (top level)
 
