@@ -1,4 +1,4 @@
-// Workforce control plane — JSON Schema (draft 2020-12 subset) validator.
+// Decision records — JSON Schema (draft 2020-12 subset) validator.
 // DEC-0002: the JSON Schema files under docs/engineering-operations/workforce/schemas are the ONE
 // canonical definition of object shape. This module only interprets them; it never redefines them.
 // Supported keywords (the subset the canonical schemas use, and nothing silently ignored):
@@ -15,26 +15,11 @@ export const SCHEMA_DIR = join(WORKFORCE_DOCS, 'schemas');
 const KNOWN = new Set(['$schema', '$id', '$defs', '$ref', 'title', 'description', 'type', 'enum', 'const', 'pattern',
   'minLength', 'maxLength', 'minimum', 'required', 'properties', 'additionalProperties', 'items', 'minItems', 'maxItems']);
 
+// DEC-0019: only the decision records keep a canonical schema; the task-distribution object schemas
+// (Task, AgentState, Lease, Reservation, ...) were removed together with the engine.
 export const SCHEMA_FILES = Object.freeze({
-  Task: 'task.schema.json',
-  Reservation: 'reservation.schema.json',
-  AgentState: 'agent-state.schema.json',
-  Lease: 'lease.schema.json',
-  Evidence: 'evidence.schema.json',
   Decision: 'decision.schema.json',
-  MergeQueueItem: 'merge-queue.schema.json',
-  Handoff: 'handoff.schema.json',
-  Request: 'request.schema.json',
-  Approval: 'approval.schema.json',
-  JournalEntry: 'journal-entry.schema.json',
-  Slice: 'slice.schema.json',
-  Actor: 'actor.schema.json',
-  Command: 'command.schema.json',
-  Event: 'event.schema.json',
 });
-
-/** The seven primary workforce objects (#263). */
-export const CORE_OBJECT_TYPES = Object.freeze(['Task', 'Reservation', 'AgentState', 'Lease', 'Evidence', 'Decision', 'MergeQueueItem']);
 
 function typeOf(value) {
   if (value === null) return 'null';
