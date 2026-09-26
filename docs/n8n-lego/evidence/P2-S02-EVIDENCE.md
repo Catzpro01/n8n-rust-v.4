@@ -91,11 +91,27 @@ installed is not loaded. `mode: 'pilot'`, `rollback.strategy: 'pilot-not-primary
    getter reported the `success` toast that arrived last. An operator reading "severity: success" on
    an error region is being told the wrong thing. Now one `leadingEntry()` — the most severe *visible*
    notice — feeds region state, severity, display model, a11y and observation.
-4. **`owner: 'agent-4'` is not a valid agent id.** The registry wants `agent-\d{2}`; corrected to
+4. **A dismissed error still held the region in `error`.** `regionState()` tested
+   `entries.some(severity === 'error')`, which scans *dismissed* entries too. Dismissing an
+   error while a success toast stayed visible reported an `error` region whose leading notice
+   was the toast: the region said `error` while `severity`, `displayModel()` and `a11y()` all
+   said `success`, and `observe()` emitted `regionState: 'error'` with a fabricated
+   `error.kind: 'network'` that no error ever supplied. A screen reader would have received a
+   **polite** notification on a region the surface itself calls an error.
+
+   This is the exact drift the single-`leadingEntry()` rule was introduced to prevent,
+   reintroduced one line below the comment explaining it: the *empty* check had been fixed to
+   count `visibleEntries()`, but the *error* check still scanned the raw array. `regionState()`
+   now derives from `leadingEntry()` outright, and the two unreachable `?? entries.at(-1)`
+   fallbacks — which documented the wrong rule — were removed so the invariant is explicit
+   rather than latent. Found by adversarial review while the delivery PR was blocked on the
+   runner fleet, and pinned by a new test that asserts region state, severity, display model,
+   a11y and observation agree at every transition, including a dismissed error.
+5. **`owner: 'agent-4'` is not a valid agent id.** The registry wants `agent-\d{2}`; corrected to
    `agent-04`.
-5. **`activation: 'lazy'` without an `entry`.** A non-eager activation must name where its code is, or
+6. **`activation: 'lazy'` without an `entry`.** A non-eager activation must name where its code is, or
    it is not installable; `entry: './src/notification-surface.mjs'` added.
-6. **`createFrontendRegistry()` with no catalog throws.** The registry refuses an empty vocabulary;
+7. **`createFrontendRegistry()` with no catalog throws.** The registry refuses an empty vocabulary;
    the test now builds it against the declared catalog like the other frontend suites do.
 
 ## 8. Gate staleness this slice had to fix
@@ -136,8 +152,8 @@ their sum. Measured total is now 82.5 KB. `card.md` itself stays inside its **L1
 
 | Gate | Result |
 | --- | --- |
-| `40-notification-surface.test.mjs` | **28 / 28 pass** |
-| `frontend-lego:test` (whole suite) | **479 / 480 pass**, 1 skipped |
+| `40-notification-surface.test.mjs` | **30 / 30 pass** |
+| `frontend-lego:test` (whole suite) | **481 / 482 pass**, 1 skipped |
 | `lego:arch` / `lego:arch:selftest` | OK |
 | `lego:foundation` / `lego:foundation:selftest` | OK |
 | `lego:capabilities` / `lego:scaleout` | OK |

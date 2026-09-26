@@ -112,6 +112,62 @@ test('an error notice occupies the error region and is never masked by a later s
   assert.equal(surface.severity, 'error');
 });
 
+test('a DISMISSED error does not keep the region in error', () => {
+  // The bug this pins: regionState() tested `entries.some(severity === 'error')`,
+  // which scans dismissed entries too. Dismissing an error while a success toast
+  // stayed visible reported an `error` region whose leading notice was the toast —
+  // so the region said error while severity, displayModel and a11y all said
+  // success, and observe() emitted `regionState: 'error'` with a fabricated
+  // `error.kind: 'network'` that no error ever supplied. A screen reader would get
+  // a POLITE notification on a region the surface itself calls an error.
+  const surface = createNotificationSurface();
+  const failed = surface.error({ error: { kind: 'timeout', code: 'E_TIMEOUT' } });
+  surface.success();
+  assert.equal(surface.regionState, 'error', 'the error leads while it is visible');
+
+  assert.equal(surface.dismiss(failed), true);
+
+  assert.equal(surface.regionState, 'ready', 'a dismissed error must not hold the region');
+  assert.equal(surface.severity, 'success');
+  assert.equal(surface.displayModel().severity, 'success');
+  // The a11y intent must agree with the region it is attached to.
+  assert.equal(surface.a11y().role, 'status');
+  assert.equal(surface.a11y()['aria-live'], 'polite');
+  // And the observation must not invent an error the surface was never given.
+  const observation = surface.observe();
+  assert.equal(observation.regionState, 'ready');
+  assert.equal(observation.error, null);
+  // The dismissed error is still in the history, which is the point of keeping it.
+  assert.equal(surface.history.filter((entry) => entry.event === 'dismissed').length, 1);
+});
+
+test('regionState, severity, displayModel and a11y agree on every transition', () => {
+  // One leading-notice accessor feeds all four. Any future second derivation
+  // shows up here as a disagreement rather than as a parity failure later.
+  const surface = createNotificationSurface();
+  const agree = (label) => {
+    const leading = surface.severity;
+    const expected = leading === null ? 'empty' : leading === 'error' ? 'error' : 'ready';
+    assert.equal(surface.regionState, expected, `${label}: regionState disagrees with severity`);
+    assert.equal(surface.displayModel().severity, leading, `${label}: displayModel disagrees`);
+    // An empty region is not announced at all, so it is 'off' rather than 'polite'.
+    const expectedLive = leading === null ? 'off' : leading === 'error' ? 'assertive' : 'polite';
+    assert.equal(surface.a11y()['aria-live'], expectedLive, `${label}: a11y disagrees`);
+    const observation = surface.observe();
+    assert.equal(observation.regionState, expected, `${label}: observation disagrees`);
+  };
+
+  agree('fresh');
+  surface.info(); agree('info');
+  surface.success(); agree('success stacked on info');
+  const warning = surface.warning(); agree('warning stacked');
+  const error = surface.error(); agree('error stacked');
+  surface.dismiss(error); agree('error dismissed, warning still visible');
+  surface.dismiss(warning); agree('warning dismissed, info+success still visible');
+  surface.dismissAll(); agree('everything dismissed');
+  surface.error(); agree('a fresh error after a full dismiss');
+});
+
 test('dismissal empties the region rather than adding a sixth region state', () => {
   // A dismissed notice that still occupied a region state would still be
   // announced. The whole point of dismissal is that the region goes away.

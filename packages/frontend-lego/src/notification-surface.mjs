@@ -215,16 +215,26 @@ export function createNotificationSurface(init = {}) {
   let degradedEvents = 0;
 
   function regionState() {
-    // The region is empty when nothing is VISIBLE — not when the array is empty.
-    // Entries are marked dismissed and kept for the history, so counting the array
-    // would report a `ready` region for a surface the user has dismissed
-    // everything from, and a live region that keeps announcing after the user
-    // cleared it is the bug this whole disposition axis exists to prevent.
-    if (visibleEntries().length === 0) return 'empty';
+    // ONE rule, derived from the ONE leading-notice accessor. The region is empty
+    // when nothing is VISIBLE — not when the array is empty: entries are marked
+    // dismissed and kept for the history, so counting the array would report a
+    // `ready` region for a surface the user has dismissed everything from, and a
+    // live region that keeps announcing after the user cleared it is the bug this
+    // whole disposition axis exists to prevent.
+    //
+    // This used to test `entries.some(severity === 'error')`, which scans DISMISSED
+    // entries too. Dismissing an error while a success toast stayed visible
+    // therefore reported an `error` region whose leading notice was the toast, so
+    // the region said error while severity, displayModel and a11y all said
+    // success — and observe() emitted `regionState: 'error'` with a fabricated
+    // `error.kind: 'network'` that no error ever supplied. Exactly the drift this
+    // accessor exists to prevent, reintroduced one line below the comment
+    // explaining why it must not happen.
+    const leading = leadingEntry();
+    if (!leading) return 'empty';
     // The most severe visible notice decides the region: an error must never be
     // masked by a success toast sitting in front of it.
-    if (entries.some((entry) => entry.severity === 'error')) return 'error';
-    return 'ready';
+    return leading.severity === 'error' ? 'error' : 'ready';
   }
 
   function visibleEntries() {
@@ -253,7 +263,9 @@ export function createNotificationSurface(init = {}) {
       // live region that fires on "nothing changed" trains users to ignore it.
       return Object.freeze({ role: 'presentation', 'aria-live': 'off', hidden: true, 'aria-label-key': null });
     }
-    const leading = leadingEntry() ?? entries.at(-1);
+    // No `?? entries.at(-1)` fallback: a non-empty region always has a visible
+    // leading notice, and reaching for a dismissed one is the bug above.
+    const leading = leadingEntry();
     const intent = NOTIFICATION_A11Y[leading.severity] ?? NOTIFICATION_A11Y.info;
     return Object.freeze({
       role: intent.role,
@@ -276,7 +288,7 @@ export function createNotificationSurface(init = {}) {
         degraded: !renderAvailable,
       });
     }
-    const leading = leadingEntry() ?? entries.at(-1);
+    const leading = leadingEntry();
     const errorDisplay = leading.severity === 'error' && leading.error
       ? toDisplayModel(
           typeof leading.error.kind === 'string'
