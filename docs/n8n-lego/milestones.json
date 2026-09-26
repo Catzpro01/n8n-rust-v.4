@@ -12,7 +12,7 @@
     "historicalLastP2Milestone": "P2.27",
     "lastVerifiedMain": "fce988e709a97c671c116310fc9a7a58ec402e42",
     "latestCompletedSlice": { "id": "P6-S01", "pr": 328, "mergeSha": "fce988e709a97c671c116310fc9a7a58ec402e42" },
-    "activeSlices": ["P6-S02"],
+    "activeSlices": ["P6-S02", "P2-S04"],
     "verifyingSlices": [],
     "plannedQueue": [],
     "blockedSlices": [
@@ -2487,7 +2487,82 @@
           "issue": 240,
           "evidence": null,
           "owner": "manager (unassigned)",
-          "blockedBy": "Authorized for Layers 3-5, blocked on task splitting. CORRECTION to an earlier recording that said this slice was not authorized: that was wrong. The Manager Master Prompt names P2-S03 in its authorized queue, and issue #240 asks for exactly that - \"Implementation must be split into dedicated milestone tasks with Manager Master Prompts.\" So Layers 3-5 (core workflow surfaces, platform surfaces, AI surfaces) ARE authorized. What is NOT authorized is the Layer 6 component the slice title carries, legacy UI decommission: the #240 scope boundary says the issue does not authorize removal of reference/n8n or n8n-editor-ui, permanent invariant 1 forbids a big-bang rewrite, invariant 2 keeps original workflow JSON compatibility mandatory, and Layer 6 is gated on every required surface having parity, compatibility, performance, accessibility and migration/rollback evidence first. The slice is therefore blocked on being SPLIT, not on authorization: Layers 3-5 must become dedicated per-surface milestone tasks in the #241/#245 strangler shape - one additional low-risk surface per slice, mode pilot, rollback pilot-not-primary, parity evidence against the reference, original editor still the default path - and Layer 6 needs its own Manager decision once that evidence exists. Splitting a slice and re-scoping its title is a Manager action, not a delivery action, so it is recorded here rather than performed."
+          "blockedBy": "Authorized for Layers 3-5, blocked on task splitting. CORRECTION to an earlier recording that said this slice was not authorized: that was wrong. The Manager Master Prompt names P2-S03 in its authorized queue, and issue #240 asks for exactly that - \"Implementation must be split into dedicated milestone tasks with Manager Master Prompts.\" So Layers 3-5 (core workflow surfaces, platform surfaces, AI surfaces) ARE authorized. What is NOT authorized is the Layer 6 component the slice title carries, legacy UI decommission: the #240 scope boundary says the issue does not authorize removal of reference/n8n or n8n-editor-ui, permanent invariant 1 forbids a big-bang rewrite, invariant 2 keeps original workflow JSON compatibility mandatory, and Layer 6 is gated on every required surface having parity, compatibility, performance, accessibility and migration/rollback evidence first. The slice is therefore blocked on being SPLIT, not on authorization: Layers 3-5 must become dedicated per-surface milestone tasks in the #241/#245 strangler shape - one additional low-risk surface per slice, mode pilot, rollback pilot-not-primary, parity evidence against the reference, original editor still the default path - and Layer 6 needs its own Manager decision once that evidence exists. Splitting a slice and re-scoping its title is a Manager action, not a delivery action, so it is recorded here rather than performed. The first Layer 3 surface (dashboard workflow list) has now been split out as P2-S04 and is in progress on delivery/p2-s03-dashboard; this umbrella covers the remaining Layers 3-5 surfaces and the not-authorized Layer 6."
+        },
+        {
+          "id": "P2-S04",
+          "title": "Dashboard workflow list (first Layer 3 surface split out of P2-S03)",
+          "kind": "slice",
+          "status": "in-progress",
+          "checkpoints": [
+            {
+              "id": "CP-01",
+              "title": "Handed-over input boundary: no private data path",
+              "purpose": "The workflow rows are handed over (inputBoundary source hand-over). The surface never fetches /rest/workflows, so it holds no private data path or second source of truth for the workflow catalog - the compatibility boundary exists to prevent exactly that.",
+              "weight": 20,
+              "status": "completed",
+              "evidence": "inputBoundary.source hand-over in src/workflow-list.mjs; loadSuccess() is the only row entry point; test/41 registry-seam and hand-over tests.",
+              "reference": "issue #240 Layer 3; the #241/#245 hand-over pattern",
+              "completedAt": "2026-09-26T06:30:00Z"
+            },
+            {
+              "id": "CP-02",
+              "title": "Closed contract reusing REGION_STATES: no fifth state",
+              "purpose": "The four region states (loading / empty / error / ready) reuse the closed REGION_STATES the parity harness compares. Filtering the list to zero is the empty region with reason filtered, not a fifth region state: the region is what the harness compares, the reason is carried in the display model.",
+              "weight": 20,
+              "status": "completed",
+              "evidence": "contract.states pinned to REGION_STATES in test/41; Object.keys(contract.states) equals REGION_STATES exactly; filter-to-zero yields regionState empty with reason filtered.",
+              "reference": "REGION_STATES in surface-contract.mjs",
+              "completedAt": "2026-09-26T06:30:00Z"
+            },
+            {
+              "id": "CP-03",
+              "title": "Bounded display with enforced bounds",
+              "purpose": "Visible rows are capped (maxVisible 20, hard 50) and the filter length is bounded (64). The bounds are enforced, not merely declared: an unknown row field is refused and an over-long filter throws. A bound that is published but not checked moves the failure onto whoever trusted it.",
+              "weight": 15,
+              "status": "completed",
+              "evidence": "WORKFLOW_LIST_LIMITS in src/workflow-list.mjs; test/41 bounded + the bounds-are-enforced + closed-row-shape tests.",
+              "reference": "NOTIFICATION_LIMITS.maxParams enforcement precedent (#245 bug 2)",
+              "completedAt": "2026-09-26T06:30:00Z"
+            },
+            {
+              "id": "CP-04",
+              "title": "Client filter as a real observable mutation",
+              "purpose": "The name filter is the one real mutation: it narrows the visible rows, is case-insensitive and trimmed, clears, and filters to zero as empty with reason filtered while the loaded data is retained (count preserved). A load clears a stale filter.",
+              "weight": 15,
+              "status": "completed",
+              "evidence": "setFilter() in src/workflow-list.mjs; test/41 narrow / clear / filter-to-zero / count-retained / stale-filter tests.",
+              "reference": "issue #240 Layer 3 dashboard",
+              "completedAt": "2026-09-26T06:30:00Z"
+            },
+            {
+              "id": "CP-05",
+              "title": "Accessibility derived once; only error assertive, only loading busy",
+              "purpose": "The a11y intent is derived once in WORKFLOW_LIST_A11Y so the contract declared observables and the view-model attributes cannot drift. Only error is aria-live assertive (cautions stay polite so they do not train users to ignore the region); only loading is aria-busy.",
+              "weight": 15,
+              "status": "completed",
+              "evidence": "WORKFLOW_LIST_A11Y in src/workflow-list.mjs; test/41 a11y tests assert role / aria-live / aria-busy per state and the assertive / busy exclusivity.",
+              "reference": "NOTIFICATION_A11Y precedent (#245)",
+              "completedAt": "2026-09-26T06:30:00Z"
+            },
+            {
+              "id": "CP-06",
+              "title": "Parity equivalent against reference fixtures, fail-closed",
+              "purpose": "All four region states are parity-equivalent to deterministic reference fixtures. The error kind is pinned (equivalent when it matches, migration-required when it does not) and the harness is fail-closed: a drifted field is migration-required and an incomparable observation throws. A fixture that drifts from the candidate is a bug.",
+              "weight": 15,
+              "status": "completed",
+              "evidence": "reference*Observation() in src/workflow-list.mjs mirror observe() field for field; test/41 parity-equivalent (four states) + error-kind pinning + fail-closed tests.",
+              "reference": "parity.mjs compareObservations; the #241/#245 fixture pattern",
+              "completedAt": "2026-09-26T06:30:00Z"
+            }
+          ],
+          "updatedAt": "2026-09-26T06:30:00Z",
+          "latestUpdate": "First P2-S03 Layer 3 strangler slice split out by the Manager continuation directive and implemented as a bounded, client-filtered workflow-list pilot on delivery/p2-s03-dashboard; original editor stays the default path.",
+          "mergeSha": null,
+          "issue": 240,
+          "evidence": null,
+          "owner": "agent-4",
+          "note": "P2-S03 Layer 3 first strangler slice; split out per #240 under the Manager continuation directive. One low-risk surface, mode pilot, rollback pilot-not-primary."
         }
       ]
     },
