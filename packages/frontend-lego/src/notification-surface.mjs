@@ -449,7 +449,20 @@ export function createNotificationSurface(init = {}) {
           ? { kind: leadingEntry()?.error?.kind ?? 'network' }
           : null,
         interactions: Object.freeze({ dismiss: model.actions.includes('dismiss') }),
-        events: Object.freeze(history.filter((h) => h.event === 'shown').map((h) => 'notification:shown')),
+        // A SNAPSHOT, not a replay. This used to map every 'shown' entry in the
+        // cumulative history to a 'notification:shown' event, so a surface the user had
+        // dismissed everything from still reported a shown event — and because the
+        // harness compares events as a set, that single stale entry made an otherwise
+        // perfect empty surface classify as `migration-required` against the empty
+        // reference. Every other field was equal; only the event stream disagreed.
+        //
+        // The disposition axis had already removed the dismissed notice from the
+        // region state, the a11y attributes and the display model, but not from here —
+        // which is the same bug wearing a different hat: a dismissed notice that is
+        // still being reported. The cumulative log is what `history` is for; an
+        // observation that replays it is not a snapshot, and it also grew without
+        // bound, allocating one string per notice ever shown on every observe() call.
+        events: Object.freeze(visibleEntries().length > 0 ? ['notification:shown'] : []),
         accessibility: a11y(),
         localization: Object.freeze({ slot: NOTIFICATION_MESSAGE_SLOT, locale }),
         contract: Object.freeze({ id: NOTIFICATION_SURFACE_ID, version: NOTIFICATION_SURFACE_VERSION }),

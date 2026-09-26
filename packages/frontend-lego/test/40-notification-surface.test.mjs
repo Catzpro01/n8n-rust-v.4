@@ -335,6 +335,43 @@ test('an empty surface classifies as equivalent against the empty fixture', () =
   assert.equal(comparison.status, 'equivalent', JSON.stringify(comparison.differences ?? comparison));
 });
 
+test('a surface the user dismissed everything from still classifies as equivalent', () => {
+  // The existing empty-fixture test only ever covers a FRESH surface that has never
+  // shown a notice, which is why this slipped through: observe().events replayed the
+  // cumulative 'shown' history, so a dismissed-everything surface still reported a
+  // shown event. The harness compares events as a set, so one stale entry made an
+  // otherwise perfect empty surface `migration-required` — every other field equal.
+  //
+  // This is the state the disposition axis exists to produce, so it is the state most
+  // worth pinning.
+  for (const clear of ['dismissAll', 'single dismiss']) {
+    const surface = createNotificationSurface();
+    surface.info();
+    surface.success();
+    if (clear === 'dismissAll') surface.dismissAll();
+    else {
+      for (const entry of surface.history.filter((h) => h.event === 'shown')) surface.dismiss(entry.id);
+    }
+    assert.equal(surface.regionState, 'empty', `${clear}: the region is empty`);
+    assert.equal(surface.a11y()['aria-live'], 'off', `${clear}: nothing is announced`);
+    assert.deepEqual([...surface.observe().events], [], `${clear}: no stale shown event`);
+    const comparison = compareObservations(referenceEmptyNotificationObservation(), surface.observe());
+    assert.equal(comparison.status, 'equivalent',
+      `${clear}: ${comparison.status} — ${JSON.stringify(comparison.diffs ?? comparison)}`);
+  }
+});
+
+test('observe() is a snapshot, not a replay of the whole history', () => {
+  // A long-lived session pushes thousands of notices. observe() is called per render,
+  // so replaying the cumulative log allocates one string per notice ever shown, every
+  // time. The snapshot is bounded by what the surface currently emits.
+  const surface = createNotificationSurface();
+  for (let i = 0; i < 200; i += 1) surface.info();
+  assert.deepEqual([...surface.observe().events], ['notification:shown']);
+  // The cumulative log is still available, unchanged, under `history`.
+  assert.equal(surface.history.filter((h) => h.event === 'shown').length, 200);
+});
+
 test('the parity vocabulary is the harness one, not a local one', () => {
   // No second parity model: this surface speaks PARITY_STATUSES or it does not
   // speak at all.
