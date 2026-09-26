@@ -16,14 +16,9 @@
       "pr": 323,
       "mergeSha": "a32e9b80d72210b68151035f451a020b1538d080"
     },
-    "activeSlices": [],
+    "activeSlices": ["P6-S01"],
     "verifyingSlices": [],
-    "plannedQueue": [
-      "P6-S01",
-      "P6-S02",
-      "P2-S02",
-      "P2-S03"
-    ],
+    "plannedQueue": ["P6-S02","P2-S02","P2-S03"],
     "blockedSlices": [
       "P5-M02",
       "P5-M05",
@@ -3524,7 +3519,71 @@
           "id": "P6-S01",
           "title": "Live community / private / custom node installation path over the P6 admission pipeline",
           "kind": "slice",
-          "status": "planned",
+          "status": "in-progress",
+          "checkpoints": [
+            {
+              "id": "CP-01",
+              "title": "Classification: a node class is a policy input, not a trust grant",
+              "purpose": "Resolve the node class of a candidate and prove that no class claim buys authority by itself: an attestation promotes one step and no further, AI-generated code is custom whatever it declares, and an unclassifiable candidate is never promoted by what it says about itself.",
+              "weight": 20,
+              "status": "completed",
+              "evidence": "classifyNode in src/lego/node-install.mjs; tests 'an attestation promotes community one step and no further', 'a local artifact is never promoted by an attestation', 'AI-generated code is custom whatever it declares about itself', 'a class claim outside the vocabulary is refused, not coerced'.",
+              "reference": "docs/n8n-lego/evidence/P6-S01-EVIDENCE.md \u00a72",
+              "completedAt": "2026-09-26T00:00:00Z"
+            },
+            {
+              "id": "CP-02",
+              "title": "Trust ceiling/floor resolution for every named class",
+              "purpose": "Map every class issue #95 names to both a ceiling and a floor, so official reaches CORE's ceiling without ever being granted CORE, and no class can be placed outside the band its own class permits.",
+              "weight": 15,
+              "status": "completed",
+              "evidence": "NODE_CLASS_TRUST_CEILING / NODE_CLASS_TRUST_FLOOR and resolveTrustClass; test 'every class has both a ceiling and a floor' asserts floor index >= ceiling index for all six classes.",
+              "reference": "docs/n8n-lego/evidence/P6-S01-EVIDENCE.md \u00a72",
+              "completedAt": "2026-09-26T00:00:00Z"
+            },
+            {
+              "id": "CP-03",
+              "title": "Locality: the capability can take the in-process row away",
+              "purpose": "Resolve where a node runs from the stricter of its class ceiling and the capabilities it requested, so an official node asking for subprocess lands in an isolated process instead of being waved into the process on the strength of its class claim.",
+              "weight": 20,
+              "status": "completed",
+              "evidence": "resolveInstallLocality with strictestPosture; tests 'a native capability takes the in-process row away, whatever the class claims' and 'an official node requesting a native capability is downgraded to ISOLATED'.",
+              "reference": "docs/n8n-lego/evidence/P6-S01-EVIDENCE.md \u00a75",
+              "completedAt": "2026-09-26T00:00:00Z"
+            },
+            {
+              "id": "CP-04",
+              "title": "Fail-closed three-way verdict (refuse / incomplete / admit)",
+              "purpose": "Keep the three verdicts deliberately distinct: refuse means something failed, incomplete means nobody checked, admit means both are answered. Conflating a missing check with a failed check is the bug that produces 'tests mostly pass'.",
+              "weight": 20,
+              "status": "completed",
+              "evidence": "installNode verdict derivation; tests 'a missing self-test is incomplete, not refuse' (caught a real inverted-verdict bug), 'a failed self-test is refused', 'a node over its resource budget is refused with the budget named'.",
+              "reference": "docs/n8n-lego/evidence/P6-S01-EVIDENCE.md \u00a73",
+              "completedAt": "2026-09-26T00:00:00Z"
+            },
+            {
+              "id": "CP-05",
+              "title": "Consumer-contract stability under re-placement",
+              "purpose": "Prove that moving a node behind a different runtime does not change the node a workflow sees: the install decision carries consumerContract { type } and nothing else, and the decision carries no grant of any kind.",
+              "weight": 10,
+              "status": "completed",
+              "evidence": "Tests 're-placing a node does not change its consumer-facing contract' (in-process vs isolated, identical consumerContract) and 'the install decision never carries a grant, only a ceiling' (asserts no grants key exists).",
+              "reference": "docs/n8n-lego/evidence/P6-S01-EVIDENCE.md \u00a74",
+              "completedAt": "2026-09-26T00:00:00Z"
+            },
+            {
+              "id": "CP-06",
+              "title": "DEC-0015 required self-hosted runner verification",
+              "purpose": "Derive the DEC-0015 verdict for the delivery PR from the required self-hosted runner jobs, with real run IDs and real runner identities read from the jobs API, never simulated.",
+              "weight": 15,
+              "status": "completed",
+              "evidence": "DEC-0015 verdict derived from the PR head check-runs and the actions/runs jobs API at merge time; recorded in the delivery PR body and in the register mergeSha reconciliation.",
+              "reference": "docs/n8n-lego/evidence/P6-S01-EVIDENCE.md \u00a77",
+              "completedAt": "2026-09-26T00:00:00Z"
+            }
+          ],
+          "updatedAt": "2026-09-26T02:00:21Z",
+          "latestUpdate": "In progress: P6-S01 installs the live community / private / custom node installation path (node.install@0.1.0) over the P6 admission pipeline. Checkpoint model installed: 6 checkpoints, weights 20/15/20/20/10/15, sum 100.",
           "mergeSha": null,
           "issue": 95,
           "evidence": null,
