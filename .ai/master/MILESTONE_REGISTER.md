@@ -31,10 +31,10 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | | |
 | --- | --- |
 | Latest completed slice | `P6-S01` — Live community / private / custom node installation path over the P6 admission pipeline (PR #328, merge `fce988e7`) |
-| Active slices | `P6-S02` — Production WASM node/plugin sandbox engine<br>`P2-S02` — Frontend LEGO shared notification surface + accessibility parity |
+| Active slices | `P6-S02` — Production WASM node/plugin sandbox engine |
 | Verifying (merged, post-merge verification pending) | — (none) |
 | Planned queue (in order; planned ≠ authorized) | `P2-S03` |
-| Blocked | `P5-M02` — blocked by P6-S04 (proposed, #116): the engine has no credential-consuming node. packages/reconstructed-engine/node-registry.mjs implements only manualTrigger, start, noOp, set, code, function and functionItem, so SecretRef resolution in the execution path has no consumer (Manager finding, verified against main 600a2145)<br>`P5-M05` — blocked by P8-S01 (planned, not authorized): the P8 storage contract that shared key/session/rate-limiter state needs<br>`P5-M06` — blocked by a mail-transport architecture decision (a dependency, or an injected transport contract); Node has no built-in SMTP<br>`P5-M10` — blocked by backing models this product does not have: projects/sharing, security audit, source control, data tables, workflow versions, a retry execution path, execution annotation tags (see P5-M08-EVIDENCE.md §1) |
+| Blocked | `P2-S02` — blocked by Self-hosted runner fleet offline. Delivery PR #332 (head c62846f857e9e4ec1fc7525d6d4c191f7a3dfb23) is green on all 3 GitHub-hosted jobs, but the 6 required self-hosted jobs have never left queued: Level 0 (Check & Format), Level 1 (Affected Tests), Level 2 Conformance LEGO & Node Catalog, Level 2 Workspace Tests (linux), Level 2 Workspace Tests (windows), Windows worker portability probe. DEC-0015 retry attempted on all 6 (jobs 108338293120, 108338293185, 108338293240, 108338293361, 108338293536, 108338293770) — each returned HTTP 403 already-running and stayed queued, so no runner ever picked them up. mergeable_state is unstable, which is not green. The same fleet outage already blocks governance PR #331 (P6-S02). Implementation, evidence and all 6 checkpoints are complete; only the merge is blocked.<br>`P5-M02` — blocked by P6-S04 (proposed, #116): the engine has no credential-consuming node. packages/reconstructed-engine/node-registry.mjs implements only manualTrigger, start, noOp, set, code, function and functionItem, so SecretRef resolution in the execution path has no consumer (Manager finding, verified against main 600a2145)<br>`P5-M05` — blocked by P8-S01 (planned, not authorized): the P8 storage contract that shared key/session/rate-limiter state needs<br>`P5-M06` — blocked by a mail-transport architecture decision (a dependency, or an injected transport contract); Node has no built-in SMTP<br>`P5-M10` — blocked by backing models this product does not have: projects/sharing, security audit, source control, data tables, workflow versions, a retry execution path, execution annotation tags (see P5-M08-EVIDENCE.md §1) |
 | Not authorized | planned is not authorized: the Manager starts a queued slice by moving it to in-progress in a PR on main. P5-M04 is planned and measure-first. P7-S01, P8-S01, P10-S01 and P11-S01 are placeholders that need a Manager Master Prompt before any work. |
 | Historical P2 ladder pointer | `P2.27` (history, not active work) |
 | Last verified main | `fce988e7` |
@@ -45,7 +45,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | --- | --- | --- | --- | --- | --- |
 | **P0** | Core Application Bootstrap | **COMPLETE** | 2/2 | 2 | — |
 | **P1** | n8n Compatibility / Behavioral Baseline | **COMPLETE** | 2/2 | 3 | — |
-| **P2** | LEGO / AI / Plugin Foundation | **COMPLETE** | 32/34 | 29 | `P2-S02` (in-progress) |
+| **P2** | LEGO / AI / Plugin Foundation | **COMPLETE** | 32/34 | 29 | `P2-S03` (planned) |
 | **P3** | Workflow + Execution + Unlimited Nodes | **COMPLETE** | 18/18 | 24 | — |
 | **P4** | Trigger / Webhook / Ingress | **COMPLETE** | 10/10 | 19 | — |
 | **P5** | Identity / Authentication / Authorization / Credentials (Security) | **COMPLETE** | 13/18 | 20 | `P5-M04` (planned) |
@@ -196,7 +196,7 @@ Contract-driven LEGO architecture, FE/BE domain boundaries, AI foundation, Agent
 | `P2.27.9` | side-by-side upgrade + rollback + supply-chain admission | implemented | #195 | `63aadb19` | #83 |
 | `P2.27.10` | frontend plugin boundary (final implementation slice) | implemented | #197 | `7d4eae8d` | #83 |
 | `P2-S01` | Frontend LEGO migration foundation + parity harness + status-region pilot | implemented | #244 | `c77c3dba` | #241 |
-| `P2-S02` | Frontend LEGO shared notification surface + accessibility parity | in-progress | — | — | #245 |
+| `P2-S02` | Frontend LEGO shared notification surface + accessibility parity **Blocked by:** Self-hosted runner fleet offline. Delivery PR #332 (head c62846f857e9e4ec1fc7525d6d4c191f7a3dfb23) is green on all 3 GitHub-hosted jobs, but the 6 required self-hosted jobs have never left queued: Level 0 (Check & Format), Level 1 (Affected Tests), Level 2 Conformance LEGO & Node Catalog, Level 2 Workspace Tests (linux), Level 2 Workspace Tests (windows), Windows worker portability probe. DEC-0015 retry attempted on all 6 (jobs 108338293120, 108338293185, 108338293240, 108338293361, 108338293536, 108338293770) — each returned HTTP 403 already-running and stayed queued, so no runner ever picked them up. mergeable_state is unstable, which is not green. The same fleet outage already blocks governance PR #331 (P6-S02). Implementation, evidence and all 6 checkpoints are complete; only the merge is blocked. | blocked | — | — | #245 |
 | `P2-S03` | Frontend Evolution layers 3-6 (core workflow, platform, AI surfaces, legacy UI decommission) | planned | — | — | #240 |
 
 </details>

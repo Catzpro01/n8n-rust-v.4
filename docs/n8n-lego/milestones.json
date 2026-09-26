@@ -12,10 +12,11 @@
     "historicalLastP2Milestone": "P2.27",
     "lastVerifiedMain": "fce988e709a97c671c116310fc9a7a58ec402e42",
     "latestCompletedSlice": { "id": "P6-S01", "pr": 328, "mergeSha": "fce988e709a97c671c116310fc9a7a58ec402e42" },
-    "activeSlices": ["P6-S02","P2-S02"],
+    "activeSlices": ["P6-S02"],
     "verifyingSlices": [],
     "plannedQueue": ["P2-S03"],
     "blockedSlices": [
+      "P2-S02",
       "P5-M02",
       "P5-M05",
       "P5-M06",
@@ -2404,7 +2405,7 @@
           "id": "P2-S02",
           "title": "Frontend LEGO shared notification surface + accessibility parity",
           "kind": "slice",
-          "status": "in-progress",
+          "status": "blocked",
           "checkpoints": [
             {
               "id": "CP-01",
@@ -2467,13 +2468,14 @@
               "completedAt": "2026-09-26T00:00:00Z"
             }
           ],
-          "updatedAt": "2026-09-26T04:30:14Z",
+          "updatedAt": "2026-09-26T04:40:37Z",
           "latestUpdate": "Implementation complete on delivery/p2-s02-notification-surface: one shared notification surface (ui.primitives.notification-surface@1.0.0) with region state, severity and disposition as three separate axes. Only error is assertive; an empty region is not announced. Degradation keeps the observable history identical. The #241 single-pilot rule was generalized to one pilot per originating slice via sourceIssue, and five pinned gate facts were refreshed. frontend-lego:test 479/480 (1 pre-existing skip); 40-notification-surface 28/28; lego:arch, lego:foundation, lego:capabilities, lego:scaleout, lego:ai:check OK.",
           "mergeSha": null,
           "issue": 245,
           "evidence": null,
           "owner": "agent-4",
-          "note": "Issue #245 open; no PR yet. #240 Layer 2 (shared UI primitives)."
+          "note": "Issue #245 open; no PR yet. #240 Layer 2 (shared UI primitives).",
+          "blockedBy": "Self-hosted runner fleet offline. Delivery PR #332 (head c62846f857e9e4ec1fc7525d6d4c191f7a3dfb23) is green on all 3 GitHub-hosted jobs, but the 6 required self-hosted jobs have never left queued: Level 0 (Check & Format), Level 1 (Affected Tests), Level 2 Conformance LEGO & Node Catalog, Level 2 Workspace Tests (linux), Level 2 Workspace Tests (windows), Windows worker portability probe. DEC-0015 retry attempted on all 6 (jobs 108338293120, 108338293185, 108338293240, 108338293361, 108338293536, 108338293770) — each returned HTTP 403 already-running and stayed queued, so no runner ever picked them up. mergeable_state is unstable, which is not green. The same fleet outage already blocks governance PR #331 (P6-S02). Implementation, evidence and all 6 checkpoints are complete; only the merge is blocked."
         },
         {
           "id": "P2-S03",
