@@ -59,7 +59,9 @@ P7 pipeline (#223 §4). It compiles one canonical n8n node description at one
 - **Dependencies are absolute paths.** A displayOptions key is relative to the
   containing value scope, a leading `/` makes it root-relative, and `@version`,
   `@tool` and `@feature` are kept apart as `metaDependsOn`.
-  `typeOptions.loadOptionsDependsOn` contributes edges too. Cycle, missing-path
+  `typeOptions.loadOptionsDependsOn` contributes edges too. Its paths are root-relative in n8n,
+  and only a leading `&` names a sibling in the same scope (upstream `resolveRelativePath`;
+  corrected during this slice after an audit against the editor source). Cycle, missing-path
   and unsupported-type rejection belong to the dependency graph of P7-S02; the
   plan only records the edges.
 - **Accounting invariant.** For every plan, `declarations = compiled + prunedByVersion`.
@@ -92,7 +94,7 @@ P7-S08 low-resource work. It is recorded here and has not been optimised yet.
 
 ## 5. Tests
 
-`apps/n8n-lego/test/lego-parameter-plan.test.mjs` has 23 tests:
+`apps/n8n-lego/test/lego-parameter-plan.test.mjs` has 24 tests:
 - contract fields;
 - deep freeze;
 - the source definition is not mutated;
@@ -108,6 +110,7 @@ P7-S08 low-resource work. It is recorded here and has not been optimised yet.
 - the `_cnd` operators;
 - an undeclared version refused;
 - dependency paths (relative, root-relative, meta);
+- `loadOptionsDependsOn` root-relative with `&` siblings;
 - dynamic sources, modes, validation and sensitivity;
 - unknown type kept as opaque;
 - display-only declarations;

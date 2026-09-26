@@ -210,6 +210,18 @@ test('dependencies are recorded as absolute paths; @meta keys are kept apart (#2
   assert.ok(plan.dependencyEdges.some(([from, to]) => from === 'resource' && to === 'teamId'));
 });
 
+test('loadOptionsDependsOn is root-relative; a leading & names a sibling in the same scope', () => {
+  const plan = compileParameterPlan(node([
+    { displayName: 'Base', name: 'base', type: 'string', default: '' },
+    { displayName: 'Options', name: 'options', type: 'collection', default: {}, options: [
+      { displayName: 'Table', name: 'table', type: 'string', default: '' },
+      { displayName: 'Fields', name: 'fields', type: 'multiOptions', default: [],
+        typeOptions: { loadOptionsMethod: 'getFields', loadOptionsDependsOn: ['base.value', '&table'] } },
+    ] },
+  ]));
+  assert.deepEqual(slotVariants(plan, 'options.fields')[0].dependsOn, ['base.value', 'options.table']);
+});
+
 test('dynamic sources, resourceLocator modes, validation and sensitivity are compiled, not evaluated', () => {
   const plan = compileParameterPlan(node(RESOURCE_OPERATION));
   const team = slotVariants(plan, 'teamId')[0];

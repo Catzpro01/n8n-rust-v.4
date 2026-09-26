@@ -375,9 +375,11 @@ export function compileParameterPlan(description, options = {}) {
         }
       }
       const dynamic = extractDynamic(property);
+      // loadOptionsDependsOn paths are ROOT-relative in n8n; only a leading `&` names a
+      // sibling in the same scope (workflow/src/node-parameters/path-utils.ts resolveRelativePath).
       for (const key of dynamic?.loadOptionsDependsOn ?? []) {
-        const dependency = dependencyOf(key, context.valueScope);
-        if (!dependency.meta) dependsOn.push(dependency.path);
+        if (typeof key !== 'string' || key === '') continue;
+        dependsOn.push(key.startsWith('&') ? (context.valueScope ? `${context.valueScope}.${key.slice(1)}` : key.slice(1)) : key);
       }
 
       const entry = {
