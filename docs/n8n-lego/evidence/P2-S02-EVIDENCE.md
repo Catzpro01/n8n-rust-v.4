@@ -251,3 +251,83 @@ slot, `compareObservations` and `createFrontendRegistry`.
 
 Weights sum to 100 and derive from the scope of each checkpoint's enforced behaviour, not from
 elapsed time, commit count or lines changed.
+
+## 14. Out of scope, isolated: a racy assertion in the P2 browser gate
+
+This is recorded here rather than fixed here, because §22 forbids unrelated changes in a
+slice PR and this has nothing to do with the notification surface.
+
+### What happened
+
+On head `8b7462cf` the `n8n-lego Gate` job (run `36238007572`, job `108393225739`,
+`ubuntu-latest`) failed at step 11, "P2 browser gate — settings visibility, route guards,
+unsupported semantics":
+
+```
+FAIL  the usage page loaded its contract endpoint (GET /rest/license 200) — []
+```
+
+### Why it is a flake, not a regression
+
+Three independent pieces of evidence, in descending order of strength:
+
+1. **The head differs from the last passing one by one markdown file.** `8b7462cf` vs
+   `f5dfe4b1` is `docs/n8n-lego/evidence/P2-S03-SPLIT-PROPOSAL.md` and nothing else. A
+   documentation file cannot change what a browser fetches.
+2. **The same job passed on all three previous heads** — `3adb63c142` → job
+   `108378849056` SUCCESS, `95e2ce77b6` → job `108380065138` SUCCESS, `f5dfe4b183` → job
+   `108382509674` SUCCESS.
+3. **The failure mode is an empty array, not a failed request.** `usageCalls` is `[]`, so
+   *zero* `/rest/license` responses were recorded. Not a 500, not a 404, not an auth
+   failure — no call at all.
+
+### The underlying defect
+
+`tests/e2e/settings-compat.mjs`:
+
+```js
+await page.goto(`${baseUrl}/settings`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+await page.waitForFunction(() => location.pathname.startsWith('/settings/'), { timeout: 60000 });
+await wait(2500);                                    // <-- fixed wait, no retry
+const usageCalls = restLog.slice(before).filter((entry) => entry.path === '/rest/license');
+report('the usage page loaded its contract endpoint (GET /rest/license 200)',
+  usageCalls.some((c) => c.status === 200), JSON.stringify(usageCalls));
+```
+
+`restLog` is fed by a `page.on('response')` listener. The assertion therefore depends on the
+SPA having issued *and completed* its `/rest/license` fetch inside a fixed 2500 ms window on a
+cold start. On a slower boot the response event fires after the slice, the array is empty, and
+the gate fails — even though the endpoint is fine. It is a latent flake that will keep
+intermittently blocking merges of anything that touches this workflow.
+
+### Proposed fix (NOT applied here)
+
+Replace the fixed wait with a wait on the actual condition:
+
+```js
+const licenseResponse = await page
+  .waitForResponse((r) => new URL(r.url()).pathname === '/rest/license', { timeout: 30000 })
+  .catch(() => null);
+report('the usage page loaded its contract endpoint (GET /rest/license 200)',
+  licenseResponse?.status() === 200,
+  licenseResponse ? `status=${licenseResponse.status()}` : 'no /rest/license response observed');
+```
+
+This keeps the assertion's meaning — the usage page really does load its contract endpoint —
+while removing the race. `waitForResponse` resolves as soon as the response arrives, so it is
+both faster on a healthy run and correct on a slow one.
+
+### Why it was not fixed in this PR
+
+It is a test-infrastructure defect in an e2e gate that drives the *pinned reference
+n8n-editor-ui*, entirely outside `packages/frontend-lego/**` and outside P2-S02's scope.
+Bundling it would have violated §22 and made this delivery PR unreviewable. It is isolated
+here so it can be picked up as its own change.
+
+### Consequence for this PR
+
+The failed check is a **required** check, so PR #332's verdict is `REQUIRED_CHECKS: FAILING`
+and `READY: NO`. It is not being treated as green. Rerunning the job is currently blocked —
+`POST .../actions/jobs/108393225739/rerun` returns HTTP 403 "The workflow run containing this
+job is already running", because the 6 queued self-hosted jobs keep the run open — so the
+rerun waits on the same fleet outage that blocks everything else.
