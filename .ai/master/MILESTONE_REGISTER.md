@@ -7,7 +7,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 
 ## Delivery progress (same two metrics as README.md)
 
-**Realtime Delivery Progress 91.1%** — 13300/14600 checkpoint-weighted points, P0–P11 only. Future programs are excluded (6 slices). 13 current-delivery slice(s) have no checkpoint model and contribute 0.
+**Realtime Delivery Progress 91.8%** — 13400/14600 checkpoint-weighted points, P0–P11 only. Future programs are excluded (6 slices). 12 current-delivery slice(s) have no checkpoint model and contribute 0.
 
 **Slice Completion 90.4%** — 132/146 implemented. Verifying and blocked contribute 0. Program status is not this percentage.
 
@@ -15,7 +15,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | --- | ---: | ---: | ---: | --- |
 | P0 | 100.0% | 100.0% | 2/2 | complete |
 | P1 | 100.0% | 100.0% | 2/2 | complete |
-| P2 | 94.1% | 94.1% | 32/34 | complete |
+| P2 | 97.1% | 94.1% | 32/34 | complete |
 | P3 | 100.0% | 100.0% | 18/18 | complete |
 | P4 | 100.0% | 100.0% | 10/10 | complete |
 | P5 | 72.2% | 72.2% | 13/18 | complete |
@@ -31,9 +31,9 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | | |
 | --- | --- |
 | Latest completed slice | `P6-S01` — Live community / private / custom node installation path over the P6 admission pipeline (PR #328, merge `fce988e7`) |
-| Active slices | `P6-S02` — Production WASM node/plugin sandbox engine |
+| Active slices | `P6-S02` — Production WASM node/plugin sandbox engine<br>`P2-S02` — Frontend LEGO shared notification surface + accessibility parity |
 | Verifying (merged, post-merge verification pending) | — (none) |
-| Planned queue (in order; planned ≠ authorized) | `P2-S02`, `P2-S03` |
+| Planned queue (in order; planned ≠ authorized) | `P2-S03` |
 | Blocked | `P5-M02` — blocked by P6-S04 (proposed, #116): the engine has no credential-consuming node. packages/reconstructed-engine/node-registry.mjs implements only manualTrigger, start, noOp, set, code, function and functionItem, so SecretRef resolution in the execution path has no consumer (Manager finding, verified against main 600a2145)<br>`P5-M05` — blocked by P8-S01 (planned, not authorized): the P8 storage contract that shared key/session/rate-limiter state needs<br>`P5-M06` — blocked by a mail-transport architecture decision (a dependency, or an injected transport contract); Node has no built-in SMTP<br>`P5-M10` — blocked by backing models this product does not have: projects/sharing, security audit, source control, data tables, workflow versions, a retry execution path, execution annotation tags (see P5-M08-EVIDENCE.md §1) |
 | Not authorized | planned is not authorized: the Manager starts a queued slice by moving it to in-progress in a PR on main. P5-M04 is planned and measure-first. P7-S01, P8-S01, P10-S01 and P11-S01 are placeholders that need a Manager Master Prompt before any work. |
 | Historical P2 ladder pointer | `P2.27` (history, not active work) |
@@ -45,7 +45,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | --- | --- | --- | --- | --- | --- |
 | **P0** | Core Application Bootstrap | **COMPLETE** | 2/2 | 2 | — |
 | **P1** | n8n Compatibility / Behavioral Baseline | **COMPLETE** | 2/2 | 3 | — |
-| **P2** | LEGO / AI / Plugin Foundation | **COMPLETE** | 32/34 | 29 | `P2-S02` (planned) |
+| **P2** | LEGO / AI / Plugin Foundation | **COMPLETE** | 32/34 | 29 | `P2-S02` (in-progress) |
 | **P3** | Workflow + Execution + Unlimited Nodes | **COMPLETE** | 18/18 | 24 | — |
 | **P4** | Trigger / Webhook / Ingress | **COMPLETE** | 10/10 | 19 | — |
 | **P5** | Identity / Authentication / Authorization / Credentials (Security) | **COMPLETE** | 13/18 | 20 | `P5-M04` (planned) |
@@ -196,7 +196,7 @@ Contract-driven LEGO architecture, FE/BE domain boundaries, AI foundation, Agent
 | `P2.27.9` | side-by-side upgrade + rollback + supply-chain admission | implemented | #195 | `63aadb19` | #83 |
 | `P2.27.10` | frontend plugin boundary (final implementation slice) | implemented | #197 | `7d4eae8d` | #83 |
 | `P2-S01` | Frontend LEGO migration foundation + parity harness + status-region pilot | implemented | #244 | `c77c3dba` | #241 |
-| `P2-S02` | Frontend LEGO shared notification surface + accessibility parity | planned | — | — | #245 |
+| `P2-S02` | Frontend LEGO shared notification surface + accessibility parity | in-progress | — | — | #245 |
 | `P2-S03` | Frontend Evolution layers 3-6 (core workflow, platform, AI surfaces, legacy UI decommission) | planned | — | — | #240 |
 
 </details>
