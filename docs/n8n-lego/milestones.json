@@ -14,8 +14,9 @@
     "latestCompletedSlice": { "id": "P6-S01", "pr": 328, "mergeSha": "fce988e709a97c671c116310fc9a7a58ec402e42" },
     "activeSlices": ["P6-S02"],
     "verifyingSlices": [],
-    "plannedQueue": ["P2-S03"],
+    "plannedQueue": [],
     "blockedSlices": [
+      "P2-S03",
       "P2-S02",
       "P5-M02",
       "P5-M05",
@@ -2468,7 +2469,7 @@
               "completedAt": "2026-09-26T00:00:00Z"
             }
           ],
-          "updatedAt": "2026-09-26T04:40:37Z",
+          "updatedAt": "2026-09-26T04:43:20Z",
           "latestUpdate": "Implementation complete on delivery/p2-s02-notification-surface: one shared notification surface (ui.primitives.notification-surface@1.0.0) with region state, severity and disposition as three separate axes. Only error is assertive; an empty region is not announced. Degradation keeps the observable history identical. The #241 single-pilot rule was generalized to one pilot per originating slice via sourceIssue, and five pinned gate facts were refreshed. frontend-lego:test 479/480 (1 pre-existing skip); 40-notification-surface 28/28; lego:arch, lego:foundation, lego:capabilities, lego:scaleout, lego:ai:check OK.",
           "mergeSha": null,
           "issue": 245,
@@ -2481,11 +2482,12 @@
           "id": "P2-S03",
           "title": "Frontend Evolution layers 3-6 (core workflow, platform, AI surfaces, legacy UI decommission)",
           "kind": "slice",
-          "status": "planned",
+          "status": "blocked",
           "mergeSha": null,
           "issue": 240,
           "evidence": null,
-          "owner": "manager (unassigned)"
+          "owner": "manager (unassigned)",
+          "blockedBy": "Not authorized. P2-S03 is registered against issue #240, the only authorization source named for it, and #240 disclaims implementation authority in three places: \"This issue is a durable requirement/backlog item. It does not authorize immediate implementation.\"; \"Scope boundary - This issue does not: authorize immediate full UI rewrite; authorize removal of reference/n8n or n8n-editor-ui\"; and \"Implementation must be split into dedicated milestone tasks with Manager Master Prompts.\" No such dedicated milestone task exists: a search of open issues for Layer 3 core-workflow surfaces (workflow list/dashboard, editor, canvas, node picker/catalog, node configuration, connections, execution panel/history, import/export) returns no authorizing issue. Separately, the slice title itself carries Layer 6 (legacy UI decommission), which the scope boundary of #240 forbids and which permanent invariant 1 (no big-bang rewrite) and invariant 2 (original workflow JSON compatibility remains mandatory) contradict: the original editor must stay the compatibility oracle until each surface has a verified LEGO replacement. Recorded as blocked rather than executed - inventing a Manager Master Prompt would be inventing authorization (DEC-0020 notAuthorized)."
         }
       ]
     },
