@@ -1,3 +1,6 @@
+# IMMUTABLE INFRASTRUCTURE NOTICE:
+# Strictly managed by Antigravity Host Operator. Arena agents & managers are FORBIDDEN from modifying this file.
+
 name: Level 2 Integration & Conformance Suite (Matrix Workers)
 
 on:
@@ -18,7 +21,7 @@ jobs:
   integration_crates:
     name: Level 2 Crate Tests (${{ matrix.os }} - ${{ matrix.crate }})
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         os: [ linux, windows ]
         crate:
@@ -39,10 +42,11 @@ jobs:
           clean: false
 
       - name: Level 2 - Parallel Crate Tests
-        run: cargo test -p ${{ matrix.crate }}
+        run: cargo nextest run -p ${{ matrix.crate }} --test-threads=8
 
   conformance:
     name: Level 2 Conformance LEGO & Node Catalog
+    needs: [ integration_crates ]
     runs-on: [ self-hosted, linux ]
     if: github.event.pull_request.head.repo.full_name == github.repository
     steps:

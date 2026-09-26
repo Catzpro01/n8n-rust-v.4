@@ -1,3 +1,6 @@
+# IMMUTABLE INFRASTRUCTURE NOTICE:
+# Strictly managed by Antigravity Host Operator. Arena agents & managers are FORBIDDEN from modifying this file.
+
 name: Level 0 & Level 1 Validation (Parallel WSL Workers)
 
 on:
@@ -54,6 +57,7 @@ jobs:
 
   unit_tests:
     name: Level 1 (Affected Tests)
+    needs: [ format_and_check ]
     runs-on: [ self-hosted, linux ]
     if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push'
     steps:
