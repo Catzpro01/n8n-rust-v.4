@@ -36,7 +36,8 @@ test('top level is exactly P0-P11 with the recorded Manager statuses', () => {
   assert.deepEqual(REGISTER.programs.map((program) => program.id), [...TOP_LEVEL_PROGRAMS]);
   for (const program of REGISTER.programs) assert.equal(program.status, EXPECTED_PROGRAM_STATUS[program.id], program.id);
   assert.deepEqual(REGISTER.programs.filter((p) => p.status === 'complete').map((p) => p.id), ['P0', 'P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P9']);
-  assert.deepEqual(REGISTER.programs.filter((p) => p.status === 'planned').map((p) => p.id), ['P7', 'P8', 'P10', 'P11']);
+  assert.deepEqual(REGISTER.programs.filter((p) => p.status === 'planned').map((p) => p.id), ['P8', 'P10', 'P11']);
+  assert.deepEqual(REGISTER.programs.filter((p) => p.status === 'in-progress').map((p) => p.id), ['P7'], 'P7 in-progress by owner authorization DEC-0024');
 });
 
 test('P5.1-P5.8 are recorded with their merge SHAs; P5 debt is P5-M01..M03, never P5.9', () => {
@@ -380,9 +381,9 @@ test('completion KPI is implemented/total and never counts verifying or blocked'
   // Pin of the reconciled register. Refresh it when a slice's delivery state is reconciled; it
   // exists so a silently-flipped status cannot pass unnoticed. The tally itself is derived above,
   // so this pin is a tripwire on the register's delivery state, not on the arithmetic.
-  assert.equal(tally.percent, 87.5);
+  assert.equal(tally.percent, 83.6);
   assert.equal(tally.implemented, 133);
-  assert.equal(tally.total, 152);
+  assert.equal(tally.total, 159);
   const verifying = verifyingIndex(REGISTER);
   const m08 = slices.find((slice) => slice.id === 'P5-M08');
   assert.equal(displayStatus(m08, verifying), 'implemented');
@@ -391,9 +392,9 @@ test('completion KPI is implemented/total and never counts verifying or blocked'
   assert.equal(completionPercentForStatus('blocked'), 0);
   assert.equal(completionPercentForStatus('planned'), 0);
   const metrics = headlineMetrics(REGISTER);
-  assert.equal(metrics.current.total, 146);
+  assert.equal(metrics.current.total, 153);
   assert.equal(metrics.current.implemented, 132);
-  assert.equal(metrics.current.sliceCompletion, percent1(132, 146));
+  assert.equal(metrics.current.sliceCompletion, percent1(132, 153));
   assert.equal(metrics.future.total, 6);
   assert.equal(metrics.current.total + metrics.future.total, tally.total);
   const block = renderReadmeMilestoneSection(REGISTER);
@@ -580,3 +581,16 @@ for (const [name, mutate, expected] of PROJECTION_MUTATIONS) {
     assert.ok(errors.some((error) => expected.test(error)), `expected ${expected} in:\n${errors.join('\n')}`);
   });
 }
+
+test('DEC-0024: P7 is authorized as the eight-slice ladder of #223 §42, each feature mapped to one slice', () => {
+  const p7 = REGISTER.programs.find((program) => program.id === 'P7');
+  assert.deepEqual(p7.slices.map((slice) => slice.id), ['P7-S01', 'P7-S02', 'P7-S03', 'P7-S04', 'P7-S05', 'P7-S06', 'P7-S07', 'P7-S08']);
+  for (const slice of p7.slices) assert.equal(slice.authorizedBy, 'DEC-0024', slice.id);
+  const features = REGISTER.features.filter((feature) => feature.parent === 'P7');
+  assert.equal(features.length, 29);
+  for (const feature of features) assert.match(feature.slice, /^P7-S0[1-8]$/, feature.id);
+  for (const slice of p7.slices) assert.ok(features.some((feature) => feature.slice === slice.id), `${slice.id} owns at least one feature`);
+  const decision = JSON.parse(read('docs/engineering-operations/workforce/decisions/DEC-0024.json'));
+  assert.equal(decision.state, 'ACTIVE');
+  assert.equal(decision.authority.decidedBy, 'OWNER');
+});
