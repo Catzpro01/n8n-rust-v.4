@@ -299,7 +299,11 @@ test('the surgical register writer round-trips the canonical register unchanged'
   const target = findSlice(seeded, REGISTER.executionPointer.plannedQueue[0]).slice;
   target.status = 'in-progress';
   target.updatedAt = '2026-09-26T00:00:00Z';
-  seeded.executionPointer.activeSlices = [target.id];
+  // The fixture ADDS its target to the active set instead of replacing it: a slice
+  // that is genuinely in flight must stay active while the writer is exercised on
+  // another one, or the register stops validating for a reason that has nothing to
+  // do with the writer.
+  seeded.executionPointer.activeSlices = [...new Set([...seeded.executionPointer.activeSlices, target.id])];
   seeded.executionPointer.plannedQueue = seeded.executionPointer.plannedQueue.filter((id) => id !== target.id);
   const planned = target;
   planned.checkpoints = [{
