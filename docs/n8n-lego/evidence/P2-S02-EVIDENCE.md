@@ -127,16 +127,27 @@ installed is not loaded. `mode: 'pilot'`, `rollback.strategy: 'pilot-not-primary
    called per render, and the cumulative log is what `history` is for. The existing
    empty-fixture test only covered a *fresh* surface, which is exactly why this slipped
    through: the state the disposition axis exists to produce was the one state never tested.
-7. **`maxVisible` is a soft bound and now says so.** Errors are never silently dropped, so an
+7. **The error reference fixture hardcoded its error kind, so a real consumer error was never
+   comparable.** The parity suite only ever called `surface.show(severity)` with no options, so
+   `observe()`'s fallback kind happened to match the fixture's hardcoded `'network'` — and an
+   error carrying a genuine consumer-supplied kind (`timeout`, `auth`) was never compared against
+   anything at all. The harness only compares a kind when **both** sides declare one, so with no
+   way to model a different reference kind the only way to make a timeout error classify was to
+   change the consumer's error or to change the fixture, and neither of those is a migration. The
+   modelled kind is now an explicit overridable parameter defaulting to the contract's declared
+   `errorKind: 'network'`, so existing callers are unchanged while a declared reference kind can be
+   pinned. The new test covers four kinds as `equivalent` **and** asserts a mismatched kind still
+   reports `migration-required`, so the pinning is not a blanket pass.
+8. **`maxVisible` is a soft bound and now says so.** Errors are never silently dropped, so an
    all-error surface legitimately exceeds `maxVisible` (10 errors at a bound of 3). That is the
    right trade — the one notice an operator must not lose is the one saying something broke —
    but a consumer reading `maxVisible` as a hard cap would be wrong, so the test states the
    softness outright instead of leaving it to be discovered.
-8. **`owner: 'agent-4'` is not a valid agent id.** The registry wants `agent-\d{2}`; corrected to
+9. **`owner: 'agent-4'` is not a valid agent id.** The registry wants `agent-\d{2}`; corrected to
    `agent-04`.
-9. **`activation: 'lazy'` without an `entry`.** A non-eager activation must name where its code is, or
+10. **`activation: 'lazy'` without an `entry`.** A non-eager activation must name where its code is, or
    it is not installable; `entry: './src/notification-surface.mjs'` added.
-10. **`createFrontendRegistry()` with no catalog throws.** The registry refuses an empty vocabulary;
+11. **`createFrontendRegistry()` with no catalog throws.** The registry refuses an empty vocabulary;
    the test now builds it against the declared catalog like the other frontend suites do.
 
 ## 8. Gate staleness this slice had to fix
@@ -177,8 +188,8 @@ their sum. Measured total is now 82.5 KB. `card.md` itself stays inside its **L1
 
 | Gate | Result |
 | --- | --- |
-| `40-notification-surface.test.mjs` | **34 / 34 pass** |
-| `frontend-lego:test` (whole suite) | **485 / 486 pass**, 1 skipped |
+| `40-notification-surface.test.mjs` | **35 / 35 pass** |
+| `frontend-lego:test` (whole suite) | **486 / 487 pass**, 1 skipped |
 | `lego:arch` / `lego:arch:selftest` | OK |
 | `lego:foundation` / `lego:foundation:selftest` | OK |
 | `lego:capabilities` / `lego:scaleout` | OK |

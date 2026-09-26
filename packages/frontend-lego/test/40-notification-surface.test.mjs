@@ -329,6 +329,33 @@ test('every severity classifies as equivalent against its reference fixture', ()
   }
 });
 
+test('an error carrying a real consumer-supplied kind is comparable', () => {
+  // The parity suite only ever pushed `surface.show(severity)` with no options, so
+  // `observe()`'s fallback kind happened to match the fixture's hardcoded 'network' and a
+  // genuine consumer error (`timeout`, `auth`) was never compared against anything. With
+  // the modelled kind hardcoded, the only way to make a timeout error classify was to
+  // change the consumer's error or to change the fixture — neither of which is a
+  // migration. The reference kind is now pinnable, so the case is testable.
+  for (const kind of ['network', 'timeout', 'auth', 'permission']) {
+    const surface = createNotificationSurface();
+    surface.error({ error: { kind, code: `E_${kind.toUpperCase()}` } });
+    const comparison = compareObservations(
+      referenceNotificationObservation('error', { errorKind: kind }),
+      surface.observe(),
+    );
+    assert.equal(comparison.status, 'equivalent',
+      `${kind}: ${comparison.status} — ${JSON.stringify(comparison.diffs ?? comparison)}`);
+  }
+  // And a mismatched kind is still reported, so the pinning is not a blanket pass.
+  const surface = createNotificationSurface();
+  surface.error({ error: { kind: 'timeout' } });
+  const mismatch = compareObservations(referenceNotificationObservation('error'), surface.observe());
+  assert.equal(mismatch.status, 'migration-required');
+  assert.match(mismatch.diffs[0].detail, /kind network vs timeout/);
+  // A non-string kind is refused rather than silently accepted.
+  assert.throws(() => referenceNotificationObservation('error', { errorKind: 7 }), /non-empty string/);
+});
+
 test('an empty surface classifies as equivalent against the empty fixture', () => {
   const surface = createNotificationSurface();
   const comparison = compareObservations(referenceEmptyNotificationObservation(), surface.observe());

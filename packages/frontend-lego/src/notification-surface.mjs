@@ -486,10 +486,21 @@ export function createNotificationSurface(init = {}) {
  * candidate is compared against, and it is a fixture precisely so the comparison
  * is reproducible rather than dependent on a browser.
  */
-export function referenceNotificationObservation(severity) {
+export function referenceNotificationObservation(severity, { errorKind = 'network' } = {}) {
   assertSeverity(severity);
+  if (typeof errorKind !== 'string' || errorKind === '') {
+    throw new Error('reference errorKind must be a non-empty string when given');
+  }
   const intent = NOTIFICATION_A11Y[severity];
   const isError = severity === 'error';
+  // The modelled error kind is EXPLICIT and overridable rather than hardcoded. It
+  // defaults to the contract's declared `errorKind: 'network'`, so existing callers are
+  // unchanged — but the parity suite only ever pushed errors with no payload, which
+  // meant `observe()`'s fallback happened to match and a real consumer-supplied kind
+  // (`timeout`, `auth`) was never compared against anything. The harness only compares
+  // a kind when BOTH sides declare one, so with no way to model a different reference
+  // kind the only way to make a timeout error classify was to change the consumer's
+  // error or to change this fixture. Now a declared reference kind can be pinned.
   return observation({
     surfaceId: NOTIFICATION_SURFACE_ID,
     side: 'reference',
@@ -497,7 +508,7 @@ export function referenceNotificationObservation(severity) {
     regionState: isError ? 'error' : 'ready',
     loading: false,
     empty: false,
-    error: isError ? { kind: 'network' } : null,
+    error: isError ? { kind: errorKind } : null,
     interactions: Object.freeze({ dismiss: true }),
     events: Object.freeze(['notification:shown']),
     accessibility: Object.freeze({
