@@ -3924,10 +3924,12 @@
       "title": "Dynamic node parameters",
       "owner": "agent-4",
       "kind": "domain",
-      "status": "planned",
+      "status": "partial",
       "phase": "P7",
       "errorNamespace": "dynamic-parameters",
-      "paths": [],
+      "paths": [
+        "src/lego/parameter-plan.mjs"
+      ],
       "public": [],
       "dependsOn": [
         "platform-kernel",
@@ -3941,8 +3943,10 @@
         "storage"
       ],
       "contract": {
-        "version": "0.0.0",
-        "tests": []
+        "version": "0.1.0",
+        "tests": [
+          "test/lego-parameter-plan.test.mjs"
+        ]
       },
       "capabilities": [
         {
@@ -3982,7 +3986,7 @@
           "resources": "low"
         }
       ],
-      "notes": "Answers 501 today via the compatibility capability registry.",
+      "notes": "P7-S01 ships the ParameterPlan compiler (src/lego/parameter-plan.mjs, pure, no I/O). The REST surface /rest/dynamic-node-parameters still answers 501 via the compatibility capability registry until P7-S04 mounts it.",
       "tier": "domain",
       "dataOwner": "none",
       "stateOwner": "cache",
