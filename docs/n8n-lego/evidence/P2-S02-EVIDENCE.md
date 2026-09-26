@@ -200,7 +200,37 @@ their sum. Measured total is now 82.5 KB. `card.md` itself stays inside its **L1
 tree publishes ai.memory — this test asserts the OTHER tree, and its twin above runs against this
 one`. A twin-tree guard that skips with a reason, unrelated to this slice.
 
-## 11. Scope compliance
+## 11. Merge order — simulated, because it is not obvious
+
+Governance PR **#331** (P6-S02 reconciliation) and this delivery PR both touch
+`executionPointer`, and **#331 must land first**. It empties `activeSlices`; this PR was written
+against a register that still had `P6-S02` listed active, because #331 had not merged. Merging in
+the other order would leave a stale `activeSlices` entry pointing at an already-implemented slice,
+which the validator rejects.
+
+Simulating the real order (`#331` then `#332`) rather than trusting it:
+
+- `docs/n8n-lego/milestones.json` **auto-merges and the result is correct** — `lastVerifiedMain`
+  `d3c35c73`, `latestCompletedSlice` P6-S02/PR #330, `activeSlices` `[]`, `plannedQueue` `[]`,
+  `blockedSlices` `[P2-S03, P2-S02, P5-M02, P5-M05, P5-M06, P5-M10]`, P6-S02 `implemented` with its
+  merge SHA, P2-S02 `blocked` with 6 checkpoints, P2-S03 `blocked` with its blocker.
+- The only conflicts are in **`README.md`** and **`.ai/master/CURRENT_STATUS.md`** — both generated
+  projections, both resolved mechanically by `npm run lego:ai`, neither a judgment call.
+- After regeneration the merged state passes: `governance-register check` exit 0, `apps/n8n-lego`
+  **2727/2730** (the 3 pre-existing compat failures), `frontend-lego` **486/487** (1 pre-existing
+  skip).
+
+**A regression this simulation caught.** An earlier fix to the `a slice listed twice in the pointer`
+mutation fell back to the first slice of the first program once `plannedQueue[0]` became undefined.
+That slice is in *no* pointer list, so pushing it into `blockedSlices` created no duplicate — the
+validator correctly passed and the mutation silently stopped testing anything. It only surfaced when
+#331 drained `activeSlices` and `plannedQueue` to empty at the same time. The mutation now picks the
+first non-empty of the three **string** pointer lists and pushes its first id into a *different* one,
+guaranteeing the cross-list duplicate the rule exists to catch. `verifyingSlices` is excluded because
+it holds `{ id, pr, mergeSha, … }` objects: pushing a bare id there claims `undefined` and produces an
+unrelated error instead. Verified on the branch alone **and** on the simulated merged state.
+
+## 12. Scope compliance
 
 Confined to `packages/frontend-lego/**` (the file boundary issue #245 names) plus the curated
 `.ai/` projections the package's own gates require. No `contracts/`, `crates/`, Cargo, workflow,
@@ -208,7 +238,7 @@ runner-config or other-package change. No second registry, transport, lifecycle,
 model — the surface reuses `defineSurfaceContract`, `REGION_STATES`, the existing `system-messages`
 slot, `compareObservations` and `createFrontendRegistry`.
 
-## 12. Checkpoints
+## 13. Checkpoints
 
 | id | title | weight | status |
 | --- | --- | --- | --- |
