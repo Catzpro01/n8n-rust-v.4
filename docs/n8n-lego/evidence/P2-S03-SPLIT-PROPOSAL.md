@@ -69,7 +69,7 @@ the default path.
 | 1 | `dialogs` | No backend, no contract; needed by later slices | none |
 | 2 | `dashboard` | Workflow list; contract present; read-mostly | none |
 | 3 | `executions` | Execution list/detail; contract present | none |
-| 4 | `node-picker` | Node menu/palette; contract present | **The three pre-existing node-catalog compat failures** (`/rest/types/nodes.json`, `/rest/types/node-versions.json`, `POST /rest/node-types`) fail identically on a clean clone of `main`. Migrating the picker over a catalog whose REST surface does not pass its own compat tests would be building on unverified ground. |
+| 4 | `node-picker` | Node menu/palette; contract present | **none** — see §8, which corrects an earlier version of this row |
 | 5 | `workflow-editor` | Canvas, connections, node configuration — the largest and highest-blast-radius surface | Should follow 1–4, not precede them. Invariant 2 (original workflow JSON compatibility mandatory) makes this the slice where a mistake is least reversible. |
 | 6 | `credentials` | Credential list/editor/modal | **Overlaps P5-M02**, blocked because the engine has no credential-consuming node. Migrating the credentials UI before the credential runtime exists builds a shell over nothing. |
 | 7 | `settings` | Settings pages | Backend status **partial** |
@@ -105,8 +105,43 @@ Carried from #241 and #245, and from #240's permanent invariants:
    Master Prompt.
 3. **Split P2-S03 in the register** into the approved per-surface tasks. That is a canonical
    state change and a Manager action; this document deliberately does not perform it.
-4. **Rule on the node-catalog compat failures** before slice 4 (`node-picker`) starts — they
-   are pre-existing and unrelated to this work, but they gate it.
+4. ~~Rule on the node-catalog compat failures~~ — **withdrawn**, see §8. There were none.
+
+## 8. Correction — the node-catalog "failures" were never real
+
+An earlier version of this proposal listed the three node-catalog REST tests
+(`GET /rest/types/nodes.json`, `GET /rest/types/node-versions.json`,
+`POST /rest/node-types`) as a blocker on slice 4, on the grounds that they "fail
+identically on a clean clone of `main`". **That was wrong**, and it is corrected here
+rather than left standing, because a proposal that gates an authorized slice on a
+non-existent blocker causes work to be deferred for no reason.
+
+The diagnosis:
+
+- `.github/workflows/n8n-lego.yml` has a step **"Fetch the pinned node catalog
+  (n8n-nodes-base + icons + roles)"** that runs `scripts/fetch-n8n-catalog.mjs` into
+  `$RUNNER_TEMP/catalog` and sets `N8N_LEGO_CATALOG_DIR` to it. The node catalog is a
+  **fetched artifact**, not a checked-in file.
+- `apps/n8n-lego/data/` ships `api-key-scopes.json`, `public-api-openapi.json` and
+  `roles.json` but **no `catalog/` directory**. A fresh clone has never run the fetch.
+- With no catalog, `loadCatalog()` returns `null` and the routes throw 404 with
+  *"Node catalog is not installed — run `npm run catalog`"*, so the tests assert
+  `200 !== 404` and fail.
+
+Verified directly: after `node scripts/fetch-n8n-catalog.mjs --dir /tmp/catalog`
+(483 node types) and `N8N_LEGO_CATALOG_DIR=/tmp/catalog`, **`apps/n8n-lego` runs
+2730 / 2730 green, zero failures**. The same 12 rest tests that failed now pass 12/12.
+
+So these were never repo defects and never a blocker. They were a missing local setup
+step that CI performs and I had not. The general lesson worth recording: a failure that
+reproduces on a clean clone is not automatically a code defect — it can equally be an
+artifact the test environment is expected to provide, and the CI workflow is the place
+that says which.
+
+The one genuine skip that remains is unrelated and deliberate: the frontend-lego
+twin-tree guard, which skips *with a reason* because it asserts against the *other*
+tree and its twin runs against this one. That is the documented house pattern, not a
+defect.
 
 ## 7. Note on what is *not* claimed here
 
