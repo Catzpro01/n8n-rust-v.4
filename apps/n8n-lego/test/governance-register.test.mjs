@@ -563,7 +563,12 @@ test('the historical P2 fingerprint is pinned', () => {
 
 const PROJECTION_MUTATIONS = [
   ['a stale README block', (p) => { p.readme = p.readme.replace('### Active work', '### Active work (edited)'); }, /block is stale/],
-  ['a README generated from a different register', (p) => { p.register.executionPointer.plannedQueue.reverse(); }, /stale or was generated from a different register/],
+  // `reverse()` was order-only, so it silently became a no-op the moment the queue shrank to a
+  // single entry (P2-S02 leaving the queue on its way to in-progress) and the mutation stopped
+  // testing anything. Change the queue CONTENT instead, which is detected at any length.
+  ['a README generated from a different register', (p) => {
+    p.register.executionPointer.plannedQueue = [...p.register.executionPointer.plannedQueue, 'P2-ZZ-PROBE'];
+  }, /stale or was generated from a different register/],
   ['a README/register mismatch after a status change', (p) => { p.register.programs[5].slices.find((x) => x.id === 'P5-M09').title = 'Changed title'; }, /different register/],
   ['a README without the generated block', (p) => { p.readme = p.readme.replace(README_MARKERS.begin, ''); }, /exactly once/],
   ['a duplicated README block', (p) => { p.readme += `\n${renderReadmeMilestoneSection(p.register)}\n`; }, /exactly once/],
