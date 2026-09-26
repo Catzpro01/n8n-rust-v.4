@@ -98,8 +98,18 @@ clock and no module state.
 
 ## 6. Verification
 
-To be completed after the delivery merge: merge SHA, fresh-main suite results and the
-DEC-0015 runner verdict.
+- **Delivery PR:** #336, head `3d1dcd0260e5accc127c42404549535a0d9c38ce`, squash-merged
+  to `main` as `d58dfaebf6d181d115ff9bd9cb455377061590b1` (2026-09-26).
+- **GitHub-hosted checks on the head (3/3 success):** Unit + integration tests and release
+  package; Backend LEGO architecture gate (P2.6); Clean clone → start → health → browser
+  smoke → restart.
+- **Self-hosted checks on the head: WAITING_RUNNER** (6 queued, not run): Level 0, Level 1,
+  Level 2 Workspace Tests (linux / windows), Level 2 Conformance LEGO & Node Catalog,
+  Windows worker portability probe. Merged under DEC-0015 model B. WAITING_RUNNER is not
+  PASS, so the slice stays **in-progress (VERIFYING)** until these checks pass on main.
+- **Fresh `main` at `d58dfaeb` (local re-verification):** backend 2769/2769
+  (`lego-parameter-graph` 14/14), frontend 451/451, `lego:ai:check`, `lego:arch`,
+  `lego:foundation`, `lego:capabilities` and `lego:scaleout` all exit 0.
 
 ## 7. Not delivered here (later P7 slices)
 
