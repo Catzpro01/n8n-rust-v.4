@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// DEC-0015 back-fill trigger: one no-op comment so the self-hosted matrix re-runs against the merged main head now that the runner fleet has returned. No behavior.
 /**
  * Impact graph and selective test selection (P2.8-B, §46–48).
  *
