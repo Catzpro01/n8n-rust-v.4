@@ -31,13 +31,13 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | | |
 | --- | --- |
 | Latest completed slice | `P6-S01` — Live community / private / custom node installation path over the P6 admission pipeline (PR #328, merge `fce988e7`) |
-| Active slices | `P6-S02` — Production WASM node/plugin sandbox engine<br>`P7-S02` — Visibility & Dependency Graph |
-| Verifying (merged, post-merge verification pending) | `P7-S01` — Parameter Contract & Compiler (PR #334, merge `8aedbfa2`): DEC-0015 self-hosted checks WAITING_RUNNER on head 71510167 (Level 0, Level 1, Level 2 linux / windows / Conformance, Windows portability probe); GitHub-hosted 3/3 green; main 8aedbfa2 re-verified locally (backend 2755/2755, frontend 451, lego:ai:check / arch / foundation / capabilities / scaleout exit 0) |
-| Planned queue (in order; planned ≠ authorized) | `P7-S03`, `P7-S04`, `P7-S05`, `P7-S06`, `P7-S07`, `P7-S08`, `P2-S02`, `P2-S03` |
+| Active slices | `P6-S02` — Production WASM node/plugin sandbox engine<br>`P7-S03` — Local Validation & Normalization |
+| Verifying (merged, post-merge verification pending) | `P7-S01` — Parameter Contract & Compiler (PR #334, merge `8aedbfa2`): DEC-0015 self-hosted checks WAITING_RUNNER on head 71510167 (Level 0, Level 1, Level 2 linux / windows / Conformance, Windows portability probe); GitHub-hosted 3/3 green; main 8aedbfa2 re-verified locally (backend 2755/2755, frontend 451, lego:ai:check / arch / foundation / capabilities / scaleout exit 0)<br>`P7-S02` — Visibility & Dependency Graph (PR #336, merge `d58dfaeb`): DEC-0015 self-hosted checks WAITING_RUNNER on head 3d1dcd02 (Level 0, Level 1, Level 2 linux / windows / Conformance, Windows portability probe); GitHub-hosted 3/3 green; main d58dfaeb re-verified locally (backend 2769/2769, frontend 451, lego:ai:check / arch / foundation / capabilities / scaleout exit 0) |
+| Planned queue (in order; planned ≠ authorized) | `P7-S04`, `P7-S05`, `P7-S06`, `P7-S07`, `P7-S08`, `P2-S02`, `P2-S03` |
 | Blocked | `P5-M02` — blocked by P6-S04 (proposed, #116): the engine has no credential-consuming node. packages/reconstructed-engine/node-registry.mjs implements only manualTrigger, start, noOp, set, code, function and functionItem, so SecretRef resolution in the execution path has no consumer (Manager finding, verified against main 600a2145)<br>`P5-M05` — blocked by P8-S01 (planned, not authorized): the P8 storage contract that shared key/session/rate-limiter state needs<br>`P5-M06` — blocked by a mail-transport architecture decision (a dependency, or an injected transport contract); Node has no built-in SMTP<br>`P5-M10` — blocked by backing models this product does not have: projects/sharing, security audit, source control, data tables, workflow versions, a retry execution path, execution annotation tags (see P5-M08-EVIDENCE.md §1) |
 | Not authorized | planned is not authorized: the Manager starts a queued slice by moving it to in-progress in a PR on main. P5-M04 is planned and measure-first. P7-S01, P8-S01, P10-S01 and P11-S01 are placeholders that need a Manager Master Prompt before any work. |
 | Historical P2 ladder pointer | `P2.27` (history, not active work) |
-| Last verified main | `8aedbfa2` |
+| Last verified main | `d58dfaeb` |
 
 ## Programs P0–P11 (top level)
 
@@ -543,8 +543,8 @@ Dynamic parameter schemas, option discovery, schema validation, caching, provide
 | Slice | Title | Status | PR | Merge SHA | Issue |
 | --- | --- | --- | --- | --- | --- |
 | `P7-S01` | Parameter Contract & Compiler: canonical n8n parameter definitions compiled once into an immutable ParameterPlan with stable parameter identity and plan versioning (#223 §4-6, §31, §42 P7.1) | in-progress | #334 | — | #223 |
-| `P7-S02` | Visibility & Dependency Graph: displayOptions visibility engine, parameter dependency graph, incremental recomputation of only affected fields, expression boundary (#223 §7-10, §42 P7.2) | in-progress | — | — | #223 |
-| `P7-S03` | Local Validation & Normalization: schema validation, normalization, failure vocabulary and the immutable execution-ready parameter snapshot with canonical vs derived representation (#223 §20-21, §27, §29-30, §42 P7.3) | planned | — | — | #223 |
+| `P7-S02` | Visibility & Dependency Graph: displayOptions visibility engine, parameter dependency graph, incremental recomputation of only affected fields, expression boundary (#223 §7-10, §42 P7.2) | in-progress | #336 | — | #223 |
+| `P7-S03` | Local Validation & Normalization: schema validation, normalization, failure vocabulary and the immutable execution-ready parameter snapshot with canonical vs derived representation (#223 §20-21, §27, §29-30, §42 P7.3) | in-progress | — | — | #223 |
 | `P7-S04` | Dynamic Options Runtime: /rest/dynamic-node-parameters options, bounded dynamic cache classes with stale-while-revalidate, dependent-field race protection, request coalescing, provider backpressure and resource budgets (#223 §11, §14-16, §23-26, §34, §42 P7.4) | planned | — | — | #223 |
 | `P7-S05` | Resource Locator & Search: resourceLocator modes, list search with pagination and search (#223 §12-13, §42 P7.5) | planned | — | — | #223 |
 | `P7-S06` | Credential-Aware Resolution: credential/security composition through scoped SecretRefs and security-sensitive dynamic values that never leak into caches, snapshots or logs (#223 §18, §28, §42 P7.6) | planned | — | — | #223 |
