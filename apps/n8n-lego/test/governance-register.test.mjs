@@ -154,11 +154,26 @@ const MUTATIONS = [
   ['a pointer naming an unknown slice', (r) => { r.executionPointer.plannedQueue.push('P5-M99'); }, /unknown slice P5-M99/],
   ['a pointer whose authority is not main', (r) => { r.executionPointer.authority = 'arena-manager'; }, /authority must be main/],
   ['a slice listed twice in the pointer', (r) => {
-    // Name a slice already in another pointer list. Derived rather than read from
-    // plannedQueue[0], which is undefined once the queue drains.
-    const elsewhere = r.executionPointer.activeSlices[0] ?? r.executionPointer.verifyingSlices[0]?.id
-      ?? r.programs.flatMap((program) => program.slices)[0].id;
-    r.executionPointer.blockedSlices.push(elsewhere);
+    // The duplicate the rule exists to catch needs a slice that is ALREADY claimed
+    // by one pointer list, added to a DIFFERENT one. Derived from whichever list is
+    // non-empty rather than from plannedQueue[0] (undefined once the queue drains).
+    //
+    // An earlier version of this fallback took the first slice of the first program,
+    // which is in no pointer list at all — so the push created no duplicate, the
+    // validator correctly passed, and the mutation silently stopped testing
+    // anything. It only surfaced once P6-S02's reconciliation merged and drained
+    // activeSlices, verifyingSlices and plannedQueue to empty at the same time.
+    // Only the three STRING lists: verifyingSlices holds { id, pr, mergeSha, ... }
+    // objects, so pushing a bare id there claims `undefined` rather than the slice
+    // and produces a different, unrelated error instead of the duplicate.
+    const lists = [
+      ['activeSlices', r.executionPointer.activeSlices ?? []],
+      ['plannedQueue', r.executionPointer.plannedQueue ?? []],
+      ['blockedSlices', r.executionPointer.blockedSlices ?? []],
+    ];
+    const [from, claimed] = lists.find(([, ids]) => ids.length > 0);
+    const target = lists.find(([name]) => name !== from)[1];
+    target.push(claimed[0]);
   }, /listed in both/],
   // DEC-0020: main-owned milestone authority
   ['Main-Owned changed to Manager-Owned', (r) => { r.governance.milestoneAuthority.milestoneTruthOwner = 'arena-manager'; }, /milestoneTruthOwner must be "main"/],
