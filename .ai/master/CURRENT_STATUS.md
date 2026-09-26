@@ -16,8 +16,8 @@ document is right and the prose is stale.
 | **Latest completed slice** | **P6-S01** |
 | **Realtime Delivery Progress** | **86.9%** (P0–P11 checkpoint-weighted; future programs excluded; no checkpoint model contributes 0) |
 | **Slice Completion** | **86.3%** (132/153 implemented; verifying and blocked contribute 0) |
-| **Active / verifying slices** | **P6-S02, P7-S01** |
-| Planned queue | P7-S02, P7-S03, P7-S04, P7-S05, P7-S06, P7-S07, P7-S08, P2-S02, P2-S03 |
+| **Active / verifying slices** | **P6-S02, P7-S02, P7-S01 (verifying)** |
+| Planned queue | P7-S03, P7-S04, P7-S05, P7-S06, P7-S07, P7-S08, P2-S02, P2-S03 |
 | Blocked slices | P5-M02, P5-M05, P5-M06, P5-M10 |
 | Historical P2 ladder pointer | P2.27 (history, not active work) |
 | Previous completed P2 milestone | P2.26 |

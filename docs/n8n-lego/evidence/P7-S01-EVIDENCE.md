@@ -125,8 +125,24 @@ provides. When it is missing, the test fails; it is never skipped.
 
 ## 6. Verification
 
-To be completed after the delivery merge: merge SHA, fresh-main suite results and
-the DEC-0015 runner verdict.
+- **Delivery PR:** #334, head `71510167bffd57ac38fc75f5289fe20b7bd2f457`, squash-merged
+  to `main` as `8aedbfa2cf67d4afd7cedb2e30b179e152107413` (2026-09-26).
+- **GitHub-hosted checks on the head (3/3 success):** Unit + integration tests and release
+  package; Backend LEGO architecture gate (P2.6); Clean clone → start → health → browser
+  smoke → restart.
+- **Self-hosted checks on the head: WAITING_RUNNER** (queued, not run): Level 0 (Check &
+  Format), Level 1 (Affected Tests), Level 2 Workspace Tests (linux), Level 2 Workspace
+  Tests (windows), Level 2 Conformance LEGO & Node Catalog, Windows worker portability
+  probe. Merged under DEC-0015 model B. WAITING_RUNNER is not PASS, so the slice stays
+  **in-progress (VERIFYING)** until these checks pass on main.
+- **Fresh `main` at `8aedbfa2` (local re-verification):** backend 2755/2755
+  (`lego-parameter-plan` 24/24), frontend 451/451, `lego:ai:check`, `lego:arch`,
+  `lego:foundation`, `lego:capabilities` and `lego:scaleout` all exit 0.
+- **Correction recorded before merge (head `71510167`):** `loadOptionsDependsOn` paths
+  were first read as relative to the scope. Upstream reads them relative to the root, and a
+  leading `&` names a sibling (`resolveRelativePath`). After the fix, 38 dependency
+  paths in 12 catalog nodes still name no declared slot. That is a property of those node
+  definitions, not of the compiler. P7-S02 reports them.
 
 ## 7. Not delivered here (later P7 slices)
 

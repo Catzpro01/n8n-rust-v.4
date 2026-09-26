@@ -363,7 +363,15 @@ test('README projection lists current state, P5 ladder, recent slices and future
   assert.match(block, /Historical pointers: current `P2\.27`, previous completed `P2\.26`/);
   assert.match(block, /\| `P5-M08` \|[^\n]*✅ Implemented \| 100\.0% \| 100\.0% \|/);
   assert.match(block, /\| `P5-M09` \|[^\n]*✅ Implemented \| 100\.0% \| 100\.0% \|/);
-  assert.match(block, /_No verifying slice\._/);
+  // Derived from the register: an empty verifying list renders the placeholder, and every
+  // verifying slice renders its own VERIFYING block with its delivery PR and pending checks.
+  const verifyingEntries = REGISTER.executionPointer.verifyingSlices ?? [];
+  if (verifyingEntries.length === 0) assert.match(block, /_No verifying slice\._/);
+  for (const entry of verifyingEntries) {
+    assert.ok(block.includes(`### 🟠 ${entry.id} — `), `${entry.id} verifying block`);
+    assert.ok(block.includes(`**PR:** #${entry.pr} · **Merge:** \`${entry.mergeSha.slice(0, 8)}\``), `${entry.id} delivery record`);
+    assert.doesNotMatch(block, /_No verifying slice\._/);
+  }
   // The latest completed slice is the delivery record that survives the verifying block emptying.
   // Derived from the register, so it follows the queue instead of going stale.
   const latest = REGISTER.executionPointer.latestCompletedSlice;
@@ -498,6 +506,8 @@ test('declared checkpoints move realtime progress and never slice completion or 
     const alsoInFlight = [...REGISTER.programs, ...REGISTER.futurePrograms]
       .flatMap((entity) => entity.slices)
       .filter((slice) => slice.status === 'in-progress' && slice.id !== 'P5-M08')
+      // A verifying slice is in-progress too, but the pointer already lists it under verifyingSlices.
+      .filter((slice) => !(REGISTER.executionPointer.verifyingSlices ?? []).some((entry) => entry.id === slice.id))
       .map((slice) => slice.id);
     register.executionPointer.activeSlices = ['P5-M08', ...alsoInFlight];
     assert.deepEqual(validateSliceCheckpoints(slice), []);
