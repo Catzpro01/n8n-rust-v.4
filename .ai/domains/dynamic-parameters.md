@@ -21,6 +21,7 @@
 ## Owns
 
 - `src/lego/parameter-plan.mjs`
+- `src/lego/parameter-graph.mjs`
 
 ## Public contract surface
 
@@ -53,3 +54,4 @@ _none — this LEGO has no public surface yet; do not import from it._
 ## Tests that guard it
 
 - `test/lego-parameter-plan.test.mjs`
+- `test/lego-parameter-graph.test.mjs`
