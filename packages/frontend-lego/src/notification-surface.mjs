@@ -320,6 +320,22 @@ export function createNotificationSurface(init = {}) {
         `notification messageKey exceeds ${NOTIFICATION_LIMITS.maxMessageKeyLength} characters`,
       );
     }
+    // `maxParams` was declared in NOTIFICATION_LIMITS but never enforced anywhere,
+    // so a consumer reading the declared bound and trusting it could hand the
+    // surface ten thousand interpolation parameters and have every one accepted. A
+    // bound that is published but not checked is worse than no bound: it moves the
+    // failure to whoever believed it.
+    if (options.params !== undefined && options.params !== null) {
+      if (typeof options.params !== 'object' || Array.isArray(options.params)) {
+        throw new Error('notification params must be a plain object');
+      }
+      const count = Object.keys(options.params).length;
+      if (count > NOTIFICATION_LIMITS.maxParams) {
+        throw new Error(
+          `notification params exceed ${NOTIFICATION_LIMITS.maxParams} entries (got ${count})`,
+        );
+      }
+    }
     // Deliberately NOT frozen: `disposition` is mutated by dismiss and by the
     // bounded-drop rule, and freezing it here would make the surface throw on its
     // own first dismissal. Only what leaves the surface is frozen.

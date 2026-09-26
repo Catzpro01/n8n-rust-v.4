@@ -168,6 +168,48 @@ test('regionState, severity, displayModel and a11y agree on every transition', (
   surface.error(); agree('a fresh error after a full dismiss');
 });
 
+test('every declared bound is actually enforced', () => {
+  // `maxParams` was published in NOTIFICATION_LIMITS but never checked, so a consumer
+  // reading the declared bound and trusting it could hand the surface ten thousand
+  // interpolation parameters and have every one accepted. A published bound that is
+  // not enforced is worse than no bound: it moves the failure to whoever believed it.
+  const surface = createNotificationSurface();
+  assert.throws(
+    () => surface.info({ params: Object.fromEntries(Array.from({ length: 17 }, (_, i) => [`k${i}`, i])) }),
+    /params exceed 16 entries/,
+  );
+  // The refusal leaves the surface untouched, exactly like the severity refusal.
+  assert.equal(surface.regionState, 'empty');
+  assert.equal(surface.queueLength, 0);
+  // A non-object params payload is refused rather than spread into nonsense.
+  assert.throws(() => surface.info({ params: 'nope' }), /must be a plain object/);
+  assert.throws(() => surface.info({ params: [1, 2, 3] }), /must be a plain object/);
+  // And the declared ceiling is reachable, so the bound is not off-by-one.
+  surface.info({ params: Object.fromEntries(Array.from({ length: 16 }, (_, i) => [`k${i}`, i])) });
+  assert.equal(Object.keys(surface.displayModel().params).length, 16);
+});
+
+test('the error bound is soft by design, and says so', () => {
+  // Errors are never silently dropped, so a surface holding only errors may exceed
+  // maxVisible. That is deliberate — the one notice an operator must not lose is the
+  // one saying something broke — but a consumer reading `maxVisible` as a hard cap
+  // needs to be able to see that it is soft, so the observable count reports the
+  // truth rather than clamping to the declared bound.
+  const surface = createNotificationSurface({ maxVisible: 3 });
+  for (let i = 0; i < 10; i += 1) surface.error();
+  assert.equal(surface.visibleCount, 10, 'errors are not dropped to honour maxVisible');
+  // The softness is stated outright rather than implied: maxVisible is a bound on
+  // droppable notices, not a cap on what the surface may hold.
+  assert.ok(
+    surface.visibleCount > NOTIFICATION_LIMITS.maxVisible,
+    'an all-error surface may exceed the default bound, and the count reports it',
+  );
+  // Non-error notices ARE bounded, which is the case the bound exists for.
+  const bounded = createNotificationSurface({ maxVisible: 3 });
+  for (let i = 0; i < 10; i += 1) bounded.info();
+  assert.equal(bounded.visibleCount, 3);
+});
+
 test('dismissal empties the region rather than adding a sixth region state', () => {
   // A dismissed notice that still occupied a region state would still be
   // announced. The whole point of dismissal is that the region goes away.

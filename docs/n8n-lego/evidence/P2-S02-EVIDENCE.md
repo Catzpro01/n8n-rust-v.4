@@ -107,11 +107,23 @@ installed is not loaded. `mode: 'pilot'`, `rollback.strategy: 'pilot-not-primary
    rather than latent. Found by adversarial review while the delivery PR was blocked on the
    runner fleet, and pinned by a new test that asserts region state, severity, display model,
    a11y and observation agree at every transition, including a dismissed error.
-5. **`owner: 'agent-4'` is not a valid agent id.** The registry wants `agent-\d{2}`; corrected to
+5. **`maxParams` was published but never enforced.** `NOTIFICATION_LIMITS.maxParams = 16` sat in
+   the declared bounds while nothing anywhere checked it, so a consumer reading the declared
+   bound and trusting it could hand the surface ten thousand interpolation parameters and have
+   every one accepted. A published bound that is not checked is worse than no bound, because it
+   moves the failure onto whoever believed it. `push` now refuses a non-plain-object payload and
+   an over-long params map, and the refusal leaves the surface untouched exactly like the
+   severity refusal does.
+6. **`maxVisible` is a soft bound and now says so.** Errors are never silently dropped, so an
+   all-error surface legitimately exceeds `maxVisible` (10 errors at a bound of 3). That is the
+   right trade — the one notice an operator must not lose is the one saying something broke —
+   but a consumer reading `maxVisible` as a hard cap would be wrong, so the test states the
+   softness outright instead of leaving it to be discovered.
+7. **`owner: 'agent-4'` is not a valid agent id.** The registry wants `agent-\d{2}`; corrected to
    `agent-04`.
-6. **`activation: 'lazy'` without an `entry`.** A non-eager activation must name where its code is, or
+8. **`activation: 'lazy'` without an `entry`.** A non-eager activation must name where its code is, or
    it is not installable; `entry: './src/notification-surface.mjs'` added.
-7. **`createFrontendRegistry()` with no catalog throws.** The registry refuses an empty vocabulary;
+9. **`createFrontendRegistry()` with no catalog throws.** The registry refuses an empty vocabulary;
    the test now builds it against the declared catalog like the other frontend suites do.
 
 ## 8. Gate staleness this slice had to fix
@@ -152,8 +164,8 @@ their sum. Measured total is now 82.5 KB. `card.md` itself stays inside its **L1
 
 | Gate | Result |
 | --- | --- |
-| `40-notification-surface.test.mjs` | **30 / 30 pass** |
-| `frontend-lego:test` (whole suite) | **481 / 482 pass**, 1 skipped |
+| `40-notification-surface.test.mjs` | **32 / 32 pass** |
+| `frontend-lego:test` (whole suite) | **483 / 484 pass**, 1 skipped |
 | `lego:arch` / `lego:arch:selftest` | OK |
 | `lego:foundation` / `lego:foundation:selftest` | OK |
 | `lego:capabilities` / `lego:scaleout` | OK |
