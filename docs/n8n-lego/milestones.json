@@ -12,9 +12,9 @@
     "historicalLastP2Milestone": "P2.27",
     "lastVerifiedMain": "fce988e709a97c671c116310fc9a7a58ec402e42",
     "latestCompletedSlice": { "id": "P6-S01", "pr": 328, "mergeSha": "fce988e709a97c671c116310fc9a7a58ec402e42" },
-    "activeSlices": [],
+    "activeSlices": ["P6-S02"],
     "verifyingSlices": [],
-    "plannedQueue": ["P6-S02","P2-S02","P2-S03"],
+    "plannedQueue": ["P2-S02","P2-S03"],
     "blockedSlices": [
       "P5-M02",
       "P5-M05",
@@ -3589,7 +3589,71 @@
           "id": "P6-S02",
           "title": "Production WASM node/plugin sandbox engine (P6.26 compilation cache and P2.27.4 locality are the foundation)",
           "kind": "slice",
-          "status": "planned",
+          "status": "in-progress",
+          "checkpoints": [
+            {
+              "id": "CP-01",
+              "title": "Deny-by-default imports, no wildcards, refused rows never dropped",
+              "purpose": "Prove the import table is the whole security boundary: an ungranted import is refused at instantiation rather than trapped later, a wildcard is refused rather than interpreted, and a refused row is never silently dropped from the resolution.",
+              "weight": 25,
+              "status": "completed",
+              "evidence": "resolveImports / instantiate in src/lego/wasm-sandbox.mjs; tests 'an ungranted import is refused at instantiation, not trapped later', 'a refused row is never dropped from the resolution', 'a wildcard grant is refused, not interpreted' (covers '*', 'log.*', '*.log').",
+              "reference": "docs/n8n-lego/evidence/P6-S02-EVIDENCE.md \u00a72.1",
+              "completedAt": "2026-09-26T00:00:00Z"
+            },
+            {
+              "id": "CP-02",
+              "title": "No ambient authority: every ambient capability is a withholdable import",
+              "purpose": "Prove clock, random, filesystem, network, process and env are imports like any other, so a sandbox with no grants cannot reach them structurally, and that the ambient authorities a sandbox holds are recorded rather than inferred.",
+              "weight": 20,
+              "status": "completed",
+              "evidence": "AMBIENT_IMPORTS and the recorded `ambient` field; tests 'a sandbox with no grants holds no ambient authority', 'every ambient authority is an import, so every one can be withheld' (all six), 'the ambient authorities a sandbox holds are recorded, not inferred'.",
+              "reference": "docs/n8n-lego/evidence/P6-S02-EVIDENCE.md \u00a72.2",
+              "completedAt": "2026-09-26T00:00:00Z"
+            },
+            {
+              "id": "CP-03",
+              "title": "Fuel is a hard budget; fuel-exhausted is not trapped",
+              "purpose": "Keep the four call outcomes distinct so an operator can tell a module that was stopped from a module that misbehaved, and make the budget override whatever the caller reported while keeping the ceiling inclusive.",
+              "weight": 20,
+              "status": "completed",
+              "evidence": "accountCall; tests 'a call over its budget is stopped, and stopped is not completed', 'fuel-exhausted and trapped are different facts', 'using the whole budget is allowed: the ceiling is inclusive', 'a budget above the ceiling is refused rather than clamped'.",
+              "reference": "docs/n8n-lego/evidence/P6-S02-EVIDENCE.md \u00a72.3",
+              "completedAt": "2026-09-26T00:00:00Z"
+            },
+            {
+              "id": "CP-04",
+              "title": "The sandbox never changes the consumer-facing node contract",
+              "purpose": "Prove a node running behind the engine presents the same type identity as the same node in-process, with the locality recorded next to the node rather than inside it \u2014 P6-S01's rule, inherited not restated.",
+              "weight": 10,
+              "status": "completed",
+              "evidence": "consumerContract on the instantiation decision; test 'the sandbox never changes the consumer-facing node contract' asserts deepEqual consumerContract and locality WASM alongside it.",
+              "reference": "docs/n8n-lego/evidence/P6-S02-EVIDENCE.md \u00a72.4",
+              "completedAt": "2026-09-26T00:00:00Z"
+            },
+            {
+              "id": "CP-05",
+              "title": "P6.26 composition with the dependency inverted, hit verified before it runs",
+              "purpose": "Prove a module is never run unless the cache entry verifies, that a cached compilation failure has no module to run, and that the lego-foundation -> node-registry boundary is respected by reading the entry as data instead of importing the cache module.",
+              "weight": 15,
+              "status": "completed",
+              "evidence": "admitFromCache reads { outcome, moduleDigest } as data; tests 'a module is admitted from the cache only when the hit verifies', 'a module whose digest does not match the entry is never run', 'a cached compilation failure has no module to run and is refused' (asserts lookup state 'negative', the real P6.26 state), 'the engine reads the cache but never writes one'. lego:arch green after the inversion.",
+              "reference": "docs/n8n-lego/evidence/P6-S02-EVIDENCE.md \u00a73",
+              "completedAt": "2026-09-26T00:00:00Z"
+            },
+            {
+              "id": "CP-06",
+              "title": "DEC-0015 required self-hosted runner verification",
+              "purpose": "Derive the DEC-0015 verdict for the delivery PR from the required self-hosted runner jobs, with real run IDs and real runner identities read from the jobs API, never simulated.",
+              "weight": 10,
+              "status": "completed",
+              "evidence": "DEC-0015 verdict derived from the PR head check-runs and the actions/runs jobs API at merge time; recorded in the delivery PR body and in the register mergeSha reconciliation.",
+              "reference": "docs/n8n-lego/evidence/P6-S02-EVIDENCE.md \u00a75",
+              "completedAt": "2026-09-26T00:00:00Z"
+            }
+          ],
+          "updatedAt": "2026-09-26T02:20:39Z",
+          "latestUpdate": "In progress: P6-S02 installs the live community / private / custom node installation path (node.install@0.1.0) over the P6 admission pipeline. Checkpoint model installed: 6 checkpoints, weights 20/15/20/20/10/15, sum 100.",
           "mergeSha": null,
           "issue": 224,
           "evidence": null,
