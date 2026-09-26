@@ -40,14 +40,22 @@ P7 pipeline (#223 §4). It compiles one canonical n8n node description at one
   sibling inside one parent. They are compiled as `id~2` (and so on) and reported as
   `IDENTICAL_DECLARATION`. Only among indistinguishable twins does occurrence order
   name the copy.
-- **`@version` is decided at compile time; nothing else is.** For one plan the type
-  version is a constant, so a variant whose `show['@version']` cannot match, or
-  whose `hide['@version']` matches, can never be visible. This is sound because
-  `show` needs every key to match and `hide` needs any key to match. All other
-  displayOptions are recorded as `visibility` for the RESOLVE stage (P7-S02) and
-  are not evaluated here. The supported `_cnd` operators are eq, not, gte, lte,
-  gt, lt, between, includes, startsWith, endsWith, regex and exists. An unknown
-  operator throws `UNSUPPORTED_CONDITION`.
+- **`@version` / `@tool` are decided at compile time, and only where provably sound.**
+  For one plan the type version and the node name are constants. But n8n walks
+  `show` in key order and returns *visible* as soon as a key holds an expression
+  (`=…`), before later keys are read. `hide` is only walked when `show` completes.
+  So a failing static key prunes only when no dynamic key precedes it, and a
+  matching static `hide` key prunes only when every `show` key is static.
+  `checkConditions` is a port of the pinned n8n function: `eq` is structural, a
+  `_cnd` must hold for every value, an empty value list satisfies only `not`, and
+  literals match strictly. **Correction made during this slice:** the first draft
+  pruned on `show['@version']` regardless of key order and pruned 717
+  declarations. Reading the upstream `displayParameter` showed that 296 of those
+  can be visible through the expression short-circuit, so the rule was narrowed
+  to the static prefix; 421 are now pruned. A test pins the key-order cases. Every
+  other displayOptions condition is recorded as `visibility` for the RESOLVE stage
+  (P7-S02) and is not evaluated here. Unknown `_cnd` operators throw
+  `UNSUPPORTED_CONDITION`.
 - **Dependencies are absolute paths.** A displayOptions key is relative to the
   containing value scope, a leading `/` makes it root-relative, and `@version`,
   `@tool` and `@feature` are kept apart as `metaDependsOn`.
@@ -62,15 +70,15 @@ P7 pipeline (#223 §4). It compiles one canonical n8n node description at one
 | Measurement | Result |
 |---|---|
 | Plans compiled (483 node types, every declared version) | 638, 0 errors |
-| Declarations (all versions) | 37,013 = 36,296 compiled + 717 pruned by `@version` |
+| Declarations (all versions) | 37,189 = 36,768 compiled + 421 pruned by `@version` / `@tool` |
 | Unknown property types | 0 (all 21 catalog types are known) |
-| Dynamic sources recorded (loadOptions / searchList / resourceMapper) | 3,362 across all plans |
-| Cold compile, 483 latest-version plans | ≈ 2.7 s (2,659 ms) |
-| Warm (cache hit), the same 483 plans | 1.45 ms, 483 hits / 0 evictions |
-| Largest node (`notion`, latest version) | 785 compiled, 68 ms, 626 KB serialised |
-| Process heap after compiling everything | ≈ 53 MB (RSS ≈ 172 MB for the whole test process) |
+| Dynamic sources recorded (loadOptions / searchList / resourceMapper) | 3,823 across all plans |
+| Cold compile, 483 latest-version plans | ≈ 2.3–2.7 s (2,303 ms and 2,659 ms in two runs) |
+| Warm (cache hit), the same 483 plans | 1.5–1.9 ms, 483 hits / 0 evictions |
+| Largest node (`notion`, latest version) | 787 compiled, 68–80 ms, 614 KB serialised |
+| Process heap after compiling everything | ≈ 53–58 MB (RSS ≈ 172 MB for the whole test process) |
 
-The largest serialised plan (626 KB for notion) is a compactness target for the
+The largest serialised plan (614 KB for notion) is a compactness target for the
 P7-S08 low-resource work. It is recorded here and has not been optimised yet.
 
 ## 4. Registration
@@ -84,7 +92,7 @@ P7-S08 low-resource work. It is recorded here and has not been optimised yet.
 
 ## 5. Tests
 
-`apps/n8n-lego/test/lego-parameter-plan.test.mjs` has 21 tests:
+`apps/n8n-lego/test/lego-parameter-plan.test.mjs` has 23 tests:
 - contract fields;
 - deep freeze;
 - the source definition is not mutated;
@@ -95,6 +103,8 @@ P7-S08 low-resource work. It is recorded here and has not been optimised yet.
 - the same child under two parent variants;
 - byte-identical twins kept;
 - `@version` pruning at v1, v2 and v3 with the accounting invariant;
+- pruning soundness against n8n key order, and `@tool`;
+- the `checkConditions` port (every value, empty values, strict literals, structural `eq`);
 - the `_cnd` operators;
 - an undeclared version refused;
 - dependency paths (relative, root-relative, meta);

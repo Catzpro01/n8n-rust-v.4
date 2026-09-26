@@ -14,7 +14,7 @@ import { join } from 'node:path';
 import {
   PLAN_FORMAT, PLAN_FORMAT_VERSION, PARAMETER_SCHEMA_VERSION, PLAN_LIMITS, KIND_BY_TYPE,
   ParameterPlanError, ParameterPlanCompiler, canonicalJson, compileParameterPlan,
-  evaluateCondition, nodeVersions, parameterById, slotVariants, versionAllows,
+  evaluateCondition, nodeVersions, parameterById, slotVariants, versionAllows, checkConditions, isDeepEqual,
 } from '../src/lego/parameter-plan.mjs';
 
 const node = (properties, extra = {}) => ({ name: 'test.node', version: [1, 2, 3], properties, ...extra });
@@ -162,6 +162,31 @@ test('versionAllows and evaluateCondition implement the n8n _cnd operators', () 
   ]) assert.equal(evaluateCondition(condition, actual), expected, JSON.stringify(condition));
   assert.throws(() => evaluateCondition({ bogus: 1 }, 1), (error) => error instanceof ParameterPlanError && error.code === 'UNSUPPORTED_CONDITION');
   assert.throws(() => evaluateCondition({ eq: 1, not: 2 }, 1), (error) => error.code === 'INVALID_CONDITION');
+});
+
+test('pruning is sound against n8n key order: a dynamic key before @version keeps the variant', () => {
+  // n8n returns VISIBLE as soon as a show key holds an expression, before @version is read.
+  assert.equal(versionAllows({ show: { resource: ['x'], '@version': [1] } }, 2), true);
+  assert.equal(versionAllows({ show: { '@version': [1], resource: ['x'] } }, 2), false, '@version first: the walk stops at it');
+  // hide is only walked when show completes, so it prunes only behind a fully static show.
+  assert.equal(versionAllows({ show: { resource: ['x'] }, hide: { '@version': [2] } }, 2), true);
+  assert.equal(versionAllows({ show: { '@version': [2] }, hide: { '@version': [2] } }, 2), false);
+  assert.equal(versionAllows({ hide: { resource: ['x'], '@version': [2] } }, 2), false, 'any static hide match hides');
+  // @tool is static: the node name ends with Tool.
+  assert.equal(versionAllows({ show: { '@tool': [true] } }, 1, 'n8n-nodes-base.fooTool'), true);
+  assert.equal(versionAllows({ show: { '@tool': [true] } }, 1, 'n8n-nodes-base.foo'), false);
+});
+
+test('checkConditions is the n8n port: every value must match a _cnd, empty values only satisfy not', () => {
+  assert.equal(checkConditions([{ _cnd: { gte: 2 } }], [2, 3]), true);
+  assert.equal(checkConditions([{ _cnd: { gte: 2 } }], [2, 1]), false);
+  assert.equal(checkConditions([{ _cnd: { not: 'a' } }], []), true);
+  assert.equal(checkConditions([{ _cnd: { eq: 'a' } }], []), false);
+  assert.equal(checkConditions(['a', 'b'], ['b']), true);
+  assert.equal(checkConditions([1], ['1']), false, 'literals match strictly');
+  assert.equal(checkConditions([{ _cnd: { eq: { a: [1] } } }], [{ a: [1] }]), true, 'eq is structural');
+  assert.equal(isDeepEqual({ a: 1, b: [1, { c: 2 }] }, { b: [1, { c: 2 }], a: 1 }), true);
+  assert.equal(isDeepEqual([1], { 0: 1 }), false);
 });
 
 test('an undeclared typeVersion is refused, not approximated', () => {

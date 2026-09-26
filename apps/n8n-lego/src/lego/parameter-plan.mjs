@@ -26,11 +26,13 @@
  *
  * VERSIONING (#223 §31). The plan records the node type version, a definition
  * fingerprint (SHA-256 of the canonical declaration), the parameter schema
- * version and the plan format version. `@version` visibility conditions are
- * static for one typeVersion, so they are decided at compile time: a variant
- * whose `show['@version']` cannot match, or whose `hide['@version']` matches, is
- * pruned (sound: `show` needs every key to match, `hide` needs any key). Every
- * other condition is left to the RESOLVE stage and is recorded, not evaluated.
+ * version and the plan format version. `@version` and `@tool` are fixed for one
+ * plan, so a variant that can never be visible is pruned at compile time, but only
+ * on the provably static prefix of n8n's key-ordered walk: `show` returns visible as
+ * soon as a key holds an expression, so a failing static key prunes only when no
+ * dynamic key precedes it, and `hide` prunes only when every `show` key is static
+ * (see `versionAllows`). Every other condition is left to the RESOLVE stage and is
+ * recorded, not evaluated.
  *
  * COMPATIBILITY (#223 §3, §32). The n8n vocabulary is preserved as declared:
  * string, number, boolean, options, multiOptions, collection, fixedCollection,
@@ -128,17 +130,52 @@ function deepFreeze(value) {
 
 const clonePlain = (value) => (value === undefined ? undefined : JSON.parse(JSON.stringify(value)));
 
-/* ------------------------------------------------------------------ version conditions */
+/* ------------------------------------------------------------------ display conditions */
 
-/** Evaluate one n8n `_cnd` condition against a scalar (used for `@version`). */
+/** Structural equality with lodash `isEqual` semantics for JSON values (n8n `eq` / `not`). */
+export function isDeepEqual(a, b) {
+  if (a === b) return true;
+  if (typeof a === 'number' && typeof b === 'number') return Number.isNaN(a) && Number.isNaN(b);
+  if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  if (Array.isArray(a)) return a.length === b.length && a.every((item, index) => isDeepEqual(item, b[index]));
+  const keys = Object.keys(a);
+  return keys.length === Object.keys(b).length && keys.every((key) => Object.prototype.hasOwnProperty.call(b, key) && isDeepEqual(a[key], b[key]));
+}
+
+/**
+ * Port of n8n `checkConditions` (workflow/src/node-helpers.ts, pinned 2.9.1): does any
+ * declared condition match the actual values? A `{ _cnd: { op: target } }` condition
+ * must hold for EVERY actual value; with no actual values only `not` holds. A literal
+ * condition matches by strict inclusion.
+ */
+export function checkConditions(conditions, actualValues) {
+  return conditions.some((condition) => {
+    if (condition && typeof condition === 'object' && condition._cnd && Object.keys(condition).length === 1) {
+      const entries = Object.entries(condition._cnd);
+      if (entries.length !== 1) throw new ParameterPlanError('INVALID_CONDITION', `a _cnd condition has exactly one operator (got ${entries.length})`);
+      const [operator, target] = entries[0];
+      if (!CND_OPERATORS.has(operator)) throw new ParameterPlanError('UNSUPPORTED_CONDITION', `unsupported _cnd operator "${operator}"`, { operator });
+      if (actualValues.length === 0) return operator === 'not';
+      return actualValues.every((value) => evaluateCondition({ [operator]: target }, value));
+    }
+    return actualValues.includes(condition);
+  });
+}
+
+/**
+ * One `_cnd` operator against one value, as n8n evaluates it. String operators on a
+ * non-string value are false here; upstream would throw a TypeError on such
+ * malformed data (recorded divergence, never reachable from a valid catalog value).
+ */
 export function evaluateCondition(condition, actual) {
   const entries = Object.entries(condition ?? {});
   if (entries.length !== 1) throw new ParameterPlanError('INVALID_CONDITION', `a _cnd condition has exactly one operator (got ${entries.length})`);
   const [operator, expected] = entries[0];
   if (!CND_OPERATORS.has(operator)) throw new ParameterPlanError('UNSUPPORTED_CONDITION', `unsupported _cnd operator "${operator}"`, { operator });
   switch (operator) {
-    case 'eq': return actual === expected;
-    case 'not': return actual !== expected;
+    case 'eq': return isDeepEqual(actual, expected);
+    case 'not': return !isDeepEqual(actual, expected);
     case 'gte': return actual >= expected;
     case 'lte': return actual <= expected;
     case 'gt': return actual > expected;
@@ -148,32 +185,48 @@ export function evaluateCondition(condition, actual) {
     case 'startsWith': return typeof actual === 'string' && actual.startsWith(expected);
     case 'endsWith': return typeof actual === 'string' && actual.endsWith(expected);
     case 'regex': return typeof actual === 'string' && new RegExp(expected).test(actual);
-    case 'exists': return actual !== undefined && actual !== null && actual !== '';
+    case 'exists': return actual !== null && actual !== undefined && actual !== '';
     default: return false;
   }
 }
 
-/** Does one declared value (literal or `{ _cnd }`) match `actual`? */
-function matchesDeclared(declared, actual) {
-  if (declared && typeof declared === 'object' && '_cnd' in declared) return evaluateCondition(declared._cnd, actual);
-  return declared === actual;
+/** Keys whose value is fixed for one (nodeType, typeVersion) plan and never an expression. */
+const STATIC_META_KEYS = new Set(['@version', '@tool']);
+
+function staticMetaValues(key, typeVersion, nodeName) {
+  if (key === '@version') return [typeVersion || 0];
+  return [String(nodeName ?? '').endsWith('Tool')];
 }
 
 /**
- * Compile-time `@version` decision. Returns false when the variant can never be
- * visible at `typeVersion`; true when `@version` does not rule it out (the rest
- * of displayOptions is decided later, at RESOLVE).
+ * Compile-time visibility decision. Returns false only when the variant can NEVER be
+ * visible for this plan; true means "not ruled out" (decided at RESOLVE, P7-S02).
+ *
+ * n8n walks `show` in key order and returns VISIBLE as soon as a key's value is an
+ * expression, before later keys are checked; `hide` is only walked when `show`
+ * completes. So pruning is sound only on the static prefix:
+ *   - show: a failing `@version` / `@tool` key prunes only when every key before it is
+ *     also static (no earlier key can short-circuit to visible);
+ *   - hide: a matching static key prunes only when every `show` key is static and
+ *     passed (so the `hide` walk is certainly reached).
  */
-export function versionAllows(displayOptions, typeVersion) {
-  const show = displayOptions?.show?.['@version'];
-  if (show !== undefined) {
-    const values = Array.isArray(show) ? show : [show];
-    if (!values.some((declared) => matchesDeclared(declared, typeVersion))) return false;
+export function versionAllows(displayOptions, typeVersion, nodeName = '') {
+  const show = displayOptions?.show ?? {};
+  let showFullyStatic = true;
+  for (const key of Object.keys(show)) {
+    if (!STATIC_META_KEYS.has(key)) {
+      showFullyStatic = false;
+      break;
+    }
+    const declared = Array.isArray(show[key]) ? show[key] : [show[key]];
+    if (!checkConditions(declared, staticMetaValues(key, typeVersion, nodeName))) return false;
   }
-  const hide = displayOptions?.hide?.['@version'];
-  if (hide !== undefined) {
-    const values = Array.isArray(hide) ? hide : [hide];
-    if (values.some((declared) => matchesDeclared(declared, typeVersion))) return false;
+  if (!showFullyStatic) return true;
+  const hide = displayOptions?.hide ?? {};
+  for (const key of Object.keys(hide)) {
+    if (!STATIC_META_KEYS.has(key)) continue;
+    const declared = Array.isArray(hide[key]) ? hide[key] : [hide[key]];
+    if (checkConditions(declared, staticMetaValues(key, typeVersion, nodeName))) return false;
   }
   return true;
 }
@@ -274,7 +327,7 @@ export function compileParameterPlan(description, options = {}) {
       if (!property || typeof property !== 'object' || typeof property.name !== 'string' || property.name === '') {
         throw new ParameterPlanError('INVALID_DEFINITION', `${description.name}: a parameter at ${context.valueScope || '(root)'} has no name`);
       }
-      if (!versionAllows(property.displayOptions, typeVersion)) {
+      if (!versionAllows(property.displayOptions, typeVersion, description.name)) {
         pruned += 1;
         continue;
       }
