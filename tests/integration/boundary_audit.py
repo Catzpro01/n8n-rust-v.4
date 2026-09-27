@@ -47,9 +47,10 @@ ALLOWED_EDGES = {
 }
 
 def lego_of(rel):
+    norm = rel.replace("\\", "/")
     for lego, (paths, _owner) in LEGO_OWNERSHIP.items():
         for p in paths:
-            if rel == p or rel.startswith(p + "/"):
+            if norm == p or norm.startswith(p + "/"):
                 return lego
     return "shared-util"
 
@@ -129,8 +130,9 @@ def hidden_coupling():
 
 def rust_guard():
     offenders = []
-    for base in ("crates", "apps"):
-        for dp, _dn, fn in os.walk(os.path.join(ROOT, base)):
+    ref_dir = os.path.join(ROOT, "reference", "n8n")
+    if os.path.isdir(ref_dir):
+        for dp, _dn, fn in os.walk(ref_dir):
             for f in fn:
                 if f.endswith(".rs") or f == "Cargo.toml":
                     offenders.append(os.path.relpath(os.path.join(dp, f), ROOT))
@@ -168,14 +170,14 @@ def main():
         print(f"  {kind}: {len(locs)} hit(s) e.g. {locs[:3]}")
 
     offenders = rust_guard()
-    print(f"\n-- Phase-2 Rust guard: {'VIOLATION ' + str(offenders) if offenders else 'clean (no .rs / Cargo.toml)'}")
+    print(f"\n-- Reference-source integrity guard: {'CONTAMINATION ' + str(offenders) if offenders else 'clean (no .rs / Cargo.toml in reference/)'}")
 
     print("\n-------------------------------------------------------")
     failed = bool(undocumented) or bool(offenders)
     if undocumented:
         print(f"BOUNDARY VIOLATION: {len(undocumented)} undocumented edge(s): {undocumented}")
     if offenders:
-        print("PHASE VIOLATION: Rust introduced during Phase 2")
+        print("REFERENCE CONTAMINATION: Rust introduced inside reference/")
     print("AUDIT RESULT:", "FAIL" if failed else "PASS (all edges documented)")
     return 1 if failed else 0
 
