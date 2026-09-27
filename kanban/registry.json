@@ -1,7 +1,8 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "project": "n8n-rust-v.4",
   "repository": "https://github.com/Catzpro01/n8n-rust-v.4",
+  "authority_doc": "docs/architecture/n8n-rust-project-decomposition.md",
   "architecture": "10-Manager Single Entity Swarm with External Critic",
   "external_critic": {
     "provider": "ChatGPT",
@@ -15,74 +16,93 @@
   "managers": {
     "M01": {
       "name": "Manager-01",
-      "domain": "Core Runtime & Execution Kernel",
-      "paths": ["crates/core/**", "crates/runtime-kernel/**"],
-      "status": "IDLE",
-      "active_slice": null
+      "milestone": "M1",
+      "domain": "Runtime Kernel",
+      "specialization": "runtime-kernel",
+      "paths": ["crates/n8n-workflow/src/runtime/**"],
+      "status": "ACTIVE",
+      "active_slice": "runtime-kernel/m1-01-execution-frame"
     },
     "M02": {
       "name": "Manager-02",
-      "domain": "Node Registry & Base Nodes Engine",
-      "paths": ["crates/nodes-base/**", "crates/node-registry/**"],
-      "status": "IDLE",
-      "active_slice": null
+      "milestone": "M5",
+      "domain": "Node System",
+      "specialization": "node-system",
+      "paths": ["crates/n8n-nodes-rust/**", "crates/n8n-node-model/**"],
+      "status": "ACTIVE",
+      "active_slice": "node-system/m5-01-node-traits"
     },
     "M03": {
       "name": "Manager-03",
-      "domain": "Expression Parser & Evaluator (JMESPath/JSONata)",
-      "paths": ["crates/expressions/**"],
-      "status": "IDLE",
-      "active_slice": null
+      "milestone": "M7",
+      "domain": "Expression Engine",
+      "specialization": "expression-engine",
+      "paths": ["crates/n8n-expression/**"],
+      "status": "ACTIVE",
+      "active_slice": "expression-engine/m7-01-ast-tokenizer"
     },
     "M04": {
       "name": "Manager-04",
-      "domain": "Webhook Dispatcher & HTTP Transport",
-      "paths": ["crates/webhook/**", "crates/http-server/**"],
-      "status": "IDLE",
-      "active_slice": null
+      "milestone": "M2",
+      "domain": "Execution Engine & Scheduler",
+      "specialization": "execution-engine",
+      "paths": ["crates/n8n-workflow/src/runtime/executor.rs", "crates/n8n-connection/**"],
+      "status": "ACTIVE",
+      "active_slice": "execution-engine/m2-01-state-machine"
     },
     "M05": {
       "name": "Manager-05",
-      "domain": "Trigger Scheduler & Queue Poller",
-      "paths": ["crates/triggers/**", "crates/scheduler/**"],
-      "status": "IDLE",
-      "active_slice": null
+      "milestone": "M4",
+      "domain": "Memory Management & Triggers",
+      "specialization": "memory",
+      "paths": ["crates/n8n-workflow/src/runtime/memory.rs", "crates/triggers/**"],
+      "status": "ACTIVE",
+      "active_slice": "memory/m4-01-heap-governor"
     },
     "M06": {
       "name": "Manager-06",
-      "domain": "Graph DAG Planner & Data Stream Engine",
-      "paths": ["crates/graph-dag/**", "crates/data-plane/**"],
-      "status": "IDLE",
-      "active_slice": null
+      "milestone": "M3",
+      "domain": "Data Plane",
+      "specialization": "data-plane",
+      "paths": ["crates/n8n-execution-data/**"],
+      "status": "ACTIVE",
+      "active_slice": "data-plane/m3-01-item-buffer"
     },
     "M07": {
       "name": "Manager-07",
-      "domain": "Security Sandbox & Credentials Vault",
-      "paths": ["crates/security/**", "crates/credentials/**"],
-      "status": "IDLE",
-      "active_slice": null
+      "milestone": "M10",
+      "domain": "Security & Sandbox Conformance",
+      "specialization": "security",
+      "paths": ["tools/arena-executor/fs_guard.py", "apps/n8n-lego/test/**"],
+      "status": "ACTIVE",
+      "active_slice": "security/m10-01-fs-sandbox"
     },
     "M08": {
       "name": "Manager-08",
-      "domain": "Storage Adapters & Database Engine",
-      "paths": ["crates/storage/**", "crates/db-postgres/**"],
-      "status": "IDLE",
-      "active_slice": null
+      "milestone": "M8",
+      "domain": "Validation",
+      "specialization": "validation",
+      "paths": ["crates/n8n-validation/**"],
+      "status": "ACTIVE",
+      "active_slice": "validation/m8-01-cycle-detection"
     },
     "M09": {
       "name": "Manager-09",
-      "domain": "Telemetry, Observability & Error Recovery",
-      "paths": ["crates/telemetry/**", "crates/diagnostics/**"],
-      "status": "IDLE",
-      "active_slice": null
+      "milestone": "M9",
+      "domain": "Integration & Conformance",
+      "specialization": "integration",
+      "paths": ["tests/**", "crates/n8n-common/**"],
+      "status": "ACTIVE",
+      "active_slice": "integration/m9-01-conformance-harness"
     },
     "M10": {
       "name": "Manager-10",
-      "domain": "Swarm Coordinator & Consolidation Arbiter",
-      "paths": ["kanban/**", "tests/integration/**"],
+      "milestone": "M6",
+      "domain": "Workflow Model & Swarm Arbiter",
+      "specialization": "workflow-model",
+      "paths": ["crates/n8n-workflow/src/lib.rs", "crates/n8n-workflow/src/connections.rs", "kanban/**"],
       "status": "ACTIVE_COORDINATING",
-      "active_slice": "Consolidation & Critic Relay"
+      "active_slice": "workflow-model/m6-01-schema-deserializer"
     }
-  },
-  "task_queue": []
+  }
 }
