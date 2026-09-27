@@ -75,6 +75,17 @@ impl StandardExpressionEvaluator {
                 context.get_item_index().into(),
             ))),
 
+            // `$runIndex` is not expressible through the ratified
+            // `EvaluationContext` trait, so `ContextResolver` binds it for the
+            // duration of a resolver-driven evaluation. Any other context keeps
+            // the fail-closed behaviour instead of silently evaluating to 0.
+            ExprAst::RunIndex => crate::context::active_run_index()
+                .map(|run| RuntimeValue::Json(Value::Number(run.into())))
+                .ok_or_else(|| ExpressionError::UnresolvedReference {
+                    path: "$runIndex (evaluate via ContextResolver to bind a run index)"
+                        .to_string(),
+                }),
+
             ExprAst::Variable(k) => context
                 .get_variable(k)
                 .cloned()
@@ -849,22 +860,19 @@ mod staged3_sandboxed_evaluator {
         // division/modulo by zero must all be deterministic *and* must never
         // yield NaN/Infinity inside a result, nor panic.
         for (_, expr) in corpus() {
-            match StandardExpressionEvaluator::new().evaluate(expr, &ctx()) {
-                Ok(v) => {
-                    let s = serde_json::to_string(&v).unwrap_or_default();
-                    assert!(
-                        !s.contains("NaN") && !s.contains("null") && !s.contains("Infinity"),
-                        "`{expr}` leaked a non-finite/null value: {s}"
-                    );
-                    if let Some(f) = v.as_f64() {
-                        assert!(f.is_finite(), "`{expr}` produced non-finite {f}");
-                    }
+            // Any *structured* error is an acceptable fail-closed outcome for this
+            // criterion (TypeError, SyntaxError, NodeNotFound, UnresolvedReference,
+            // …). What must never happen is a panic, a non-finite float, or a
+            // non-deterministic result.
+            if let Ok(v) = StandardExpressionEvaluator::new().evaluate(expr, &ctx()) {
+                let s = serde_json::to_string(&v).unwrap_or_default();
+                assert!(
+                    !s.contains("NaN") && !s.contains("null") && !s.contains("Infinity"),
+                    "`{expr}` leaked a non-finite/null value: {s}"
+                );
+                if let Some(f) = v.as_f64() {
+                    assert!(f.is_finite(), "`{expr}` produced non-finite {f}");
                 }
-                // Any *structured* error is an acceptable fail-closed outcome for
-                // this criterion (TypeError, SyntaxError, NodeNotFound,
-                // UnresolvedReference, …). What must never happen is a panic, a
-                // non-finite float, or a non-deterministic result.
-                Err(_) => {}
             }
         }
     }
@@ -971,15 +979,23 @@ mod staged3_memory {
 
         let first = mid.saturating_sub(before);
         let second = after.saturating_sub(mid);
-        println!("RSS growth: batch1={first} bytes, batch2={second} bytes ({N} evals each)");
-        assert!(
-            after >= before,
-            "resident set shrank below the start ({before} -> {after}); statm read race?"
+        println!(
+            "RSS: before={before} mid={mid} after={after}; growth batch1={first} batch2={second} \
+             ({N} evals each)"
         );
+        // No monotonicity is assumed: glibc returns freed arenas to the OS, so RSS
+        // legitimately *falls* (observed here: 126 MB -> 9 MB). Only the second
+        // batch matters — a leak is linear growth across identical workloads.
         assert!(
             second < first.max(1) * 4 + (16 << 20),
             "second identical batch grew {second} bytes after the first grew {first}: \
              linear growth indicates a leak"
+        );
+        // And the process must not end up holding more than one batch's worth of
+        // unbounded accumulation above the steady-state mark.
+        assert!(
+            after.saturating_sub(mid) < 64 << 20,
+            "resident set gained {second} bytes in one batch"
         );
     }
 
