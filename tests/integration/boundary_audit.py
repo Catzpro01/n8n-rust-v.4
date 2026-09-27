@@ -6,28 +6,19 @@ owns it (per docs/LEGO_PARALLEL_RULES.md), and reports:
   * cross-LEGO edges (DIRECT RUNTIME vs TYPE-ONLY)
   * circular dependencies between LEGOs
   * hidden coupling signals (global state, env vars, filesystem/db access)
-  * Rust placement (phase-aware, see below)
-
-Rust placement guard
-  * `reference/n8n/` is the upstream TypeScript snapshot and must NEVER contain
-    `.rs` files or a `Cargo.toml`, in any phase (reference-source integrity).
-  * `crates/` and `apps/` were forbidden to hold Rust while
-    PHASE_2_LEGO_ISOLATION was active. The active phase is read from
-    `.arena/state/phases.yaml`; once Phase 2 is `completed` and
-    PHASE_3_RUST_RUNTIME (or later) is `active`, Rust under `crates/` is the
-    expected state and is reported as allowed. If the phase file is missing or
-    unreadable the guard fails closed and applies the Phase-2 rule.
+  * reference-source integrity: `reference/n8n/` is the upstream TypeScript
+    snapshot and must never contain `.rs` files or a `Cargo.toml`. Rust lives
+    in the Cargo workspace under `crates/` (Phase 3+), which this audit does
+    not police.
 
 Read-only: it never modifies reference source. Exit 1 on undocumented findings.
-Run with `--selftest` to exercise the phase parser and the guard on a temp tree.
+Run with `--selftest` to exercise the guard and the path mapping on a temp tree.
 """
 import os, re, sys, json
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SRC = os.path.join(ROOT, "reference", "n8n", "packages", "workflow", "src")
-PHASES = os.path.join(ROOT, ".arena", "state", "phases.yaml")
-RUST_FREE_ALWAYS = (os.path.join("reference", "n8n"),)
-RUST_FREE_PHASE2 = ("crates", "apps")
+REFERENCE_DIR = os.path.join("reference", "n8n")  # must stay Rust-free in every phase
 
 LEGO_OWNERSHIP = {
     "workflow":       (["workflow.ts"], "Agent 1"),
@@ -61,9 +52,10 @@ ALLOWED_EDGES = {
 }
 
 def lego_of(rel):
+    norm = rel.replace("\\", "/")  # Windows runners hand back backslashes
     for lego, (paths, _owner) in LEGO_OWNERSHIP.items():
         for p in paths:
-            if rel == p or rel.startswith(p + "/"):
+            if norm == p or norm.startswith(p + "/"):
                 return lego
     return "shared-util"
 
@@ -141,60 +133,24 @@ def hidden_coupling():
                         hits.setdefault(kind, []).append(f"{rel}:{i}")
     return hits
 
-def read_phases(path=None):
-    """Parse the tiny `.arena/state/phases.yaml` (id/status pairs) without PyYAML.
+def rust_guard(root=None):
+    """Return the `.rs` / `Cargo.toml` files found inside reference/n8n/ (sorted).
 
-    Returns {phase_id: status} or None when the file is missing/unparseable.
+    Reference-source integrity is phase-independent: the upstream snapshot is the
+    behavioural oracle of every LEGO and must never receive Rust. Vendored
+    node_modules are skipped. Rust under crates/ is the expected Phase-3 state.
     """
-    path = path or PHASES
-    try:
-        with open(path, encoding="utf-8") as fh:
-            lines = fh.read().splitlines()
-    except OSError:
-        return None
-    phases, current = {}, None
-    for raw in lines:
-        line = raw.split("#", 1)[0].rstrip()
-        m = re.match(r"^\s*-\s*id:\s*([A-Za-z0-9_.-]+)\s*$", line)
-        if m:
-            current = m.group(1)
-            phases.setdefault(current, "unknown")
-            continue
-        m = re.match(r"^\s*status:\s*([A-Za-z_-]+)\s*$", line)
-        if m and current:
-            phases[current] = m.group(1).lower()
-    return phases or None
-
-def rust_policy(phases):
-    """Decide where Rust is forbidden.
-
-    Returns (forbidden_bases, reason). Fail-closed: no readable phase file means
-    the strict Phase-2 rule applies.
-    """
-    if not phases:
-        return RUST_FREE_ALWAYS + RUST_FREE_PHASE2, "phase file unreadable -> Phase-2 rule applied (fail-closed)"
-    if phases.get("PHASE_2_LEGO_ISOLATION") == "active":
-        return RUST_FREE_ALWAYS + RUST_FREE_PHASE2, "PHASE_2_LEGO_ISOLATION active -> no Rust in crates/ or apps/"
-    active = [pid for pid, st in phases.items() if st == "active"]
-    label = ", ".join(active) if active else "no active phase, Phase 2 completed"
-    return RUST_FREE_ALWAYS, f"{label} -> Rust allowed under crates/ (workspace), reference/n8n/ stays Rust-free"
-
-def rust_offenders(bases, root=None):
     root = root or ROOT
+    ref_dir = os.path.join(root, REFERENCE_DIR)
     offenders = []
-    for base in bases:
-        for dp, _dn, fn in os.walk(os.path.join(root, base)):
+    if os.path.isdir(ref_dir):
+        for dp, _dn, fn in os.walk(ref_dir):
             if "node_modules" in dp.split(os.sep):
                 continue
             for f in fn:
                 if f.endswith(".rs") or f == "Cargo.toml":
                     offenders.append(os.path.relpath(os.path.join(dp, f), root).replace(os.sep, "/"))
     return sorted(offenders)
-
-def rust_guard(root=None, phases_path=None):
-    """Return (offenders, reason) for the current phase."""
-    bases, reason = rust_policy(read_phases(phases_path))
-    return rust_offenders(bases, root), reason
 
 def selftest():
     import tempfile, shutil
@@ -204,31 +160,24 @@ def selftest():
             p = os.path.join(tmp, rel)
             os.makedirs(os.path.dirname(p), exist_ok=True)
             open(p, "w", encoding="utf-8").close()
-        def phases_file(name, body):
-            p = os.path.join(tmp, name)
-            with open(p, "w", encoding="utf-8") as fh:
-                fh.write(body)
-            return p
         touch("crates/n8n-workflow/src/lib.rs")
         touch("crates/n8n-workflow/Cargo.toml")
-        touch("apps/n8n-ts/node_modules/dep/Cargo.toml")   # vendored, ignored
         touch("apps/n8n-ts/src/server.ts")
         touch("reference/n8n/packages/workflow/src/workflow.ts")
-
-        p2 = phases_file("phases-p2.yaml", "phases:\n  - id: PHASE_2_LEGO_ISOLATION\n    status: active\n")
-        p3 = phases_file("phases-p3.yaml", "phases:\n  - id: PHASE_2_LEGO_ISOLATION\n    status: completed\n  - id: PHASE_3_RUST_RUNTIME\n    status: active # comment\n")
+        touch("reference/n8n/node_modules/vendored/Cargo.toml")   # vendored, ignored
 
         checks = []
-        off, why = rust_guard(tmp, p3)
-        checks.append(("phase 3: crates Rust allowed", off == [], f"{off} / {why}"))
-        off, why = rust_guard(tmp, p2)
-        checks.append(("phase 2: crates Rust flagged", off == ["crates/n8n-workflow/Cargo.toml", "crates/n8n-workflow/src/lib.rs"], f"{off} / {why}"))
-        off, why = rust_guard(tmp, os.path.join(tmp, "missing.yaml"))
-        checks.append(("missing phase file fails closed", len(off) == 2 and "fail-closed" in why, f"{off} / {why}"))
+        checks.append(("Rust under crates/ is allowed (Phase 3 workspace)", rust_guard(tmp) == [], str(rust_guard(tmp))))
         touch("reference/n8n/packages/core/native.rs")
-        off, why = rust_guard(tmp, p3)
-        checks.append(("phase 3: Rust inside reference/n8n still flagged", off == ["reference/n8n/packages/core/native.rs"], f"{off} / {why}"))
-        checks.append(("phase parser reads id/status pairs", read_phases(p3) == {"PHASE_2_LEGO_ISOLATION": "completed", "PHASE_3_RUST_RUNTIME": "active"}, str(read_phases(p3))))
+        touch("reference/n8n/packages/core/Cargo.toml")
+        got = rust_guard(tmp)
+        checks.append(("Rust inside reference/n8n is flagged, node_modules ignored",
+                       got == ["reference/n8n/packages/core/Cargo.toml", "reference/n8n/packages/core/native.rs"], str(got)))
+        checks.append(("missing reference dir yields no offenders (missing SRC is reported by main())",
+                       rust_guard(os.path.join(tmp, "nowhere")) == [], "unexpected offenders"))
+        checks.append(("lego_of normalises Windows separators",
+                       lego_of("graph\\graph-utils.ts") == "connection" and lego_of("workflow.ts") == "workflow",
+                       f"{lego_of('graph\\graph-utils.ts')} / {lego_of('workflow.ts')}"))
 
         failed = 0
         for name, ok, detail in checks:
@@ -272,16 +221,15 @@ def main():
     for kind, locs in sorted(hits.items()):
         print(f"  {kind}: {len(locs)} hit(s) e.g. {locs[:3]}")
 
-    offenders, reason = rust_guard()
-    print(f"\n-- Rust placement guard ({reason}) --")
-    print(f"  {'VIOLATION ' + str(offenders) if offenders else 'clean'}")
+    offenders = rust_guard()
+    print(f"\n-- Reference-source integrity guard: {'CONTAMINATION ' + str(offenders) if offenders else 'clean (no .rs / Cargo.toml in reference/)'}")
 
     print("\n-------------------------------------------------------")
     failed = bool(undocumented) or bool(offenders)
     if undocumented:
         print(f"BOUNDARY VIOLATION: {len(undocumented)} undocumented edge(s): {undocumented}")
     if offenders:
-        print(f"RUST PLACEMENT VIOLATION: {len(offenders)} file(s) outside the allowed zone: {offenders[:5]}")
+        print(f"REFERENCE CONTAMINATION: Rust introduced inside reference/ ({len(offenders)} file(s))")
     print("AUDIT RESULT:", "FAIL" if failed else "PASS (all edges documented)")
     return 1 if failed else 0
 
