@@ -1,4 +1,4 @@
-﻿# Global Operating Instructions for Arena AI Development Agents
+# Global Operating Instructions for Arena AI Development Agents
 
 Operating Mode: **EXECUTION MODE**
 Do NOT produce conversational planning. Do NOT ask the user what to work on if `.arena/TASK.md` exists.
@@ -34,5 +34,6 @@ Do NOT produce conversational planning. Do NOT ask the user what to work on if `
 - **NEVER** delete any branch.
 - **NEVER** push directly to `main`.
 - **NEVER** modify files in `FORBIDDEN_FILES` or files owned by another active task.
+- **NEVER** modify `.github/workflows/*`, CI/CD pipeline definitions, `Cargo.toml` build profiles, or self-hosted runner infrastructure under any circumstances.
 - **NEVER** create permanent agent branches (e.g. `agent-1`).
 - **NEVER** ask the user what task to perform or what files to modify.

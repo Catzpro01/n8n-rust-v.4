@@ -25,6 +25,8 @@ anyhow = "1.0"
 petgraph = "0.6"
 indexmap = { version = "=2.2.6", features = ["serde"] }
 
+# IMMUTABLE BUILD CONFIGURATION NOTICE:
+# Strictly managed by Antigravity Host Operator. Arena agents & managers are FORBIDDEN from modifying profiles.
 # Optimasi Kompilasi & Testing Maksimal (Aman)
 [profile.dev]
 debug = 1               # Kurangi penulisan debug symbols ke disk (hemat I/O & RAM 50%+)

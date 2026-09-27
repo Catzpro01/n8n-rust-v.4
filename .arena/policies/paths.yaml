@@ -6,9 +6,12 @@ path_policy:
     - contracts/**
     - .arena/policies/**
     - Cargo.lock
+    - .github/workflows/**
   global_forbidden_paths:
     - .env
     - .env.*
+    - .github/workflows/**
+    - .cargo/**
     - /etc/**
     - /root/**
     - /home/fern/.ssh/**

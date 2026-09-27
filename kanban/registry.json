@@ -1,0 +1,88 @@
+{
+  "version": "1.0.0",
+  "project": "n8n-rust-v.4",
+  "repository": "https://github.com/Catzpro01/n8n-rust-v.4",
+  "architecture": "10-Manager Single Entity Swarm with External Critic",
+  "external_critic": {
+    "provider": "ChatGPT",
+    "role": "External Architectural Reviewer & Critic",
+    "status": "ACTIVE"
+  },
+  "lock_policy": {
+    "rule": "Strict Domain Isolation. Each Manager must only edit files within their designated module path to prevent git merge conflicts.",
+    "branch_convention": "feature/manager-[ID]-[domain-slice]"
+  },
+  "managers": {
+    "M01": {
+      "name": "Manager-01",
+      "domain": "Core Runtime & Execution Kernel",
+      "paths": ["crates/core/**", "crates/runtime-kernel/**"],
+      "status": "IDLE",
+      "active_slice": null
+    },
+    "M02": {
+      "name": "Manager-02",
+      "domain": "Node Registry & Base Nodes Engine",
+      "paths": ["crates/nodes-base/**", "crates/node-registry/**"],
+      "status": "IDLE",
+      "active_slice": null
+    },
+    "M03": {
+      "name": "Manager-03",
+      "domain": "Expression Parser & Evaluator (JMESPath/JSONata)",
+      "paths": ["crates/expressions/**"],
+      "status": "IDLE",
+      "active_slice": null
+    },
+    "M04": {
+      "name": "Manager-04",
+      "domain": "Webhook Dispatcher & HTTP Transport",
+      "paths": ["crates/webhook/**", "crates/http-server/**"],
+      "status": "IDLE",
+      "active_slice": null
+    },
+    "M05": {
+      "name": "Manager-05",
+      "domain": "Trigger Scheduler & Queue Poller",
+      "paths": ["crates/triggers/**", "crates/scheduler/**"],
+      "status": "IDLE",
+      "active_slice": null
+    },
+    "M06": {
+      "name": "Manager-06",
+      "domain": "Graph DAG Planner & Data Stream Engine",
+      "paths": ["crates/graph-dag/**", "crates/data-plane/**"],
+      "status": "IDLE",
+      "active_slice": null
+    },
+    "M07": {
+      "name": "Manager-07",
+      "domain": "Security Sandbox & Credentials Vault",
+      "paths": ["crates/security/**", "crates/credentials/**"],
+      "status": "IDLE",
+      "active_slice": null
+    },
+    "M08": {
+      "name": "Manager-08",
+      "domain": "Storage Adapters & Database Engine",
+      "paths": ["crates/storage/**", "crates/db-postgres/**"],
+      "status": "IDLE",
+      "active_slice": null
+    },
+    "M09": {
+      "name": "Manager-09",
+      "domain": "Telemetry, Observability & Error Recovery",
+      "paths": ["crates/telemetry/**", "crates/diagnostics/**"],
+      "status": "IDLE",
+      "active_slice": null
+    },
+    "M10": {
+      "name": "Manager-10",
+      "domain": "Swarm Coordinator & Consolidation Arbiter",
+      "paths": ["kanban/**", "tests/integration/**"],
+      "status": "ACTIVE_COORDINATING",
+      "active_slice": "Consolidation & Critic Relay"
+    }
+  },
+  "task_queue": []
+}

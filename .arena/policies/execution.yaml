@@ -41,6 +41,9 @@ execution_policy:
       approval_required: true
       human_admin_only: true
       forbidden_for_agents: true
+      restricted_paths:
+        - ".github/workflows/**"
+        - "tools/setup_windows_runners_env.ps1"
       patterns:
         - "sudo *"
         - "systemctl *"
