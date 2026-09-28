@@ -42,9 +42,7 @@
     "humanEscalation": true,
     "proposedBy": "MANAGER-01"
   },
-  "evidence": [
-    "docs/n8n-lego/evidence/P2-S03-RESCOPE.md"
-  ],
+  "evidence": [],
   "evidenceRefs": [
     "docs/n8n-lego/evidence/P2-S03-RESCOPE.md (gates evaluation table, measurements, rollback)",
     "docs/n8n-lego/evidence/P2-S07-EVIDENCE.md .. P2-S29-EVIDENCE.md (28 child slice evidence files)",
