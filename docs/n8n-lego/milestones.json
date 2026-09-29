@@ -216,6 +216,141 @@
     ],
     "branchPolicy": "Persistent branches: main and arena-manager only (DEC-0019, docs/engineering-operations/workforce/decisions/DEC-0019.json; supersedes the worker-slot branches of DEC-0003 and the agent-branch model of DEC-0017). The Manager executes every task itself; each Slice is delivered by one PR from a short-lived Manager branch that is deleted after merge. Every other branch is: A) merged -> deleted; B) important unmerged work -> PR, merge, delete; C) obsolete -> deleted after comparison with main (unique content preserved under an archive/<branch> tag).",
     "runnerProtocol": "docs/engineering-operations/RUNNER-PROTOCOL.md (machine-readable: docs/engineering-operations/workforce-governance.json#runnerProtocol)",
+    "terminology": {
+      "authority": "docs/engineering-operations/VOCABULARY.md (owner Master Prompt 'CANONICAL VOCABULARY SEPARATION', 2026-09-29). This block is a machine-readable summary; the document is the prose authority. Regression gate: apps/n8n-lego/test/governance-vocabulary.test.mjs.",
+      "absoluteRule": "PROGRAM ID != PRIORITY ID. P0 = Program P0 (Core Application Bootstrap); Priority-00 = operational urgency (Security / Trust). P5 = Program P5; Priority-05 = root-cause hardening. P5-M05 = an existing canonical slice inside Program P5. Urgency and identity are orthogonal: one work item carries both. No operating report may read P0 as 'priority'; no canonical governance record may read Priority-05 as 'Program P5'.",
+      "hierarchy": "PROGRAM (identity, P0-P11, permanent) -> MILESTONE (grouping inside a program, historical, immutable) -> SLICE (delivery, one PR, canonical work identity). PRIORITY overlays all three and owns none of them.",
+      "namespaces": {
+        "program": {
+          "tokens": "P0-P11",
+          "source": "programs[].id in this file",
+          "rule": "Canonical identity. Never renamed. noNewTopLevelMilestones: P0-P11 is the complete top-level set, P24+ forbidden. Legacy P12-P23 were consolidated into futurePrograms[] as FUTURE-* with traceability; a bare P12-P23 in a historical document is a legacy Program reference, never a priority."
+        },
+        "milestone": {
+          "tokens": "P2.11-P2.27, P2.27.0-P2.27.10, P9.6, P6.23, P4.8 (dot notation); P5-M01..P5-M10 (maintenance)",
+          "rule": "Historical granular ladder; milestones[] stays immutable. The letter M inside a historical slice ID (P5-M05) is part of that slice's canonical identifier and is NOT evidence of one global Milestone namespace. A NEW grouping, if ever needed, uses MILESTONE-01 / 'Milestone 01' and never a bare Pn. Do not create a Milestone to decorate nomenclature; report MILESTONE: N/A rather than invent one."
+        },
+        "slice": {
+          "tokens": "P2-S07, P2-S29, P5-M05, P6-S05, P8-S01, P3 Slice A, P3 Slice M",
+          "rule": "Canonical work identity, one delivery PR each (DEC-0014). P2-S07 reads as 'a slice inside Program P2'. Never changed for vocabulary reasons: changing one orphans its PR, merge SHA, evidence file and checkpoint history."
+        },
+        "priority": {
+          "tokens": "Priority-00 .. Priority-06",
+          "scale": {
+            "Priority-00": "Security / Trust",
+            "Priority-01": "Merge Backlog",
+            "Priority-02": "CI / Runner",
+            "Priority-03": "Blocker Removal",
+            "Priority-04": "Authorized Delivery",
+            "Priority-05": "Root-Cause Hardening",
+            "Priority-06": "Future / Optional"
+          },
+          "rule": "Operational urgency overlay. MAY NOT be written P0-P6. Prose may render Priority-04 or priority-04; never P4. A priority never appears alone in a work record: it is always paired with the PROGRAM / SLICE it overlays, never changes STATUS, and never contributes to progress."
+        },
+        "aiUiPhase": {
+          "tokens": "UI-PHASE-03 .. UI-PHASE-10",
+          "source": ".ai/master/AI_UI_IMPLEMENTATION_PHASES.md (curated)",
+          "rule": "AI-UI implementation phases. Formerly written as bare P3-P10, which collided token-for-token with canonical Programs P3-P10 in this same register. Namespaced 2026-09-29; a crosswalk in that file keeps historical references readable. Historical evidence, PR bodies and issues that say 'AI UI P5' mean UI-PHASE-05 and are NOT rewritten.",
+          "collisionResolved": true
+        },
+        "projectPhase": {
+          "tokens": "PHASE_1_ANATOMY .. PHASE_5_PERFORMANCE_BENCHMARK",
+          "source": ".arena/state/phases.yaml, PROJECT_RULES.md, README.md",
+          "rule": "Distinct token shape; no Pn collision. The WORD 'phase' is overloaded three ways and must always be qualified: (a) aiUiPhase; (b) the generator's '(phase Pn)' rendering of a canonical Program in .ai/domains/*.md; (c) canonical Program IDs carried as QUOTED DATA VALUES under a field the code names 'phase' or 'source' - apps/n8n-lego/src/compat/capability.mjs (phase: 'P3'/'P5'/'P6'), src/lego/contract-oracle.mjs (CORACLE_PHASES = ['P3','P4','P6','P8']), src/lego/replay-evidence.mjs (REPLAY_EVID_SOURCES = ['P3','P6']). Sense (c) is namespace #1, NOT a priority, and is NOT renamed: those values are contract-fed and capability-conformance.mjs validates them against the LEGO registry. Every quoted Pn data value in first-party source is declared in QUOTED_PN_ALLOWLIST in apps/n8n-lego/test/governance-vocabulary.test.mjs with the namespace it means; an undeclared one fails the gate."
+        },
+        "telemetryPriorityClass": {
+          "tokens": "P0-P4",
+          "source": "observability.telemetry-buffer@1.0.0 (TELEMETRY_PRIORITY_CLASSES), observability.telemetry-retention@1.0.0 (RETENTION_PRIORITIES, RET_RANK, SIGNAL_DEFAULT_PRIORITY), observability.low-resource-mode@1.0.0",
+          "meanings": {
+            "P0": "security/audit/safety evidence - never shed by pressure",
+            "P1": "failure/error diagnostics",
+            "P2": "execution lifecycle",
+            "P3": "performance telemetry",
+            "P4": "debug/verbose telemetry - shed first"
+          },
+          "rule": "NOT the Manager ladder and not interchangeable with it (5 values, record-shedding criticality, vs 7 values, human urgency). DELIBERATELY NOT RENAMED: these are locked contracts at v1.0.0 and the values are serialized into fixtures, so renaming is a contract-breaking DELIVERY (ADR + version bump + fixture migration), not vocabulary cleanup. Blast radius measured: 10 files, ~178 occurrences. Disambiguated by registration here plus the regression gate, which pins these three contracts as the ONLY place P0-P4 may carry priority semantics.",
+          "collisionStatus": "OPEN-DOCUMENTED (AMBIGUITY-01)",
+          "precedent": "execution.guard@1.0.0 GUARD_LANES already uses named lanes (system, interactive, background, bulk, deferred) with no Pn token - the pattern to follow if this namespace is ever migrated."
+        },
+        "resourcePriorityLane": {
+          "tokens": "system, interactive, background, bulk, deferred",
+          "source": "resource-guard.mjs GUARD_LANES (execution.guard@1.0.0)",
+          "rule": "Already clean: named lanes, no Pn token. Held up as the precedent for telemetryPriorityClass."
+        }
+      },
+      "reportFormat": {
+        "fields": [
+          "PRIORITY",
+          "PROGRAM",
+          "MILESTONE",
+          "SLICE",
+          "BRANCH",
+          "PR",
+          "HEAD SHA",
+          "STATUS",
+          "EVIDENCE"
+        ],
+        "example": {
+          "PRIORITY": "Priority-04",
+          "PROGRAM": "P5",
+          "MILESTONE": "N/A",
+          "SLICE": "P5-M05",
+          "BRANCH": "delivery/p5-m05-multi-host-state",
+          "PR": "#401",
+          "HEAD SHA": "0123abcd",
+          "STATUS": "in-progress",
+          "EVIDENCE": "docs/n8n-lego/evidence/P5-M05-EVIDENCE.md"
+        },
+        "rules": "MILESTONE: N/A when no canonical grouping exists - never fabricate. STATUS uses only statusVocabulary. PRIORITY is optional on a delivery record and mandatory on a Manager triage/backlog record."
+      },
+      "openAmbiguities": [
+        {
+          "id": "AMBIGUITY-01",
+          "field": "telemetry priority classes P0-P4",
+          "location": "telemetry-buffer.mjs, telemetry-retention.mjs, low-resource-mode.mjs + fixtures/p9/*.json + 5 test files",
+          "currentMeaning": "record-shedding criticality inside three contracts locked at v1.0.0",
+          "possibleMeanings": [
+            "telemetry priority (actual)",
+            "Program P0-P4 (collision)",
+            "Manager priority (collision)"
+          ],
+          "recommendation": "keep as-is; disambiguate by registration + regression gate",
+          "authorityRequired": "owner decision to open a contract-change delivery (ADR + version bump + fixture migration), or explicit acceptance of documentation-only disambiguation (RECOMMENDED)",
+          "status": "reported, NOT changed"
+        },
+        {
+          "id": "AMBIGUITY-02",
+          "field": "(P0 CONSTITUTION) / (P0 Governance)",
+          "location": "PROJECT_RULES.md section 0 heading; README.md 'Governance & Single Source of Truth (P0 Constitution)'",
+          "currentMeaning": "primacy - these are the highest-authority rules",
+          "possibleMeanings": [
+            "operational priority",
+            "Program P0",
+            "bare ordinal"
+          ],
+          "evidence": "Program P0 = 'Core Application Bootstrap' (programs[0] in this file): app bootstrap, runtime host, packaging - not a constitution. Priority-00 = 'Security / Trust' - also not a constitution. Every available Pn reading asserts something false.",
+          "recommendation": "drop the Pn token: '(CONSTITUTIONAL - highest authority; not Program P0, not Priority-00)'",
+          "authorityRequired": "owner confirmation of wording; PROJECT_RULES.md section 0 is a constitutional clause and Issue #266 reserves rule changes to Manager authority",
+          "status": "reported, NOT changed"
+        },
+        {
+          "id": "AMBIGUITY-03",
+          "field": "(P1: ExecutionContext, ExecutionFrame, NodeExecutor, Data Plane)",
+          "location": "PROJECT_RULES.md section 0.5 FEATURE & NODE FREEZE; README.md feature/node freeze item",
+          "currentMeaning": "ordinal enumerator listing the Kernel Runtime IR spec items that must land before the freeze lifts",
+          "possibleMeanings": [
+            "Program P1",
+            "operational priority",
+            "ordinal list marker"
+          ],
+          "evidence": "Program P1 = 'n8n Compatibility / Behavioral Baseline' - unrelated to the Runtime IR. Priority-01 = 'Merge Backlog' - unrelated. The four items exist as crates/n8n-workflow/src/runtime/{ir,frame,executor,context}.rs, i.e. a spec-item list.",
+          "recommendation": "'(IR-1: ExecutionContext, ExecutionFrame, NodeExecutor, Data Plane)' or drop the label",
+          "authorityRequired": "owner/Manager ruling - the token sits inside a FREEZE clause whose exit condition is separately contested, so editing its text risks changing what the freeze means",
+          "status": "reported, NOT changed"
+        }
+      ],
+      "notDelivery": "Vocabulary cleanup is not delivery. This block adds no slice, moves no status to implemented, and contributes 0 to Realtime Delivery Progress and 0 to Slice Completion. The denominators (199 global / 193 current) and numerators (190 / 189) are unchanged by design. No Program ID, slice ID, sub-milestone ID, DEC ID, merge SHA, status, denominator, checkpoint or plannedQueue entry was altered."
+    },
     "reconciliation": {
       "mergedPRs": [
         {
