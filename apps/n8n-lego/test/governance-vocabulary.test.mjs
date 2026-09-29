@@ -22,9 +22,11 @@ import { fileURLToPath } from 'node:url';
 
 import { headlineMetrics, accountingBreakdown } from '../../../tools/lego/governance-register.mjs';
 
-// Path traversal, never the directory NAME: a repo checked out anywhere must pass. (The
-// `.endsWith('n8n-rust-v.4')` assertion in packages/frontend-lego/test/12-knowledge.test.mjs is
-// the known counter-example; do not copy it.)
+// Path traversal, never the directory NAME: a repo checked out anywhere must pass.
+// (packages/frontend-lego/test/12-knowledge.test.mjs once asserted the checkout directory
+// was named after the repository - the known counter-example. It is repaired in #399, and
+// the repo-wide guard in tools/workforce/test/repo-invariants.test.mjs now rejects that
+// shape, so the literal is deliberately not repeated here.)
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const read = (relative) => readFileSync(join(REPO_ROOT, relative), 'utf8');
 const REGISTER = JSON.parse(read('docs/n8n-lego/milestones.json'));
