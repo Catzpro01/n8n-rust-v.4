@@ -14,7 +14,7 @@ GitHub
    ▼
 Cloudflare Tunnel
    │
-   │ Private Docker network / loopback bridge
+   │ Private Docker network (arena_internal bridge)
    ▼
 arena-gateway
    │
@@ -25,8 +25,8 @@ arena-gateway
    │     - X-GitHub-Delivery idempotency / deduplication
    │
    ├── control API :7891 (STRICTLY PRIVATE / LOCALHOST)
-   │     - Bound to 127.0.0.1
-   │     - NEVER published to 0.0.0.0, LAN, or Tunnel
+   │     - Bound via ARENA_CONTROL_BIND (127.0.0.1)
+   │     - Published to localhost only (127.0.0.1:7891:7891) — NOT to 0.0.0.0, LAN, or Tunnel
    │     - Operators / Antigravity control plane only
    │
    └── runner orchestration
@@ -41,7 +41,7 @@ arena-gateway
 Untuk containerisasi gateway (`arena-gateway`):
 - **Least Privilege**: Non-root execution.
 - **Read-Only App**: `/app` dimount read-only.
-- **Minimal Writable State**: Hanya volume `/var/lib/arena-ci` (persistent JSON data, evidence, logs, artifacts).
+- **Minimal Writable State**: Volume `/var/lib/arena-ci` (persistent JSON data, evidence, logs, artifacts) **dan** named volume `arena_node_modules` pada `/app/node_modules` (dependensi hasil `npm ci --omit=dev`). Source aplikasi di `/app` tetap read-only; `node_modules` hanya memakai named volume yang dimaksud.
 - **Absolute Host Isolation**:
   - Dilarang mount `C:\`, `C:\Users\`, `C:\Windows`, `C:\Program Files`, atau browser/SSH profiles.
   - Dilarang mount Docker socket (`/var/run/docker.sock`).
@@ -53,9 +53,11 @@ Untuk containerisasi gateway (`arena-gateway`):
 
 - **Zero Secret in Repo**: Token (`GITHUB_PAT`) dan Webhook Secret (`GITHUB_WEBHOOK_SECRET`) tidak pernah dicommit ke git repository.
 - **No Git Remote URL Parsing**: Gateway dilarang membaca token dari remote URL origin.
-- **Local Secret Storage**:
-  - Process environment variable: `GITHUB_PAT`
-  - Host-only secure file: `C:\arena-ci\data\gateway-secrets.json` (chmod 600)
+- **Local Secret Storage** (Docker secrets, di luar Git):
+  - `deploy/arena-ci/secrets/github_webhook_secret.txt` dan `deploy/arena-ci/secrets/github_pat.txt`
+  - Dimount sebagai Docker secrets menjadi `/run/secrets/github_webhook_secret` dan `/run/secrets/github_pat`
+  - Gateway membaca lewat `GITHUB_WEBHOOK_SECRET_FILE` / `GITHUB_PAT_FILE` — bukan environment variable yang berisi nilai token
+  - Nilai secret tidak pernah muncul di `docker compose config`, argv, logs, health response, atau evidence
 - **Token Protection**: Token tidak boleh muncul di stdout, logs, diagnostic output, atau command argv runner.
 
 ---

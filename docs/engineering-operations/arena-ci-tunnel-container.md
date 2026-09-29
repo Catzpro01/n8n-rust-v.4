@@ -11,7 +11,7 @@ Cloudflare Tunnel
   ▼
 arena-gateway:7890
   │
-  ├── local control API: 127.0.0.1:7891 (not published)
+  ├── local control API: 127.0.0.1:7891 (published to localhost only)
   └── persistent state: /var/lib/arena-ci
 ```
 
@@ -32,7 +32,9 @@ Do **not** mount:
 - arbitrary host drives
 - Docker socket
 
-Port `7890` is **not published to the Windows host**. Cloudflare Tunnel reaches it over the Docker network. Port `7891` is never published.
+Port `7890` is **not published to the Windows host**. Cloudflare Tunnel reaches it over the Docker network.
+
+Port `7891` **is published to localhost only** (`127.0.0.1:7891:7891`). It is not published to LAN/public interfaces and is not routed through the tunnel.
 
 ## Secrets
 
