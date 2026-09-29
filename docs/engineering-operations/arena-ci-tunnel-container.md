@@ -57,9 +57,16 @@ with values provisioned on the laptop.
 
 The public endpoint should expose **only the GitHub webhook path handled by port 7890**. The operator/control API must remain private.
 
-## Current limitation
+## Gateway Host Verification
 
-The repository documents the local gateway, but the gateway source currently lives under `C:\arena-ci\gateway` rather than in this repository. The compose file therefore mounts only that exact directory read-only. Antigravity must verify the gateway's actual entrypoint, dependency lockfile, health endpoint, and *_FILE secret support before declaring the containerized deployment operational.
+The gateway source lives under `C:\arena-ci\gateway` and the compose file mounts that exact directory read-only (`:ro`).
+The required contract interfaces have been verified in the gateway runtime:
+- **Entrypoint**: `server.js` starts both Ingress (:7890) and Control API (:7891).
+- **Dependency lockfile**: `package-lock.json` is generated and compatible with `npm ci --omit=dev`.
+- **Health endpoint**: `GET /health` on port 7890 serves HTTP 200 for container healthchecks.
+- **Docker secrets**: `GITHUB_WEBHOOK_SECRET_FILE` and `GITHUB_PAT_FILE` are supported directly.
+- **Non-root user**: Container runs as user `node` with `security_opt: no-new-privileges:true`.
+- **Operator access**: Port `127.0.0.1:7891:7891` is mapped strictly to localhost for private operator access.
 
 ## Acceptance
 
