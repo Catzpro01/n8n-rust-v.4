@@ -29,7 +29,7 @@ jobs:
           lfs: false
 
       - name: Level 2 - Full Rust Workspace Tests (Linux container)
-        shell: pwsh
+        shell: powershell
         run: |
           & "$env:GITHUB_WORKSPACE\tools\ci\run-linux-container.ps1" -Command @'
           set -euo pipefail
@@ -68,7 +68,7 @@ jobs:
           lfs: false
 
       - name: Level 2 - Localization & Catalog Tests
-        shell: pwsh
+        shell: powershell
         run: |
           & "$env:GITHUB_WORKSPACE\tools\ci\run-linux-container.ps1" -Command @'
           set -euo pipefail
@@ -78,7 +78,7 @@ jobs:
           '@
 
       - name: Level 2 - Execution LEGO Conformance Tests
-        shell: pwsh
+        shell: powershell
         run: |
           & "$env:GITHUB_WORKSPACE\tools\ci\run-linux-container.ps1" -Command @'
           set -euo pipefail
