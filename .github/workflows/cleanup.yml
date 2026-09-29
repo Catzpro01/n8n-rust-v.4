@@ -28,7 +28,7 @@ jobs:
           fetch-depth: 0
 
       - name: Post-Merge Main Verification (Linux container)
-        shell: pwsh
+        shell: powershell
         run: |
           & "$env:GITHUB_WORKSPACE\tools\ci\run-linux-container.ps1" -Command @'
           set -euo pipefail
