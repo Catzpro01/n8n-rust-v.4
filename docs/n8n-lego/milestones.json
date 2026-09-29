@@ -1,5 +1,5 @@
 {
-  "registerVersion": "2.4.0",
+  "registerVersion": "2.5.0",
   "owner": "manager",
   "canonical": true,
   "purpose": "Granular milestone truth beneath the strategic Phase A-F roadmap, and \u2014 since the governance reset (#256) \u2014 the single canonical register of programs P0-P11, their slices, the thematic future programs and the feature registry. This is the only machine-readable milestone register. Milestones and slices may be refined by Manager only by updating this file; strategic phases are not deleted.",
@@ -349,6 +349,57 @@
           "status": "reported, NOT changed"
         }
       ],
+      "versionPolicy": {
+        "field": "registerVersion",
+        "scheme": "semver; enforced by packages/frontend-lego/test/33-milestones.test.mjs:55 (/^\\d+\\.\\d+\\.\\d+$/)",
+        "majorMeans": "a canonical re-foundation of the register that invalidates existing identifiers or forces consumers to migrate. Sole precedent: 1.0.0 -> 2.0.0, 'governance reset (#256): one canonical register for P0-P11, slices, future programs and features' (8b7bd19b).",
+        "minorMeans": "an additive governance rule, decision, or newly authorized program/slice set that invalidates nothing. Precedent: 2.1.0 DEC-0020 milestone truth is main-owned (5468b2d4); 2.2.0 split realtime progress from slice completion (7084a123); 2.3.0 DEC-0021 live milestone progress telemetry (c2b519d6); 2.4.0 DEC-0024 authorize P7 as P7-S01..S08 (45733fa2).",
+        "thisChange": "2.4.0 -> 2.5.0. governance.terminology (this block) and governance.terminology.documentationLayers are additive keys. No identifier was invalidated, no consumer must migrate, and no canonical state moved - see notDelivery below and the progress invariants in apps/n8n-lego/test/governance-vocabulary.test.mjs. Under the precedent above this is a MINOR bump.",
+        "v3Question": "The owner directive of 2026-09-29 named 'Milestone/Register schema/documentation: v3.0' as a target, and in the same section (steps 7-8) instructed the Manager to determine from existing semantics whether a change is genuinely MAJOR and never to move a version string cosmetically without documenting a contract change. The two are resolved by the evidence: writing 3.0.0 here would advertise a canonical reset that this cycle deliberately did not perform, which sections 15 and 16 forbid. Recorded as an open authority item, not silently decided - see docs/engineering-operations/VOCABULARY.md section 12.",
+        "authority": "Manager, delegated by repository precedent: every prior bump was made by a governance commit of exactly this shape. Escalated to the owner only for the 3.0.0 label question."
+      },
+      "documentationLayers": {
+        "rule": "One term, one meaning, one authority. A projection may restate canonical state but may never originate it; a curated document may add prose but may never contradict the register.",
+        "layers": [
+          {
+            "id": "canonical-register",
+            "path": "docs/n8n-lego/milestones.json",
+            "kind": "AUTHORITY",
+            "versionField": "registerVersion",
+            "note": "The only place program identity, slice identity, statuses, denominators and the execution pointer originate. DEC-0020: milestone truth is main-owned."
+          },
+          {
+            "id": "generated-projection",
+            "paths": [
+              ".ai/master/MILESTONE_REGISTER.md",
+              ".ai/ (64 generated files)",
+              "README.md, the block between the milestone-governance markers"
+            ],
+            "kind": "GENERATED",
+            "authority": "tools/lego/ai-pack.mjs + tools/lego/governance-register.mjs",
+            "note": "Rendered from the register by `npm run lego:ai` and verified by `npm run lego:ai:check`. Never hand-edited."
+          },
+          {
+            "id": "curated-prose",
+            "paths": [
+              "docs/engineering-operations/VOCABULARY.md",
+              ".ai/master/AI_UI_IMPLEMENTATION_PHASES.md",
+              "README.md outside the generated markers"
+            ],
+            "kind": "CURATED",
+            "note": "Human-authored. The generator must never delete or replace curated content, and a curated document must never restate a number the register owns."
+          },
+          {
+            "id": "readme-documentation-layer",
+            "path": "README.md, section 'How to read this register'",
+            "kind": "CURATED",
+            "version": "README v2.0",
+            "contract": "v2.0 = the README states, in human-readable form and immediately before the generated register table, the five namespaces a reader meets there (PROGRAM, PRIORITY, MILESTONE, SLICE, STATUS), the rule that a namespace must not be inferred from another namespace, and its own standing as a projection. Machine-checked by apps/n8n-lego/test/governance-vocabulary.test.mjs, which also asserts the layer names the registerVersion it projects - so the README can carry a version without becoming an authority.",
+            "whyVersionedSeparately": "README.md declares no version string of its own anywhere on main; its only version marker is the generated freshness line ('from register <registerVersion>, fingerprint <hash>'). Introducing 'README v2.0' therefore creates a new label, which section 2 of the directive permits only with a documented contract. This entry is that contract, and the regression gate is its enforcement."
+          }
+        ],
+        "wordOverload": "'Vocabulary' already names a second, unrelated thing in this repository. packages/frontend-lego/src/vocabulary.mjs is the shared CAPABILITY vocabulary lock (VOCABULARIES, LOCAL_VOCABULARIES, DECLARED_OVERLAPS, detectCollisions, vocabularyDrift, compareVocabulary) that stops the frontend and the backend foundation from growing two dialects for one capability term; it is tested by packages/frontend-lego/test/24-vocabulary.test.mjs against docs/n8n-lego/decisions/cross-agent-decisions.json. This terminology block and docs/engineering-operations/VOCABULARY.md govern IDENTIFIER NAMESPACES (P0-P11, Priority-NN, Pn-Snn, Pn-Mnn, UI-PHASE-NN). The two are disjoint: neither reads, renames, validates or versions the other, and no capability term in the lock carries a Pn token. Registered because the directive's own target is one term and one meaning, and the word 'vocabulary' was the one collision the first pass missed."
+      },
       "notDelivery": "Vocabulary cleanup is not delivery. This block adds no slice, moves no status to implemented, and contributes 0 to Realtime Delivery Progress and 0 to Slice Completion. The denominators (199 global / 193 current) and numerators (190 / 189) are unchanged by design. No Program ID, slice ID, sub-milestone ID, DEC ID, merge SHA, status, denominator, checkpoint or plannedQueue entry was altered."
     },
     "reconciliation": {
