@@ -361,7 +361,35 @@ test('no status, DEC id, merge SHA or queue entry was moved to make the vocabula
   assert.deepEqual(ep.verifyingSlices, []);
   assert.deepEqual(ep.plannedQueue, []);
   assert.deepEqual(ep.blockedSlices, []);
-  assert.equal(REGISTER.executionPointer.lastVerifiedMain, '8db77e63fdeb266dffb9c617a8c8ad89dcf162f9', 'lastVerifiedMain not bumped by a vocabulary change');
+  // lastVerifiedMain is NOT pinned to a literal here. It legitimately moves on main
+  // through governance reconciliation (DEC-0021 telemetry: post-merge verification bumps
+  // it), so pinning the value would make a lawful main-side bump look like a vocabulary
+  // defect - and would pressure a future Manager into editing the canonical register just
+  // to make this test pass. What this guard must prove is that the VOCABULARY work left
+  // executionPointer semantics alone, so it asserts shape and meaning instead of a value.
+  assert.match(
+    ep.lastVerifiedMain,
+    /^[0-9a-f]{40}$/,
+    'lastVerifiedMain is a full 40-hex commit SHA (its value is main-owned, not pinned here)',
+  );
+  assert.equal(ep.historicalLastP2Milestone, REGISTER.currentMilestone, 'the historical pointer still tracks currentMilestone');
+  assert.match(ep.latestCompletedSlice.mergeSha, /^[0-9a-f]{40}$/, 'latestCompletedSlice keeps a real merge SHA');
+  assert.equal(typeof ep.latestCompletedSlice.id, 'string');
+  assert.equal(typeof ep.latestCompletedSlice.pr, 'number');
+  // the pointer keeps exactly its declared shape: a vocabulary change adds no key and drops none
+  assert.deepEqual(
+    Object.keys(ep).sort(),
+    [
+      'activeSlices', 'authority', 'blockedSlices', 'historicalLastP2Milestone',
+      'latestCompletedSlice', 'lastVerifiedMain', 'notAuthorized', 'plannedQueue',
+      'updateRule', 'verifyingSlices',
+    ].sort(),
+    'executionPointer key set unchanged by the vocabulary work',
+  );
+  // and the pointer still says what it said: main-owned authority, planned != authorized
+  assert.match(ep.authority, /main \(DEC-0020\)/, 'authority still names main as the owner');
+  assert.match(ep.notAuthorized, /planned is not authorized by itself/, 'planned != authorized survives');
+  assert.match(ep.updateRule, /DEC-0020 \+ DEC-0021/, 'the two-path update rule survives');
 });
 
 /* ------------------------------------------------------------------ 6. the prose authority */
