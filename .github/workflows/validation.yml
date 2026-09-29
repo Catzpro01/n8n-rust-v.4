@@ -46,7 +46,7 @@ jobs:
           lfs: false
 
       - name: Level 0 - Linux container preflight + format + check
-        shell: pwsh
+        shell: powershell
         run: |
           & "$env:GITHUB_WORKSPACE\\tools\\ci\\run-linux-container.ps1" -Command @'
           set -euo pipefail
@@ -73,7 +73,7 @@ jobs:
           lfs: false
 
       - name: Level 1 - Affected Crate Unit Tests
-        shell: pwsh
+        shell: powershell
         run: |
           & "$env:GITHUB_WORKSPACE\tools\ci\run-linux-container.ps1" -Command @'
           set -euo pipefail
