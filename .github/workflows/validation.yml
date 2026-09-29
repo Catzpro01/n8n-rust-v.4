@@ -60,6 +60,18 @@ jobs:
           cargo check --workspace
           '@
 
+  unit_tests:
+    name: Level 1 (Affected Tests)
+    runs-on: [ self-hosted, Windows, X64, rust-build, n8n-rust ]
+    if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
+          submodules: false
+          lfs: false
+
       - name: Level 1 - Affected Crate Unit Tests
         shell: pwsh
         run: |
