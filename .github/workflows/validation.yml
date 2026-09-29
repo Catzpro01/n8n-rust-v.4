@@ -63,7 +63,7 @@ jobs:
       - name: Level 1 - Affected Crate Unit Tests
         shell: pwsh
         run: |
-          & "$env:GITHUB_WORKSPACE\\tools\\ci\\run-linux-container.ps1" -Command @'
+          & "$env:GITHUB_WORKSPACE\tools\ci\run-linux-container.ps1" -Command @'
           set -euo pipefail
           CHANGED=$(git diff --name-only HEAD~1 HEAD)
           if echo "$CHANGED" | grep -qE '^(Cargo\.toml|Cargo\.lock|crates/n8n-common/)'; then
@@ -71,19 +71,8 @@ jobs:
             cargo test --workspace
           else
             CRATES=$(echo "$CHANGED" | { grep '^crates/' || true; } | cut -d/ -f2)
-            AFFECTED=$( (echo n8n-workflow; echo "$CRATES") | grep -v '^
+            AFFECTED=$( (echo n8n-workflow; echo "$CRATES") | grep -v '^$' | sort -u | sed 's/^/-p /' | tr '\n' ' ')
             echo "Testing: $AFFECTED"
             cargo test $AFFECTED
           fi
           '@
-          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
-          echo "cargo: $(command -v cargo) ($(cargo --version))"
-          rustc --version
- | sort -u | sed 's/^/-p /' | tr '\n' ' ')
-            echo "Testing: $AFFECTED"
-            cargo test $AFFECTED
-          fi
-          '@
-          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
-          echo "cargo: $(command -v cargo) ($(cargo --version))"
-          rustc --version
