@@ -1,5 +1,5 @@
 {
-  "registerVersion": "2.5.0",
+  "registerVersion": "3.0.0",
   "owner": "manager",
   "canonical": true,
   "purpose": "Granular milestone truth beneath the strategic Phase A-F roadmap, and \u2014 since the governance reset (#256) \u2014 the single canonical register of programs P0-P11, their slices, the thematic future programs and the feature registry. This is the only machine-readable milestone register. Milestones and slices may be refined by Manager only by updating this file; strategic phases are not deleted.",
@@ -7,6 +7,22 @@
   "mainBaseline": "fc54c8c2bfc2557ddecf466e662869f197fc9595",
   "currentMilestone": "P2.27",
   "previousCompletedMilestone": "P2.26",
+  "milestoneGroups": [
+    {
+      "id": "Milestone-01",
+      "title": "Foundation",
+      "purpose": "The founding era of the system, complete: the application core, the n8n behavioural compatibility baseline, and the LEGO/AI/plugin foundation. These three programs form the base layer that precedes workflow, ingress, security, registry/runtime, storage, observability, multi-tenancy and distributed scaling.",
+      "members": ["P0", "P1", "P2"],
+      "memberKind": "program",
+      "sliceCount": 64,
+      "requiredCompletion": "every member slice implemented",
+      "state": "COMPLETE",
+      "stateDerivation": "derived from member slice statuses at validation time, never asserted: state is COMPLETE only while 64/64 member slices are implemented",
+      "authority": "owner declaration 2026-09-29, ADR-0012",
+      "reason": "P0 builds the application foundation, P1 the behavioural compatibility baseline, P2 the LEGO/AI/plugin foundation. The owner rejected both 'all implemented slices' (too broad, loses architectural meaning) and 'the current frontier' (that would make Milestone a work queue, which is Priority's role)."
+    }
+  ],
+  "currentMilestoneGroup": "Milestone-01",
   "executionPointer": {
     "authority": "main (DEC-0020). This block, read together with the slice statuses it names, is the only active-work pointer. lastVerifiedMain is the newest main SHA that passed post-merge verification; it is bumped at each governance reconciliation and must never lag current main without an explicit recorded reason. arena-manager is Manager memory and handoff, never a milestone source; README.md and .ai/ are generated projections of this file.",
     "historicalLastP2Milestone": "P2.27",
@@ -89,6 +105,12 @@
       "features are never deleted: they move to superseded / retired / rejected with a reason",
       "historical evidence (milestones[] rows, P n.m slices, evidence docs) is immutable"
     ],
+    "milestoneGroupNaming": {
+      "grammar": "^Milestone-\\d{2}$",
+      "rule": "A milestone group is a historical grouping layer added beside the immutable milestones[] ladder, never inside it. A group REFERENCES programs and slices and OWNS none of them: membership changes no slice status, no earned progress, no delivery evidence and no historical fingerprint. A group is never a progress metric, never a third completion counter, and never a replacement for programs[] or milestones[].",
+      "distinctFrom": "Milestone-NN is not Pn-Mnn (the M of P5-M05 is Maintenance and part of that slice id), not Pn.m (the historical ladder), not Priority-NN (operational priority), not UI-PHASE-nn, and not the runtime/telemetry P0-P4 contract.",
+      "authority": "A new group, its title and its membership are an owner declaration. The Manager never derives a group from Programs, and never invents one to decorate the roadmap."
+    },
     "sliceNaming": {
       "historical": "Pn.m (and P3 \"Slice X\") \u2014 pre-reset ids, immutable",
       "feature": "Pn-Snn \u2014 new work inside an existing P (completed Ps may receive slices)",
@@ -228,7 +250,14 @@
         },
         "milestone": {
           "tokens": "P2.11-P2.27, P2.27.0-P2.27.10, P9.6, P6.23, P4.8 (dot notation); P5-M01..P5-M10 (maintenance)",
-          "rule": "Historical granular ladder; milestones[] stays immutable. The letter M inside a historical slice ID (P5-M05) is part of that slice's canonical identifier and is NOT evidence of one global Milestone namespace. A NEW grouping, if ever needed, uses MILESTONE-01 / 'Milestone 01' and never a bare Pn. Do not create a Milestone to decorate nomenclature; report MILESTONE: N/A rather than invent one."
+          "rule": "Historical granular ladder; milestones[] stays immutable. The letter M inside a historical slice ID (P5-M05) is part of that slice's canonical identifier and is NOT evidence of one global Milestone namespace. The NEW grouping layer now exists as milestoneGroups[] with ids Milestone-NN (see the milestoneGroup namespace); it never uses a bare Pn and never mutates this ladder. Do not create a Milestone to decorate nomenclature; report MILESTONE: N/A rather than invent one."
+        },
+        "milestoneGroup": {
+          "tokens": "Milestone-01 .. Milestone-NN",
+          "source": "milestoneGroups[].id in this file",
+          "rule": "A historical grouping layer that sits BESIDE the immutable milestones[] ladder and never inside it. A group references programs and slices and owns none of them: it changes no slice status, no earned progress, no delivery evidence and no historical fingerprint. It is not a progress metric and not a third completion counter. currentMilestoneGroup is the newest group whose required membership is fully implemented; it is derived, never asserted.",
+          "distinctFrom": "Milestone-NN is not Pn-Mnn (the M of P5-M05 is Maintenance and part of that slice id), not Pn.m (the historical ladder), not Priority-NN (operational priority), not UI-PHASE-nn, and not the runtime/telemetry P0-P4 contract.",
+          "authority": "Group identity and membership are an owner declaration (ADR-0012). The Manager never derives a group from Programs and never invents one."
         },
         "slice": {
           "tokens": "P2-S07, P2-S29, P5-M05, P6-S05, P8-S01, P3 Slice A, P3 Slice M",
@@ -352,11 +381,11 @@
       "versionPolicy": {
         "field": "registerVersion",
         "scheme": "semver; enforced by packages/frontend-lego/test/33-milestones.test.mjs:55 (/^\\d+\\.\\d+\\.\\d+$/)",
-        "majorMeans": "a canonical re-foundation of the register that invalidates existing identifiers or forces consumers to migrate. Sole precedent: 1.0.0 -> 2.0.0, 'governance reset (#256): one canonical register for P0-P11, slices, future programs and features' (8b7bd19b).",
+        "majorMeans": "a canonical re-foundation of the register that invalidates existing identifiers or forces consumers to migrate, OR a schema migration that adds a new canonical namespace every consumer must understand. Precedents: 1.0.0 -> 2.0.0, 'governance reset (#256): one canonical register for P0-P11, slices, future programs and features' (8b7bd19b); 2.5.0 -> 3.0.0, ADR-0012 milestone groups - milestoneGroups[] and currentMilestoneGroup become canonical, validators/generator/projections must understand them, and the mandatory MILESTONE report field can carry a real value for the first time instead of N/A.",
         "minorMeans": "an additive governance rule, decision, or newly authorized program/slice set that invalidates nothing. Precedent: 2.1.0 DEC-0020 milestone truth is main-owned (5468b2d4); 2.2.0 split realtime progress from slice completion (7084a123); 2.3.0 DEC-0021 live milestone progress telemetry (c2b519d6); 2.4.0 DEC-0024 authorize P7 as P7-S01..S08 (45733fa2).",
-        "thisChange": "2.4.0 -> 2.5.0. governance.terminology (this block) and governance.terminology.documentationLayers are additive keys. No identifier was invalidated, no consumer must migrate, and no canonical state moved - see notDelivery below and the progress invariants in apps/n8n-lego/test/governance-vocabulary.test.mjs. Under the precedent above this is a MINOR bump.",
-        "v3Question": "The owner directive of 2026-09-29 named 'Milestone/Register schema/documentation: v3.0' as a target, and in the same section (steps 7-8) instructed the Manager to determine from existing semantics whether a change is genuinely MAJOR and never to move a version string cosmetically without documenting a contract change. The two are resolved by the evidence: writing 3.0.0 here would advertise a canonical reset that this cycle deliberately did not perform, which sections 15 and 16 forbid. Recorded as an open authority item, not silently decided - see docs/engineering-operations/VOCABULARY.md section 12.",
-        "authority": "Manager, delegated by repository precedent: every prior bump was made by a governance commit of exactly this shape. Escalated to the owner only for the 3.0.0 label question."
+        "thisChange": "2.5.0 -> 3.0.0. ADR-0012 milestone groups. This is a real schema migration, not a bumped string: milestoneGroups[] and currentMilestoneGroup are new canonical top-level keys, governance.milestoneGroupNaming declares their grammar, terminology.namespaces.milestoneGroup registers the namespace, validateMilestoneGroups() enforces them, and the generator renders them into README and .ai. The historical layer is untouched - milestones[], currentMilestone, historicalLastP2Milestone and HISTORICAL_P2_FINGERPRINT are all preserved byte-for-byte, proved by apps/n8n-lego/test/milestone-groups.test.mjs I-01..I-04. No slice status, merge SHA, checkpoint or denominator moved: I-14 and I-15 pin delivery progress identical before and after. Under majorMeans above this is a MAJOR bump.",
+        "v3Question": "RESOLVED 2026-09-29 by owner authority. The question was whether 3.0.0 could be written at all; the answer given was that it may be written ONLY as a genuine schema migration, never as a cosmetic label. The vocabulary cycle therefore shipped as 2.5.0 (MINOR, additive), and 3.0.0 follows separately as ADR-0012: Milestone-XX becomes a real grouping namespace with a validator, a generator, projections and an invariant suite. The owner also declared the first group - Milestone-01 'Foundation' = P0 + P1 + P2, 64 slices, state derived from 64/64 implemented. Reasoning retained in docs/engineering-operations/VOCABULARY.md section 12.",
+        "authority": "Manager, delegated by repository precedent for MINOR bumps: every prior bump was made by a governance commit of exactly this shape. The 3.0.0 MAJOR was NOT self-delegated - it required and received an explicit owner decision (2026-09-29), recorded in ADR-0012 together with the Milestone-01 declaration."
       },
       "documentationLayers": {
         "rule": "One term, one meaning, one authority. A projection may restate canonical state but may never originate it; a curated document may add prose but may never contradict the register.",

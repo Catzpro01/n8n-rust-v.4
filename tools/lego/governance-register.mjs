@@ -156,6 +156,7 @@ export function validateGovernanceRegister(register) {
     if (model.currentDelivery !== 'P0-P11') fail('progressModel.currentDelivery must be P0-P11');
   }
   errors.push(...validateHistoricalPointers(register));
+  errors.push(...validateMilestoneGroups(register));
   return errors;
 }
 
@@ -296,6 +297,104 @@ export function validateHistoricalPointers(register) {
   return errors;
 }
 
+export const MILESTONE_GROUP_ID = /^Milestone-\d{2}$/;
+
+/**
+ * Milestone groups are a grouping layer beside the immutable historical ladder.
+ * A group REFERENCES programs and slices and OWNS none of them, so this validator
+ * never reads or writes a slice status - it only checks that what the group claims
+ * about the register is true. `state` is DERIVED here, never trusted from the file.
+ */
+export function milestoneGroupMembers(register, group) {
+  const slices = [];
+  const missing = [];
+  const byProgram = new Map((register.programs ?? []).map((p) => [p.id, p]));
+  const bySlice = new Map(
+    (register.programs ?? []).flatMap((p) => (p.slices ?? []).map((s) => [s.id, s])),
+  );
+  for (const member of group.members ?? []) {
+    if (byProgram.has(member)) slices.push(...(byProgram.get(member).slices ?? []));
+    else if (bySlice.has(member)) slices.push(bySlice.get(member));
+    else missing.push(member);
+  }
+  return { slices, missing };
+}
+
+export function deriveMilestoneGroupState(register, group) {
+  const { slices } = milestoneGroupMembers(register, group);
+  if (slices.length === 0) return 'EMPTY';
+  return slices.every((s) => s.status === 'implemented') ? 'COMPLETE' : 'IN_PROGRESS';
+}
+
+export function validateMilestoneGroups(register) {
+  const errors = [];
+  const groups = register.milestoneGroups ?? [];
+  if (!Array.isArray(groups)) return ['milestoneGroups must be an array'];
+
+  const seenIds = new Set();
+  const claimedBy = new Map();
+
+  for (const group of groups) {
+    const id = group?.id;
+    if (!MILESTONE_GROUP_ID.test(id ?? '')) {
+      errors.push(`milestoneGroups: "${id}" does not match ${MILESTONE_GROUP_ID} (Milestone-NN)`);
+      continue;
+    }
+    if (seenIds.has(id)) errors.push(`${id}: duplicate milestone group id`);
+    seenIds.add(id);
+
+    for (const field of ['title', 'purpose', 'members', 'sliceCount', 'state', 'authority']) {
+      if (group[field] === undefined) errors.push(`${id}: missing required field ${field}`);
+    }
+    if (!Array.isArray(group.members) || group.members.length === 0) {
+      errors.push(`${id}: members must be a non-empty array`);
+      continue;
+    }
+
+    const { slices, missing } = milestoneGroupMembers(register, group);
+    for (const m of missing) errors.push(`${id}: member "${m}" is not a program or slice in this register`);
+
+    for (const slice of slices) {
+      const owner = claimedBy.get(slice.id);
+      if (owner && owner !== id) errors.push(`${slice.id}: claimed by both ${owner} and ${id}`);
+      claimedBy.set(slice.id, id);
+    }
+
+    if (group.sliceCount !== slices.length) {
+      errors.push(`${id}: sliceCount ${group.sliceCount} but membership resolves to ${slices.length} slice(s)`);
+    }
+
+    const derived = deriveMilestoneGroupState(register, group);
+    if (group.state !== derived) {
+      errors.push(`${id}: state "${group.state}" is not derivable - membership yields ${derived}`);
+    }
+
+    // a group never carries delivery state of its own
+    for (const forbidden of ['status', 'mergeSha', 'pr', 'checkpoints', 'weight', 'earned', 'percent']) {
+      if (group[forbidden] !== undefined) {
+        errors.push(`${id}: a milestone group must not carry delivery/progress field "${forbidden}"`);
+      }
+    }
+  }
+
+  const pointer = register.currentMilestoneGroup ?? null;
+  if (pointer !== null) {
+    if (!seenIds.has(pointer)) {
+      errors.push(`currentMilestoneGroup "${pointer}" is not a declared milestone group`);
+    } else {
+      const complete = groups.filter((g) => deriveMilestoneGroupState(register, g) === 'COMPLETE');
+      const newest = complete.at(-1)?.id;
+      if (pointer !== newest) {
+        errors.push(`currentMilestoneGroup must be the newest COMPLETE group ${newest} (stale pointer)`);
+      }
+    }
+  } else if (groups.some((g) => deriveMilestoneGroupState(register, g) === 'COMPLETE')) {
+    errors.push('currentMilestoneGroup is null while a COMPLETE group exists');
+  }
+
+  return errors;
+}
+
 export function registerFingerprint(register) {
   return createHash('sha256').update(JSON.stringify(register)).digest('hex').slice(0, 16);
 }
@@ -347,8 +446,66 @@ function activeWorkLines(register) {
     `| Blocked | ${(pointer.blockedSlices ?? []).map((id) => `\`${id}\` — blocked by ${cell(all.get(id)?.blockedBy)}`).join('<br>') || '—'} |`,
     `| Not authorized | ${cell(pointer.notAuthorized)} |`,
     `| Historical P2 ladder pointer | \`${pointer.historicalLastP2Milestone}\` (history, not active work) |`,
+    `| Milestone group | ${milestoneGroupCell(register)} |`,
     `| Last verified main | ${short(pointer.lastVerifiedMain)} |`,
   ];
+}
+
+/**
+ * A grouping layer, never a metric: this renders membership and a derived state and
+ * deliberately renders NO percentage. A group must not become a third progress counter.
+ */
+export function milestoneGroupCell(register) {
+  const groups = register.milestoneGroups ?? [];
+  if (groups.length === 0) return '— (no milestone group declared)';
+  const current = register.currentMilestoneGroup ?? null;
+  return groups
+    .map((g) => {
+      const state = deriveMilestoneGroupState(register, g);
+      const here = g.id === current ? ' ← current' : '';
+      return `\`${g.id}\` ${g.title} — ${(g.members ?? []).join(' + ')} (${g.sliceCount} slices, ${state})${here}`;
+    })
+    .join('<br>');
+}
+
+/**
+ * README v2.0 milestone-group section. Renders membership, a DERIVED state and the
+ * namespace separation. It renders no percentage and no completion figure: a group is a
+ * grouping layer, and the two progress numbers stay Realtime Delivery Progress and
+ * Slice Completion.
+ */
+export function milestoneGroupProse(register) {
+  const groups = register.milestoneGroups ?? [];
+  if (groups.length === 0) {
+    return 'No milestone group is declared. A group is an owner declaration; the Manager never derives one from Programs.';
+  }
+  const current = register.currentMilestoneGroup ?? null;
+  const lines = [
+    'A **milestone group** is a historical grouping layer that sits beside the immutable `milestones[]` ladder. It **references** programs and slices and owns none of them: membership changes no slice status, no earned progress and no delivery evidence, and it is **not** a progress metric. Group identity and membership are an owner declaration.',
+    '',
+    '| Group | Title | Members | Slices | State |',
+    '| --- | --- | --- | --- | --- |',
+  ];
+  for (const g of groups) {
+    const state = deriveMilestoneGroupState(register, g);
+    const mark = g.id === current ? ' **← current**' : '';
+    lines.push(`| \`${g.id}\`${mark} | ${g.title} | ${(g.members ?? []).join(' + ')} | ${g.sliceCount} | ${state} |`);
+  }
+  lines.push('');
+  lines.push(`Current milestone group: ${current ? `\`${current}\`` : '— (none)'} — the newest group whose required membership is fully implemented. This is **derived from member slice statuses at validation time, never asserted**.`);
+  lines.push('');
+  lines.push('Every governance record therefore carries five separate coordinates, and no two of them may be conflated:');
+  lines.push('');
+  lines.push('```text');
+  lines.push('Program:   P2 — LEGO / AI / Plugin Foundation      (P0–P11, canonical identity, never renamed)');
+  lines.push('Priority:  Priority-04 — Authorized Delivery       (operational urgency, never written P0–P6)');
+  lines.push('Milestone: Milestone-01 — Foundation               (grouping layer, never a bare Pn)');
+  lines.push('Slice:     P2-S07                                  (delivery unit; the M of P5-M05 is Maintenance)');
+  lines.push('Status:    Implemented                             (the only status that moves Slice Completion)');
+  lines.push('```');
+  lines.push('');
+  lines.push('`UI-PHASE-nn` is the AI-UI implementation phase namespace, and the runtime/telemetry `P0`–`P4` priority classes are a locked contract that this vocabulary never renames.');
+  return lines.join('\n');
 }
 
 export const README_MARKERS = Object.freeze({
@@ -953,6 +1110,10 @@ ${blockedBlocks.length ? `### Blocked\n\n${blockedBlocks.join('\n')}` : ''}
 Planned queue (planned ≠ authorized): ${(pointer.plannedQueue ?? []).map((id) => `\`${id}\``).join(' → ') || '—'}.
 
 Not authorized: ${cell(pointer.notAuthorized)}
+
+### Milestone groups
+
+${milestoneGroupProse(register)}
 
 ## Status Legend
 

@@ -462,7 +462,7 @@ canonical state winning over prose:
   This is the worked form of the layer rule: a projection may **explain** canonical state,
   it may not **restate** it.
 
-## 12. The register version decision: 2.5.0, not 3.0.0
+## 12. The register version decision: 2.5.0, then 3.0.0 — RESOLVED
 
 Section 2 of the directive asked for two things at once: hit `v3.0`, and *first* determine
 from the repository's existing semantics whether the change is genuinely MAJOR, never
@@ -495,13 +495,41 @@ Writing `3.0.0` instead would publish a claim that a canonical reset happened wh
 deliberately did not. That is a false canonical-state assertion, and it is the specific
 failure mode sections 15 and 16 exist to prevent.
 
-**AUTHORITY — open, owner decision required.** If the owner wants the *label* `3.0.0`, the
-honest route is to define the contract change that makes it MAJOR (for example: adopting
-`Milestone-XX` as a real grouping namespace, which would be a genuine schema migration and
-would touch `currentMilestone`, `previousCompletedMilestone`, `milestones[]` and
-`governance.sliceNaming`). That is a delivery, with an ADR, not a rename of a string.
-Until such a ruling, `2.5.0` stands and the question is recorded in
-`governance.terminology.versionPolicy.v3Question` rather than silently resolved either way.
+**AUTHORITY — RESOLVED, owner ruling 2026-09-29.** The owner ruled that `3.0.0` may be
+written **only** as a genuine schema migration, never as a label. The vocabulary cycle
+therefore shipped as `2.5.0`, and `3.0.0` followed as a separate delivery: **ADR-0012,
+milestone groups**.
+
+What earned the MAJOR — each item is a contract change a consumer must understand:
+
+| Change | Kind |
+| --- | --- |
+| `milestoneGroups[]` | new canonical top-level key |
+| `currentMilestoneGroup` | new canonical pointer, parallel to and independent of `currentMilestone` |
+| `governance.milestoneGroupNaming` | new grammar `^Milestone-\d{2}$` and the reference-only rule |
+| `governance.terminology.namespaces.milestoneGroup` | eleventh registered namespace |
+| `validateMilestoneGroups()` | new validator, wired into `validateGovernanceRegister` |
+| `milestoneGroupCell` / `milestoneGroupProse` | the generator renders groups into `.ai` and README |
+| `MILESTONE:` report field | can carry a real value for the first time instead of `N/A` |
+
+What it deliberately did **not** touch, contradicting the earlier guess in this section
+that a grouping namespace would have to move the historical pointers: `milestones[]`,
+`currentMilestone`, `previousCompletedMilestone` and `HISTORICAL_P2_FINGERPRINT` are all
+preserved byte-for-byte. The group layer is **additive and sits beside the ladder**, which
+was proved empirically before implementation — adding both new keys leaves the fingerprint
+byte-identical — and is pinned by `apps/n8n-lego/test/milestone-groups.test.mjs` I-01…I-04.
+
+The first group is an owner declaration, not a Manager derivation:
+
+```text
+Milestone-01 — Foundation
+  members  P0 + P1 + P2
+  slices   64  (P0 = 2, P1 = 2, P2 = 60)
+  state    COMPLETE — derived from 64/64 implemented at validation time, never asserted
+```
+
+Delivery progress is identical before and after the migration (I-14, I-15): a governance
+schema change is not a delivery and contributes zero.
 
 ## 13. The word "vocabulary" is itself overloaded
 

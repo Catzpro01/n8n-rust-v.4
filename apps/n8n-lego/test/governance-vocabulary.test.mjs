@@ -539,32 +539,43 @@ test('the README layer says it is a projection, not an authority', () => {
 
 /* ------------------------------------------------------------------ 9. the register version decision */
 
-test('this additive cycle bumped a MINOR, not a MAJOR - the repository precedent decides', () => {
+test('3.0.0 is a MAJOR backed by a real schema migration, not a bumped string', () => {
   const [major, minor, patch] = REGISTER.registerVersion.split('.').map(Number);
-  assert.equal(REGISTER.registerVersion, '2.5.0', 'registerVersion after this cycle');
-  assert.equal(major, 2, 'MAJOR unchanged: no canonical re-foundation happened');
-  assert.equal(minor, 5, 'MINOR bumped from 2.4.0: an additive governance rule');
+  assert.equal(REGISTER.registerVersion, '3.0.0', 'registerVersion after the ADR-0012 migration');
+  assert.equal(major, 3, 'MAJOR bumped: a new canonical namespace every consumer must understand');
+  assert.equal(minor, 0);
   assert.equal(patch, 0);
   const policy = TERMINOLOGY.versionPolicy;
   assert.ok(policy, 'governance.terminology.versionPolicy exists');
-  assert.match(policy.thisChange, /2\.4\.0 -> 2\.5\.0/, 'the transition is recorded');
-  assert.match(policy.thisChange, /MINOR/, 'and classified');
-  assert.match(policy.majorMeans, /8b7bd19b/, 'the one MAJOR precedent is cited by commit');
+  assert.match(policy.thisChange, /2\.5\.0 -> 3\.0\.0/, 'the transition is recorded');
+  assert.match(policy.thisChange, /MAJOR/, 'and classified');
+  assert.match(policy.majorMeans, /8b7bd19b/, 'the first MAJOR precedent is cited by commit');
   assert.match(policy.majorMeans, /governance reset/, 'and by what it actually was');
+  assert.match(policy.majorMeans, /ADR-0012/, 'the second MAJOR precedent is this migration');
   for (const dec of ['DEC-0020', 'DEC-0021', 'DEC-0024']) {
-    assert.match(policy.minorMeans, new RegExp(dec), `${dec} cited as a MINOR precedent`);
+    assert.match(policy.minorMeans, new RegExp(dec), `${dec} stays cited as a MINOR precedent`);
   }
+  // A MAJOR must be earned: the string alone is never enough.
+  assert.ok(Array.isArray(REGISTER.milestoneGroups), 'milestoneGroups[] exists');
+  assert.ok('currentMilestoneGroup' in REGISTER, 'currentMilestoneGroup exists');
+  assert.ok(REGISTER.governance.milestoneGroupNaming, 'the grammar is declared');
+  assert.ok(TERMINOLOGY.namespaces.milestoneGroup, 'the namespace is registered');
+  // And it must NOT have been self-delegated by the Manager.
+  assert.match(policy.authority, /owner/i, 'the MAJOR is attributed to owner authority');
+  assert.match(policy.authority, /NOT self-delegated|not self-delegated/, 'and says so explicitly');
 });
 
-test('the 3.0.0 question is an open authority item, not a silent decision', () => {
+test('the 3.0.0 question was decided by the owner, and the record says how', () => {
   const policy = TERMINOLOGY.versionPolicy;
   assert.match(policy.v3Question, /3\.0\.0/, 'the requested label is addressed');
-  assert.match(policy.v3Question, /open authority item|authority item/i, 'and left open rather than assumed');
+  assert.match(policy.v3Question, /RESOLVED/, 'it is no longer an open item');
+  assert.match(policy.v3Question, /owner authority/i, 'resolved by the owner, not by the Manager');
+  assert.match(policy.v3Question, /ONLY as a genuine schema migration|genuine schema migration/,
+    'and on the condition that made it legitimate');
   assert.match(policy.v3Question, /VOCABULARY\.md section 12/, 'with a pointer to the reasoning');
-  assert.match(policy.authority, /owner/i, 'the escalation path names the owner');
   const doc = read(VOCAB_DOC);
-  assert.match(doc, /## 12\. The register version decision: 2\.5\.0, not 3\.0\.0/, 'VOCABULARY.md §12 states the decision');
-  assert.match(doc, /AUTHORITY — open, owner decision required/, 'as an explicit authority item');
+  assert.match(doc, /## 12\. The register version decision/, 'VOCABULARY.md §12 still carries the decision');
+  assert.match(doc, /RESOLVED/, 'and records that it was resolved');
   assert.ok(doc.includes('| `2.0.0` | `8b7bd19b` |'), 'with the full transition table as evidence');
 });
 
@@ -613,10 +624,15 @@ test('the capability vocabulary lock is disjoint from the identifier namespaces,
 
 /* ------------------------------------------------------------------ 11. milestone namespace discipline */
 
-test('no Milestone-NN was invented in the canonical register', () => {
-  const raw = read('docs/n8n-lego/milestones.json');
-  assert.equal((raw.match(/Milestone-[0-9]+/g) ?? []).length, 0,
-    'the register invents no Milestone-NN grouping - the canonical shape is Pn.m dot notation');
+test('Milestone-NN exists only as a declared group, never as ladder history', () => {
+  // ADR-0012 made Milestone-NN real. What must still hold is that it never leaked into the
+  // historical ladder and was never invented by the Manager.
+  const declared = new Set((REGISTER.milestoneGroups ?? []).map((g) => g.id));
+  assert.ok(declared.size > 0, 'at least one group is declared');
+  for (const id of declared) assert.match(id, /^Milestone-\d{2}$/, `${id} follows the grammar`);
+  for (const group of REGISTER.milestoneGroups ?? []) {
+    assert.match(group.authority, /owner/i, `${group.id} carries owner authority, not Manager invention`);
+  }
   assert.equal(REGISTER.currentMilestone, 'P2.27', 'currentMilestone is still dot notation');
   assert.equal(REGISTER.previousCompletedMilestone, 'P2.26', 'and so is previousCompletedMilestone');
   for (const row of REGISTER.milestones) {
@@ -626,10 +642,11 @@ test('no Milestone-NN was invented in the canonical register', () => {
     'the rule says the M in P5-M05 is not a milestone namespace');
   // The counter-example is written with placeholders, so no Milestone-NN token exists anywhere
   // in the repo: not as a grouping, not even as an illustration.
-  const readmeHits = README.match(/Milestone-[0-9]+/g) ?? [];
-  assert.deepEqual(readmeHits, [], 'README invents no Milestone-NN either');
-  const docHits = read(VOCAB_DOC).match(/Milestone-[0-9]+/g) ?? [];
-  assert.deepEqual(docHits, [], 'and neither does the protocol document');
+  const declaredIds = new Set((REGISTER.milestoneGroups ?? []).map((g) => g.id));
+  const undeclared = (text) =>
+    [...new Set(text.match(/Milestone-[0-9]+/g) ?? [])].filter((t) => !declaredIds.has(t));
+  assert.deepEqual(undeclared(README), [], 'README names only declared groups');
+  assert.deepEqual(undeclared(read(VOCAB_DOC)), [], 'and so does the protocol document');
   assert.match(LEGEND, /Pn-Mnn\s*!=\s*Milestone-nn/, 'the contrast is taught with placeholders');
   assert.match(LEGEND, /no global `Milestone-XX` namespace/, 'README states plainly that the namespace does not exist here');
 });

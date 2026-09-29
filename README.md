@@ -31,7 +31,7 @@ Proyek ini berada di bawah tata kelola arsitektur tunggal (P0 Governance):
 ## How to read this register
 
 **Documentation layer: README v2.0** — a projection of `docs/n8n-lego/milestones.json`
-register 2.5.0. This section explains the identifiers; it does not define them. The
+register 3.0.0. This section explains the identifiers; it does not define them. The
 register is the only authority (DEC-0020: milestone truth is main-owned), the generated
 block below and the `.ai/` pack are rendered from it by `npm run lego:ai`, and
 `npm run lego:ai:check` fails when this README, the pack and the register disagree.
@@ -225,6 +225,28 @@ _No verifying slice._
 Planned queue (planned ≠ authorized): —.
 
 Not authorized: planned is not authorized by itself: the Manager starts a queued slice by moving it to in-progress in a PR on main. AUTHORIZED QUEUE: EMPTY - every slice of the owner master prompt marathon BLOCKER-ZERO authorization has been delivered. That authorization named P8-S01, P5-M06, P5-M05, P5-M10, P5-M11..P5-M18 and P2-S10..P2-S29; all 32 now carry status implemented, so the list authorizes no remaining work and is retained here only as the record of what it covered. No delivery slice is authorized at present: a new authorization is an owner act, and planned or proposed status never substitutes for one. COMPLETED: P6-S05 (PR #355, merge d549d40d) and P5-M02 (same chain). DECIDED (DEC-0029): the P2-S03 Layer 6 legacy UI decommission executes NO removal - reference/n8n and n8n-editor-ui preserved per #240 permanent invariants 1-2, umbrella formally re-scoped; P6-S03, P6-S04 (proposed, no owner authorization for their scope); P10-S01 and P11-S01 (placeholders).
+
+### Milestone groups
+
+A **milestone group** is a historical grouping layer that sits beside the immutable `milestones[]` ladder. It **references** programs and slices and owns none of them: membership changes no slice status, no earned progress and no delivery evidence, and it is **not** a progress metric. Group identity and membership are an owner declaration.
+
+| Group | Title | Members | Slices | State |
+| --- | --- | --- | --- | --- |
+| `Milestone-01` **← current** | Foundation | P0 + P1 + P2 | 64 | COMPLETE |
+
+Current milestone group: `Milestone-01` — the newest group whose required membership is fully implemented. This is **derived from member slice statuses at validation time, never asserted**.
+
+Every governance record therefore carries five separate coordinates, and no two of them may be conflated:
+
+```text
+Program:   P2 — LEGO / AI / Plugin Foundation      (P0–P11, canonical identity, never renamed)
+Priority:  Priority-04 — Authorized Delivery       (operational urgency, never written P0–P6)
+Milestone: Milestone-01 — Foundation               (grouping layer, never a bare Pn)
+Slice:     P2-S07                                  (delivery unit; the M of P5-M05 is Maintenance)
+Status:    Implemented                             (the only status that moves Slice Completion)
+```
+
+`UI-PHASE-nn` is the AI-UI implementation phase namespace, and the runtime/telemetry `P0`–`P4` priority classes are a locked contract that this vocabulary never renames.
 
 ## Status Legend
 
@@ -695,7 +717,7 @@ Excluded from the current-delivery denominator. Realtime **0.0%**. Slice complet
 - **Live progress (DEC-0021, LIVE-MILESTONE EXCEPTION):** checkpoint progress, checkpoint status, checkpoint evidence, current checkpoint, slice / program / overall progress and the milestone evidence of a slice still in flight are operational telemetry. The Manager may reconcile them straight to `main` in a `governance(progress):` commit, without a governance PR, with `node tools/lego/progress-event.mjs record --slice <id> --checkpoint <CP-nn> --status <status> --evidence <reference>`. The tool runs the whole atomic chain: validate evidence and weights → write the register → regenerate `README.md` and `.ai` → run `npm run lego:ai:check` → commit → push → verify `main`. One measurable event is one commit; live progress is never batched and a partial state is never published. The Manager never types a percentage: `resolve` derives the state from evidence — `--fetch` reads the DEC-0015 jobs and the runner availability from the GitHub API, `--jobs <file.json>` reads an export, and `verify --cmd` derives completed / blocked from a verification command's exit code. A checkpoint that declares `requires` is earned only when every named check has passed; an absent self-hosted check is never PASS and `WAITING_RUNNER` is never PASS, so a head that never ran the suite cannot look green. Two paths, never mixed: delivery state is implementation → delivery PR → merge → post-merge verification → one governance PR reconciling status, merge SHA, evidence and projections; telemetry is evidence → checkpoint update → register → README → .ai → a `governance(progress):` commit → main. A slice status becoming `implemented` is delivery state and is never telemetry. The exception never covers source code, tests, runtime behaviour, API / frontend / backend / contract / schema implementation, dependencies, packages, Rust code, CI workflows, security policy, permissions, infrastructure, database schema or production configuration — those still go through a delivery PR. Live telemetry never bypasses a completion gate: 100% realtime progress with a completion contribution of 0% is a legitimate state, and only `implemented` (DEC-0014 + DEC-0015) moves Slice Completion.
 - **Rule:** Milestone truth is main-owned. A milestone design found or developed in Manager memory becomes authoritative only when reconciled into main through a PR. arena-manager is not an alternate milestone authority, and its docs/ tree is a stale snapshot that is never copied over main.
 - **Pending reconciliation:** A milestone change that exists only on arena-manager, a local worktree, a handoff, an issue, a PR body or chat is a proposal (pending reconciliation), never authoritative truth. A PR proposes a milestone state; only the merged state on main is authoritative.
-- **Freshness:** generated by `npm run lego:ai` from register 2.5.0 (fingerprint `69a08573e0ce115f`); `npm run lego:ai:check` fails when this section, the `.ai` pack or the register disagree.
+- **Freshness:** generated by `npm run lego:ai` from register 3.0.0 (fingerprint `5281257d71cf5369`); `npm run lego:ai:check` fails when this section, the `.ai` pack or the register disagree.
 - **Progress model (Issue #307):** Realtime Delivery Progress is checkpoint-weighted across P0-P11. Slice Completion is implemented / active in that same denominator. Future programs stay visible and are excluded from the current-delivery denominator. Illustrations of the status/progress split are not register measurements and must not be copied into slice checkpoints. The generator counts only weights declared on slice.checkpoints. It does not invent weights. A completed checkpoint requires evidence. Weights on a slice must sum to 100. A slice with no checkpoint model stays at 0 unless it is implemented, in which case the legacy rule contributes 100. This projection is not canonical until the change is on main.
 - **Completion KPI:** Slice Completion is implemented slices / active slices in P0–P11. A verifying or blocked slice never increases that numerator. Realtime Delivery Progress is a separate checkpoint-weighted figure and can move while Slice Completion stays still.
 - **Purpose field:** a slice purpose is `slice.purpose` when present, otherwise the text after the first `: ` in the canonical title, otherwise the title. No purpose is invented.
