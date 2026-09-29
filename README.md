@@ -38,13 +38,19 @@ block below and the `.ai/` pack are rendered from it by `npm run lego:ai`, and
 Prose authority for every rule stated here:
 [`docs/engineering-operations/VOCABULARY.md`](docs/engineering-operations/VOCABULARY.md).
 
-Five namespaces appear in the table below. **A namespace must not be inferred from
-another namespace** — matching digits never imply matching meaning:
+This layer deliberately teaches **shapes, not facts**. It names no live slice, no live
+sub-milestone and no current pointer, because `governance-register.test.mjs` forbids
+milestone/slice IDs outside the generated block — a curated layer that recites canonical
+state would be a second authority, and would go stale. The concrete IDs are in the table
+below, which the generator owns.
+
+Five namespaces appear there. **A namespace must not be inferred from another namespace**
+— matching digits never imply matching meaning:
 
 ```text
 P2           != Priority-02    program identity is not urgency
 P5           != Priority-05    program identity is not urgency
-P5-M05       != Milestone-05   that M is Maintenance, inside Program P5
+Pn-Mnn       != Milestone-nn   that M is Maintenance, inside Program n
 UI-PHASE-05  != P5             a UI planning phase is not a program
 telemetry P0 != Program P0     a locked runtime contract is not identity
 ```
@@ -88,20 +94,22 @@ written `P0`–`P6`, it never changes a STATUS, and it contributes 0 to delivery
 
 ### MILESTONE — grouping inside a program, `Pn.m`, historical and immutable
 
-The canonical milestone shape in this repository is dot notation **inside a program**
-(`P2.11` … `P2.27`, currently `P2.27`), and `milestones[]` is immutable. There is no
-global `Milestone-XX` namespace here: `M0`–`M5` in older documents are informal section
-names, not identifiers, and the `M` in a slice ID such as `P5-M05` means *Maintenance*.
-A work record therefore writes `MILESTONE: N/A` rather than inventing a grouping.
+The canonical milestone shape in this repository is dot notation **inside a program**:
+`Pn.m`, where `n` is the Program and `m` the milestone within it. `milestones[]` is
+immutable, and the current pointer lives in the register and in the generated table below.
+There is no global `Milestone-XX` namespace here: `M0`–`M5` in older documents are
+informal section names, not identifiers, and the `M` in a slice ID such as `Pn-Mnn` means
+*Maintenance*. A work record therefore writes `MILESTONE: N/A` rather than inventing a
+grouping.
 
 ### SLICE — delivery identity, one PR each (DEC-0014)
 
-| Shape | Means | Example |
+| Shape | Means | Reads as |
 | :--- | :--- | :--- |
-| `Pn-Snn` | feature slice inside Program `n` | `P2-S07` |
-| `Pn-Mnn` | maintenance / hardening / debt slice inside Program `n` | `P5-M05` |
-| `Pn.m` | historical pre-reset id — immutable | `P2.13` |
-| `<FUTURE-PROGRAM>-Snn` | slice of a thematic future program | `FUTURE-*-S01` |
+| `Pn-Snn` | feature slice inside Program `n` | "a slice inside Program `P2`" |
+| `Pn-Mnn` | maintenance / hardening / debt slice inside Program `n` | "maintenance inside Program `P5`" |
+| `Pn.m` | historical pre-reset id — immutable | "sub-milestone `m` of Program `n`" |
+| `<FUTURE-PROGRAM>-Snn` | slice of a thematic future program | "a slice of a `FUTURE-*` program" |
 
 A slice ID is never renamed for vocabulary reasons: renaming one orphans its PR, its
 merge SHA, its evidence file and its checkpoint history.
@@ -124,11 +132,11 @@ are deliberately not renamed — see VOCABULARY.md §7.
 ### A complete work record
 
 ```text
-PRIORITY:   Priority-04     Authorized Delivery        (overlay)
-PROGRAM:    P2              LEGO / AI / Plugin Foundation   (identity, permanent)
+PRIORITY:   Priority-04     Authorized Delivery             (overlay, urgency)
+PROGRAM:    Pn              a canonical Program, e.g. P2     (identity, permanent)
 MILESTONE:  N/A             no canonical grouping applies - never fabricated
-SLICE:      P2-S07          a slice inside Program P2       (delivery, one PR)
-STATUS:     implemented     from statusVocabulary
+SLICE:      Pn-Snn          a slice inside that Program      (delivery, one PR)
+STATUS:     implemented     from governance.statusVocabulary
 ```
 
 <!-- BEGIN GENERATED milestone-governance: npm run lego:ai renders this block from docs/n8n-lego/milestones.json; do not edit by hand -->
