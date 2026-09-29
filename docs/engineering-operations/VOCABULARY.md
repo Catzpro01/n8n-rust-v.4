@@ -357,9 +357,9 @@ inventing meaning, it was **reported, not chosen**.
 | --- | --- |
 | `docs/engineering-operations/VOCABULARY.md` | **new** — this protocol |
 | `.ai/master/AI_UI_IMPLEMENTATION_PHASES.md` | `P3`–`P10` → `UI-PHASE-03`–`UI-PHASE-10` (21 tokens) + namespace note + crosswalk. Curated doc. No scope, dependency, exit gate or definition of done altered. `P2.5` / `P2.10` sub-milestone references preserved. |
-| `docs/n8n-lego/milestones.json` | **additive** `governance.terminology` block. No Program ID, slice ID, status, DEC ID, merge SHA, denominator, checkpoint or queue entry touched. |
+| `docs/n8n-lego/milestones.json` | **additive** `governance.terminology` block (+ `versionPolicy`, `documentationLayers`), and `registerVersion` 2.4.0 → 2.5.0 (§12 below). No Program ID, slice ID, status, DEC ID, merge SHA, denominator, checkpoint or queue entry touched. |
 | `apps/n8n-lego/test/governance-vocabulary.test.mjs` | **new** — regression gate against future collision |
-| `README.md` | regenerated projection only (marker-delimited block); hand-written lines untouched pending AMBIGUITY-02/03 |
+| `README.md` | **new curated section** `## How to read this register` (README v2.0 documentation layer, §11 below), inserted entirely *before* the generated markers; plus one regenerated line inside the block (freshness: register 2.4.0 → 2.5.0). The hand-written `(P0 Constitution)` / `(P1: …)` lines stay untouched pending AMBIGUITY-02/03. |
 
 **Deliberately NOT changed:**
 
@@ -391,3 +391,111 @@ Milestone-XX                  only where a canonical grouping genuinely exists
 
 Before writing any `Pn` token, answer: **is this identity or urgency?** If the answer is not
 obvious from the sentence, the sentence needs the namespace written out.
+
+## 11. Documentation layers, and the README v2.0 contract
+
+Four layers carry this repository's state. They are registered machine-readably in
+`governance.terminology.documentationLayers`, and the rule between them is one line:
+
+> **A projection may restate canonical state but may never originate it; a curated
+> document may add prose but may never contradict the register.**
+
+| Layer | Where | Kind | Versioned by |
+| --- | --- | --- | --- |
+| Canonical register | `docs/n8n-lego/milestones.json` | AUTHORITY | `registerVersion` |
+| Generated projection | `.ai/master/MILESTONE_REGISTER.md`, the 64 generated `.ai/` files, the marker-delimited block in `README.md` | GENERATED | re-rendered by `npm run lego:ai`, verified by `npm run lego:ai:check` |
+| Curated prose | this document, `.ai/master/AI_UI_IMPLEMENTATION_PHASES.md`, `README.md` outside the markers | CURATED | by hand; the generator must never delete or replace it |
+| README documentation layer | `README.md` → `## How to read this register` | CURATED | `README v2.0` |
+
+### What "README v2.0" is a claim about
+
+`README.md` on `main` declares **no version string of its own** — its only version marker
+is the generated freshness line (`from register <registerVersion>, fingerprint <hash>`).
+So "v2.0" is a *new* label, and section 2 of the owner directive permits a new version
+string only together with a documented contract. This is that contract:
+
+```text
+README v2.0 ==
+  the README states, in human-readable form and immediately before the generated
+  register table, the five namespaces a reader meets there
+      PROGRAM   P0-P11        with the canonical program titles
+      PRIORITY  Priority-00..06 with the owner-defined meanings
+      MILESTONE Pn.m          historical, immutable; N/A rather than invented
+      SLICE     Pn-Snn / Pn-Mnn / Pn.m / <FUTURE-PROGRAM>-Snn
+      STATUS    governance.statusVocabulary, exactly
+  + the rule that a namespace must not be inferred from another namespace
+  + an explicit statement that the README is a projection, not an authority
+```
+
+It is machine-checked, not merely asserted. `governance-vocabulary.test.mjs` verifies
+that the section exists, that it sits **outside** the generated markers, that every
+program title and priority meaning in it matches the register token-for-token, that the
+status list matches `governance.statusVocabulary` exactly, and that the register version
+the README declares equals `registerVersion`. A stale or self-promoting README fails the
+gate — which is what keeps a version label from turning a projection into a second
+authority.
+
+Two corrections the gate caught while writing this section, both in the direction of the
+register winning:
+
+- Program `P5` is `Identity / Authentication / Authorization / Credentials (Security)`.
+  The directive's summary dropped the trailing `(Security)`; the register is canonical.
+- The directive rendered `Priority-02` as `CI / Runner` and this protocol keeps that
+  spelling, because it is what `terminology.namespaces.priority.scale` already said.
+
+## 12. The register version decision: 2.5.0, not 3.0.0
+
+Section 2 of the directive asked for two things at once: hit `v3.0`, and *first* determine
+from the repository's existing semantics whether the change is genuinely MAJOR, never
+moving a version string cosmetically. The second instruction governs, because the evidence
+is unambiguous.
+
+Every `registerVersion` transition in the history of `docs/n8n-lego/milestones.json`:
+
+| To | Commit | Subject | Class |
+| --- | --- | --- | --- |
+| `1.0.0` | `3d456a3f` | Implement P2.13 context and session foundation | creation |
+| `2.0.0` | `8b7bd19b` | governance reset (#256): one canonical register for P0-P11, slices, future programs and features | **MAJOR — re-foundation** |
+| `2.1.0` | `5468b2d4` | governance: milestone truth is Main-Owned (DEC-0020) | MINOR — additive rule |
+| `2.2.0` | `7084a123` | governance: split realtime progress from slice completion | MINOR — additive rule |
+| `2.3.0` | `c2b519d6` | governance: live milestone progress telemetry (DEC-0021) | MINOR — additive rule |
+| `2.4.0` | `45733fa2` | governance(milestone): authorize P7 as P7-S01..S08 per #223 §42 (DEC-0024) | MINOR — additive authorization |
+
+The protocol this establishes: **MAJOR means the register was re-founded and existing
+identifiers or consumers were invalidated. MINOR means an additive governance rule that
+invalidates nothing.** `registerVersion` is semver and
+`packages/frontend-lego/test/33-milestones.test.mjs:55` enforces the shape.
+
+This cycle adds two keys (`governance.terminology`, and inside it `versionPolicy` /
+`documentationLayers`) plus one curated README section. It invalidates no identifier,
+forces no consumer to migrate, and moves no canonical state — that is the whole point of
+sections 7 and 15 of the directive. By the repository's own precedent it is a **MINOR**
+bump: `2.4.0 → 2.5.0`.
+
+Writing `3.0.0` instead would publish a claim that a canonical reset happened when one
+deliberately did not. That is a false canonical-state assertion, and it is the specific
+failure mode sections 15 and 16 exist to prevent.
+
+**AUTHORITY — open, owner decision required.** If the owner wants the *label* `3.0.0`, the
+honest route is to define the contract change that makes it MAJOR (for example: adopting
+`Milestone-XX` as a real grouping namespace, which would be a genuine schema migration and
+would touch `currentMilestone`, `previousCompletedMilestone`, `milestones[]` and
+`governance.sliceNaming`). That is a delivery, with an ADR, not a rename of a string.
+Until such a ruling, `2.5.0` stands and the question is recorded in
+`governance.terminology.versionPolicy.v3Question` rather than silently resolved either way.
+
+## 13. The word "vocabulary" is itself overloaded
+
+The directive's target is *one term, one meaning*. The first pass of this protocol missed
+one collision, and it is the word the protocol is named after.
+
+| Sense | Where | What it governs |
+| --- | --- | --- |
+| **Capability vocabulary lock** | `packages/frontend-lego/src/vocabulary.mjs` — `VOCABULARIES`, `LOCAL_VOCABULARIES`, `DECLARED_OVERLAPS`, `QUOTED_FROM`, `assertTerm`, `compareVocabulary`, `detectCollisions`, `vocabularyDrift`; tested by `packages/frontend-lego/test/24-vocabulary.test.mjs` against `docs/n8n-lego/decisions/cross-agent-decisions.json` | Shared **capability terms** (availability states, operation states, capability IDs, change kinds, compatibility, sub-LEGO statuses, interaction classes), quoted with provenance so the frontend and the backend foundation do not grow two dialects for one concept |
+| **Identifier namespaces** | this document + `governance.terminology` + `apps/n8n-lego/test/governance-vocabulary.test.mjs` | **Identifier shapes**: `P0`–`P11`, `Priority-00`–`06`, `Pn-Snn`, `Pn-Mnn`, `Pn.m`, `UI-PHASE-NN` |
+
+The two are disjoint and stay that way: neither reads, renames, validates or versions the
+other, and no term in the capability lock carries a `Pn` token. Both are named
+"vocabulary" because both prevent one string from meaning two things — the same goal, at
+two different layers. Registered here so that a future reader who greps for "vocabulary"
+lands on both and does not conclude one of them is dead code.

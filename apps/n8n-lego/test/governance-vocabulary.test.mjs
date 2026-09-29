@@ -395,3 +395,204 @@ test('every open ambiguity records the six fields the NO BLIND REFACTOR rule req
   const ids = TERMINOLOGY.openAmbiguities.map((a) => a.id);
   assert.deepEqual(new Set(ids).size, ids.length, 'ambiguity ids are unique');
 });
+
+/* ------------------------------------------------------------------ 8. README v2.0 documentation layer */
+
+const README = read('README.md');
+const BEGIN_MARK = '<!-- BEGIN GENERATED milestone-governance:';
+const END_MARK = '<!-- END GENERATED milestone-governance -->';
+const LEGEND_HEADING = '## How to read this register';
+const legendStart = README.indexOf(LEGEND_HEADING);
+const beginMark = README.indexOf(BEGIN_MARK);
+const endMark = README.indexOf(END_MARK);
+/** The curated legend only - everything before the generated block starts. */
+const LEGEND = legendStart >= 0 && beginMark > legendStart ? README.slice(legendStart, beginMark) : '';
+/** Whitespace-normalised, so a hard-wrapped list still matches a joined one. */
+const flat = (text) => text.replace(/\s+/g, ' ');
+
+test('the README carries a v2.0 documentation layer, entirely outside the generated block', () => {
+  assert.ok(legendStart > 0, `"${LEGEND_HEADING}" exists in README.md`);
+  assert.ok(beginMark > legendStart, 'the legend precedes the generated block, so the generator never touches it');
+  assert.ok(endMark > beginMark, 'the generated block is still marker-delimited');
+  assert.match(LEGEND, /Documentation layer: README v2\.0/, 'it declares the layer version');
+  // Curated content must survive regeneration: the legend is not inside the markers.
+  assert.ok(!README.slice(beginMark, endMark).includes(LEGEND_HEADING), 'the generated block does not contain the legend');
+});
+
+test('the README layer names all five namespaces a reader meets in the register table', () => {
+  for (const heading of [
+    '### PROGRAM — identity, `P0`–`P11`, permanent',
+    '### PRIORITY — operational urgency, `Priority-00`–`Priority-06`',
+    '### MILESTONE — grouping inside a program, `Pn.m`, historical and immutable',
+    '### SLICE — delivery identity, one PR each (DEC-0014)',
+    '### STATUS — `governance.statusVocabulary`, and nothing else',
+  ]) {
+    assert.ok(LEGEND.includes(heading), `README explains ${heading}`);
+  }
+  assert.match(LEGEND, /### A complete work record/, 'and it works one full record end to end');
+  for (const field of ['PRIORITY:', 'PROGRAM:', 'MILESTONE:', 'SLICE:', 'STATUS:']) {
+    assert.ok(LEGEND.includes(field), `the worked record shows ${field}`);
+  }
+});
+
+test('every Program title in the README layer matches the canonical register exactly', () => {
+  const rows = new Map();
+  for (const m of LEGEND.matchAll(/^\| `(P\d{1,2})` \| (.+?) \|$/gm)) rows.set(m[1], m[2]);
+  assert.equal(rows.size, REGISTER.programs.length, `${REGISTER.programs.length} programs documented`);
+  for (const program of REGISTER.programs) {
+    assert.equal(rows.get(program.id), program.title, `${program.id} title is quoted from the register, not paraphrased`);
+  }
+});
+
+test('every Priority meaning in the README layer matches the canonical scale exactly', () => {
+  const rows = new Map();
+  for (const m of LEGEND.matchAll(/^\| `(Priority-\d\d)` \| (.+?) \|$/gm)) rows.set(m[1], m[2]);
+  const scale = TERMINOLOGY.namespaces.priority.scale;
+  assert.deepEqual([...rows.keys()].sort(), [...PRIORITY_TOKENS].sort(), 'exactly the seven tokens');
+  for (const token of PRIORITY_TOKENS) {
+    assert.equal(rows.get(token), scale[token], `${token} means "${PRIORITY_MEANINGS[token]}"`);
+    assert.equal(rows.get(token), PRIORITY_MEANINGS[token], `${token} keeps the owner-defined wording`);
+  }
+});
+
+test('the README status list is governance.statusVocabulary, exactly and in order', () => {
+  const section = flat(LEGEND.split('### STATUS')[1].split('### One more namespace')[0]);
+  const joined = REGISTER.governance.statusVocabulary.map((s) => `\`${s}\``).join(', ');
+  assert.ok(section.includes(joined), 'all nine slice statuses, in register order, no extras');
+  assert.match(section, /complete` \/ `in-progress` \/ `planned/, 'and it separates the program-status vocabulary from the slice one');
+  assert.match(section, /is \*\*not\*\* a slice percentage/, 'program state is not a completion figure');
+});
+
+test('the README layer declares the registerVersion it projects, so it cannot drift', () => {
+  assert.match(REGISTER.registerVersion, /^\d+\.\d+\.\d+$/, 'the register is semver');
+  assert.ok(LEGEND.includes(`register ${REGISTER.registerVersion}`),
+    `the curated layer names register ${REGISTER.registerVersion} - a stale legend fails here`);
+  // The generated freshness line must agree with the curated one: two layers, one version.
+  assert.match(README, new RegExp(`from register ${REGISTER.registerVersion.replace(/\./g, '\\.')} \\(fingerprint \`[0-9a-f]{16}\`\\)`),
+    'the generated block projects the same register version');
+  assert.ok(LEGEND.includes('docs/engineering-operations/VOCABULARY.md'), 'and it points at the prose authority');
+});
+
+test('the README layer states the non-inference rule with worked contrasts', () => {
+  assert.match(flat(LEGEND), /A namespace must not be inferred from another namespace/, 'the rule itself');
+  const block = LEGEND.split('```text')[1].split('```')[0];
+  const contrasts = block.split('\n').map((l) => l.trim()).filter((l) => l.includes('!=')).map((l) => l.split('!=')[0].trim());
+  assert.ok(contrasts.length >= 5, `${contrasts.length} worked contrasts`);
+  for (const pair of ['P2', 'P5', 'P5-M05', 'UI-PHASE-05', 'telemetry P0']) {
+    assert.ok(contrasts.includes(pair), `"${pair}" is contrasted against the namespace it is confused with`);
+  }
+  assert.match(block, /P5-M05\s*!=\s*Milestone-05/, 'the M in a slice id is Maintenance, not Milestone');
+});
+
+test('the README layer says it is a projection, not an authority', () => {
+  assert.match(LEGEND, /it does not define them/, 'it explains identifiers without defining them');
+  assert.match(LEGEND, /The\s+register is the only authority/, 'the register stays the only authority');
+  assert.match(LEGEND, /DEC-0020/, 'by the decision that makes milestone truth main-owned');
+  assert.match(LEGEND, /npm run lego:ai:check/, 'and it names the check that keeps the layers in sync');
+  assert.ok(!/authoritative source|source of truth for delivery/i.test(LEGEND), 'it never claims to originate state');
+});
+
+/* ------------------------------------------------------------------ 9. the register version decision */
+
+test('this additive cycle bumped a MINOR, not a MAJOR - the repository precedent decides', () => {
+  const [major, minor, patch] = REGISTER.registerVersion.split('.').map(Number);
+  assert.equal(REGISTER.registerVersion, '2.5.0', 'registerVersion after this cycle');
+  assert.equal(major, 2, 'MAJOR unchanged: no canonical re-foundation happened');
+  assert.equal(minor, 5, 'MINOR bumped from 2.4.0: an additive governance rule');
+  assert.equal(patch, 0);
+  const policy = TERMINOLOGY.versionPolicy;
+  assert.ok(policy, 'governance.terminology.versionPolicy exists');
+  assert.match(policy.thisChange, /2\.4\.0 -> 2\.5\.0/, 'the transition is recorded');
+  assert.match(policy.thisChange, /MINOR/, 'and classified');
+  assert.match(policy.majorMeans, /8b7bd19b/, 'the one MAJOR precedent is cited by commit');
+  assert.match(policy.majorMeans, /governance reset/, 'and by what it actually was');
+  for (const dec of ['DEC-0020', 'DEC-0021', 'DEC-0024']) {
+    assert.match(policy.minorMeans, new RegExp(dec), `${dec} cited as a MINOR precedent`);
+  }
+});
+
+test('the 3.0.0 question is an open authority item, not a silent decision', () => {
+  const policy = TERMINOLOGY.versionPolicy;
+  assert.match(policy.v3Question, /3\.0\.0/, 'the requested label is addressed');
+  assert.match(policy.v3Question, /open authority item|authority item/i, 'and left open rather than assumed');
+  assert.match(policy.v3Question, /VOCABULARY\.md section 12/, 'with a pointer to the reasoning');
+  assert.match(policy.authority, /owner/i, 'the escalation path names the owner');
+  const doc = read(VOCAB_DOC);
+  assert.match(doc, /## 12\. The register version decision: 2\.5\.0, not 3\.0\.0/, 'VOCABULARY.md §12 states the decision');
+  assert.match(doc, /AUTHORITY — open, owner decision required/, 'as an explicit authority item');
+  assert.ok(doc.includes('| `2.0.0` | `8b7bd19b` |'), 'with the full transition table as evidence');
+});
+
+/* ------------------------------------------------------------------ 10. documentation layers, and the word overload */
+
+test('documentationLayers registers every layer with a kind and a version mechanism', () => {
+  const dl = TERMINOLOGY.documentationLayers;
+  assert.ok(dl, 'governance.terminology.documentationLayers exists');
+  assert.match(dl.rule, /may never originate it/, 'a projection may restate but not originate');
+  assert.match(dl.rule, /may never contradict the register/, 'curated prose may not contradict canonical state');
+  const byId = new Map(dl.layers.map((l) => [l.id, l]));
+  for (const id of ['canonical-register', 'generated-projection', 'curated-prose', 'readme-documentation-layer']) {
+    assert.ok(byId.has(id), `layer "${id}" is registered`);
+  }
+  assert.equal(byId.get('canonical-register').kind, 'AUTHORITY', 'exactly one authority');
+  assert.equal(dl.layers.filter((l) => l.kind === 'AUTHORITY').length, 1, 'and never a second one');
+  assert.equal(byId.get('generated-projection').kind, 'GENERATED');
+  assert.equal(byId.get('curated-prose').kind, 'CURATED');
+  const readme = byId.get('readme-documentation-layer');
+  assert.equal(readme.version, 'README v2.0', 'the README layer version');
+  assert.ok(readme.contract.length > 200, 'its contract is documented, not just asserted');
+  assert.match(readme.contract, /PROGRAM, PRIORITY, MILESTONE, SLICE, STATUS/, 'the contract names the five namespaces');
+  assert.match(readme.whyVersionedSeparately, /declares no version string of its own/, 'and admits the label is new');
+});
+
+test('the capability vocabulary lock is disjoint from the identifier namespaces, and was not renamed', () => {
+  const LOCK = 'packages/frontend-lego/src/vocabulary.mjs';
+  const LOCK_TEST = 'packages/frontend-lego/test/24-vocabulary.test.mjs';
+  assert.ok(existsSync(join(REPO_ROOT, LOCK)), LOCK);
+  assert.ok(existsSync(join(REPO_ROOT, LOCK_TEST)), LOCK_TEST);
+  const lock = read(LOCK);
+  // A bare Program token would mean the two namespaces had touched. Dot-notation historical
+  // ids (P2.13, P2.14) are provenance metadata and are expected - they are not Program tokens.
+  const bare = lock.match(/\bP(?:[0-9]|1[01])\b(?!\.\d)/g) ?? [];
+  assert.deepEqual(bare, [], 'the capability lock carries no bare P0-P11 token');
+  assert.ok(/\bP2\.1[0-9]\b/.test(lock), 'it does quote dot-notation historical ids as provenance');
+  for (const symbol of ['VOCABULARIES', 'DECLARED_OVERLAPS', 'detectCollisions', 'vocabularyDrift']) {
+    assert.ok(lock.includes(symbol), `the lock still exports ${symbol} - untouched by this cycle`);
+  }
+  const overload = TERMINOLOGY.documentationLayers.wordOverload;
+  assert.ok(overload.includes(LOCK), 'the register names the capability lock');
+  assert.ok(overload.includes(LOCK_TEST), 'and its test');
+  assert.match(overload, /IDENTIFIER NAMESPACES/, 'and states which sense this protocol governs');
+  assert.match(read(VOCAB_DOC), /## 13\. The word "vocabulary" is itself overloaded/, 'VOCABULARY.md §13 records the overload');
+});
+
+/* ------------------------------------------------------------------ 11. milestone namespace discipline */
+
+test('no Milestone-NN was invented in the canonical register', () => {
+  const raw = read('docs/n8n-lego/milestones.json');
+  assert.equal((raw.match(/Milestone-[0-9]+/g) ?? []).length, 0,
+    'the register invents no Milestone-NN grouping - the canonical shape is Pn.m dot notation');
+  assert.equal(REGISTER.currentMilestone, 'P2.27', 'currentMilestone is still dot notation');
+  assert.equal(REGISTER.previousCompletedMilestone, 'P2.26', 'and so is previousCompletedMilestone');
+  for (const row of REGISTER.milestones) {
+    assert.match(row.id, /^P\d+\.\d+/, `milestone ${row.id} keeps its canonical dot-notation id`);
+  }
+  assert.match(TERMINOLOGY.namespaces.milestone.rule, /NOT evidence of one global Milestone namespace/,
+    'the rule says the M in P5-M05 is not a milestone namespace');
+  // README may only mention Milestone-05 as the counter-example the protocol requires.
+  const readmeHits = README.match(/Milestone-[0-9]+/g) ?? [];
+  assert.deepEqual(readmeHits, ['Milestone-05'], 'exactly one README mention');
+  assert.match(LEGEND, /P5-M05\s*!=\s*Milestone-05/, 'and it is the non-inference contrast, not a grouping');
+});
+
+test('the slice shapes in the README are governance.sliceNaming, verbatim in meaning', () => {
+  const naming = REGISTER.governance.sliceNaming;
+  assert.match(naming.maintenance, /^Pn-Mnn/, 'maintenance slices are Pn-Mnn');
+  assert.match(naming.feature, /^Pn-Snn/, 'feature slices are Pn-Snn');
+  assert.match(naming.historical, /^Pn\.m/, 'historical ids are Pn.m and immutable');
+  for (const shape of ['`Pn-Snn`', '`Pn-Mnn`', '`Pn.m`', '`<FUTURE-PROGRAM>-Snn`']) {
+    assert.ok(LEGEND.includes(shape), `README documents the ${shape} shape`);
+  }
+  assert.match(LEGEND, /Maintenance/, 'and says what the M actually means');
+  assert.match(LEGEND, /never renamed for vocabulary reasons/, 'with the reason renaming is forbidden');
+});
