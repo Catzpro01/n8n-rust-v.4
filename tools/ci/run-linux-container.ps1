@@ -18,7 +18,7 @@ if (-not (Get-Command docker.exe -ErrorAction SilentlyContinue)) {
   throw "docker.exe is required for Linux-container jobs on the Windows runner"
 }
 
-docker version --format '{{.Server.Version}}' | Out-Host
+docker version --format "{{.Server.Version}}" | Out-Host
 if ($LASTEXITCODE -ne 0) {
   throw "Docker daemon is not available"
 }
@@ -29,17 +29,25 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $resolved = (Resolve-Path -LiteralPath $Workspace).Path
+$scriptPath = Join-Path $env:RUNNER_TEMP ("arena-linux-command-" + [guid]::NewGuid().ToString("N") + ".sh")
+
+$lfCommand = $Command.Replace([char]13 + [char]10, [char]10).Replace([char]13, [char]10)
+[System.IO.File]::WriteAllText(
+  $scriptPath,
+  $lfCommand + [char]10,
+  [System.Text.UTF8Encoding]::new($false)
+)
 
 Write-Host "Linux container image: $Image"
 Write-Host "Workspace: $resolved"
-Write-Host "Command: $Command"
+Write-Host "Command script: $scriptPath"
 
-docker run --rm `
-  --mount "type=bind,source=$resolved,target=/workspace" `
-  --workdir /workspace `
-  $Image `
-  bash -lc $Command
-
-if ($LASTEXITCODE -ne 0) {
-  exit $LASTEXITCODE
+try {
+  docker run --rm --mount "type=bind,source=$resolved,target=/workspace" --mount "type=bind,source=$scriptPath,target=/tmp/arena-command.sh,readonly" --workdir /workspace $Image bash /tmp/arena-command.sh
+  if ($LASTEXITCODE -ne 0) {
+    exit $LASTEXITCODE
+  }
+}
+finally {
+  Remove-Item -LiteralPath $scriptPath -Force -ErrorAction SilentlyContinue
 }
