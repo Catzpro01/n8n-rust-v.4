@@ -44,6 +44,20 @@ jobs:
           echo "cargo: $(command -v cargo) ($(cargo --version))"
           rustc --version
 
+      - name: sccache daemon self-heal
+        shell: bash
+        run: |
+          if command -v sccache >/dev/null 2>&1; then
+            sccache --stop-server 2>/dev/null || true
+            if sccache --start-server 2>/dev/null; then
+              echo "RUSTC_WRAPPER=sccache" >> "$GITHUB_ENV"
+              sccache --show-stats 2>/dev/null || true
+            else
+              echo "::warning::sccache daemon gagal start, kompilasi tanpa cache"
+              echo "RUSTC_WRAPPER=" >> "$GITHUB_ENV"
+            fi
+          fi
+
       - name: Post-Merge Main Verification (Level 0 + Level 2)
         run: |
           cargo check --workspace
