@@ -38,6 +38,9 @@ jobs:
     runs-on: [ self-hosted, Windows, X64, rust-build, n8n-rust ]
     container:
       image: n8n-rust-runner:latest
+    defaults:
+      run:
+        shell: bash
     if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push'
     steps:
       - name: Checkout Code
@@ -91,6 +94,9 @@ jobs:
     runs-on: [ self-hosted, Windows, X64, rust-build, n8n-rust ]
     container:
       image: n8n-rust-runner:latest
+    defaults:
+      run:
+        shell: bash
     if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push'
     steps:
       - name: Checkout Code

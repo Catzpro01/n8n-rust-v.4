@@ -17,6 +17,9 @@ jobs:
     runs-on: [ self-hosted, Windows, X64, rust-build, n8n-rust ]
     container:
       image: n8n-rust-runner:latest
+    defaults:
+      run:
+        shell: bash
     if: github.event.pull_request.merged == true
     steps:
       # Full history: when another PR merged in the meantime, main has advanced past
