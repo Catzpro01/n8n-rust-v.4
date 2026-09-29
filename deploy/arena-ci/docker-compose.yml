@@ -16,6 +16,7 @@ services:
       GITHUB_WEBHOOK_SECRET_FILE: /run/secrets/github_webhook_secret
       GITHUB_PAT_FILE: /run/secrets/github_pat
     ports:
+      - "127.0.0.1:7890:7890"
       - "127.0.0.1:7891:7891"
     volumes:
       - ${ARENA_GATEWAY_HOST_DIR:-C:/arena-ci/gateway}:/app:ro
@@ -24,12 +25,7 @@ services:
     secrets:
       - github_webhook_secret
       - github_pat
-    command:
-      - /bin/sh
-      - -lc
-      - |
-        npm ci --omit=dev
-        exec node server.js
+    command: ["node", "server.js"]
     networks:
       - arena_internal
 
