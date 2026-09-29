@@ -14,7 +14,9 @@ permissions:
 jobs:
   cleanup:
     name: Post-Merge Verification & Branch Cleanup
-    runs-on: [ self-hosted, linux, x64, rust-build, n8n-rust ]
+    runs-on: [ self-hosted, Windows, X64, rust-build, n8n-rust ]
+    container:
+      image: n8n-rust-runner:latest
     if: github.event.pull_request.merged == true
     steps:
       # Full history: when another PR merged in the meantime, main has advanced past
@@ -27,9 +29,8 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      # Self-heal: a restarted WSL runner must not turn the post-merge verification
-      # into "cargo: command not found" (exit 127) — that failure also blocks the
-      # branch cleanup step below and lets merged branches pile up.
+      # Rust toolchain is pre-installed in the container image. This step
+      # ensures the PATH is set correctly for subsequent steps.
       - name: Rust toolchain preflight
         shell: bash
         run: |

@@ -1,0 +1,75 @@
+name: Runner Preflight
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        description: 'Runner operating system'
+        required: true
+        type: string
+      need_rust:
+        description: 'Need Rust environment'
+        required: false
+        type: boolean
+        default: true
+      need_node:
+        description: 'Need Node environment'
+        required: false
+        type: boolean
+        default: false
+      node_version:
+        description: 'Node version'
+        required: false
+        type: string
+        default: '22.18'
+    outputs:
+      runner_ready:
+        description: "Indicates if the runner is ready"
+        value: ${{ jobs.preflight.outputs.ready }}
+
+jobs:
+  preflight:
+    runs-on: self-hosted
+    outputs:
+      ready: ${{ steps.set_ready.outputs.ready }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Rust toolchain preflight (Linux)
+        if: inputs.need_rust == true && inputs.os == 'Linux'
+        shell: bash
+        run: |
+          if [ -f "$HOME/.cargo/env" ]; then
+            source "$HOME/.cargo/env"
+          else
+            echo "Rustup not found. Installing..."
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+            source "$HOME/.cargo/env"
+          fi
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Level 0 - sccache daemon self-heal (Linux)
+        if: inputs.need_rust == true && inputs.os == 'Linux'
+        shell: bash
+        run: |
+          if [ -f .github/scripts/sccache-heal.sh ]; then
+            source .github/scripts/sccache-heal.sh
+          fi
+
+      - name: Level 0 - sccache daemon self-heal (Windows)
+        if: inputs.need_rust == true && inputs.os == 'Windows'
+        shell: powershell
+        run: |
+          if (Test-Path .github\scripts\sccache-heal.ps1) {
+            . .\.github\scripts\sccache-heal.ps1
+          }
+
+      - name: Setup Node.js
+        if: inputs.need_node == true
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+
+      - id: set_ready
+        run: echo "ready=true" >> $GITHUB_OUTPUT

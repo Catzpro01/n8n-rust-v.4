@@ -16,13 +16,12 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  integration_workspace:
-    name: Level 2 Workspace Tests (${{ matrix.os }})
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ linux, windows ]
-    runs-on: [ self-hosted, '${{ matrix.os }}', x64, rust-build, n8n-rust ]
+  # Linux workspace tests: Windows runner + Docker container
+  integration_linux:
+    name: Level 2 Workspace Tests (linux)
+    runs-on: [ self-hosted, Windows, X64, rust-build, n8n-rust ]
+    container:
+      image: n8n-rust-runner:latest
     if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Checkout Code
@@ -32,26 +31,7 @@ jobs:
           submodules: false
           lfs: false
 
-      # Self-heal (Linux workers only): a restarted WSL runner must not turn the
-      # workspace test run into "cargo: command not found" (exit 127). The Windows
-      # worker keeps its own cargo environment.
-      - name: Level 2 - Rust toolchain preflight
-        if: runner.os == 'Linux'
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [ -f "$HOME/.cargo/env" ]; then . "$HOME/.cargo/env"; fi
-          if ! command -v cargo >/dev/null 2>&1; then
-            echo "cargo not found on PATH - installing rustup (minimal + rustfmt)"
-            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --component rustfmt
-            . "$HOME/.cargo/env"
-          fi
-          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
-          echo "cargo: $(command -v cargo) ($(cargo --version))"
-          rustc --version
-
-      - name: Level 2 - sccache daemon self-heal (Linux)
-        if: runner.os == 'Linux'
+      - name: Level 2 - sccache daemon self-heal
         shell: bash
         run: |
           if command -v sccache >/dev/null 2>&1; then
@@ -65,8 +45,23 @@ jobs:
             fi
           fi
 
+      - name: Level 2 - Full Rust Workspace Tests
+        run: cargo test --workspace
+
+  # Windows native workspace tests
+  integration_windows:
+    name: Level 2 Workspace Tests (windows)
+    runs-on: [ self-hosted, Windows, X64, rust-build, n8n-rust ]
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          submodules: false
+          lfs: false
+
       - name: Level 2 - sccache daemon self-heal (Windows)
-        if: runner.os == 'Windows'
         shell: powershell
         run: |
           $scc = Get-Command sccache -ErrorAction SilentlyContinue
@@ -87,9 +82,12 @@ jobs:
       - name: Level 2 - Full Rust Workspace Tests
         run: cargo test --workspace
 
+  # Conformance tests: container-based
   conformance:
     name: Level 2 Conformance LEGO & Node Catalog
-    runs-on: [ self-hosted, linux, x64, rust-build, n8n-rust ]
+    runs-on: [ self-hosted, Windows, X64, rust-build, n8n-rust ]
+    container:
+      image: n8n-rust-runner:latest
     if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Checkout Code

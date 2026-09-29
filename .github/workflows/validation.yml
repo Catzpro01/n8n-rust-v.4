@@ -35,7 +35,9 @@ concurrency:
 jobs:
   format_and_check:
     name: Level 0 (Check & Format)
-    runs-on: [ self-hosted, linux, x64, rust-build, n8n-rust ]
+    runs-on: [ self-hosted, Windows, X64, rust-build, n8n-rust ]
+    container:
+      image: n8n-rust-runner:latest
     if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push'
     steps:
       - name: Checkout Code
@@ -86,7 +88,9 @@ jobs:
 
   unit_tests:
     name: Level 1 (Affected Tests)
-    runs-on: [ self-hosted, linux, x64, rust-build, n8n-rust ]
+    runs-on: [ self-hosted, Windows, X64, rust-build, n8n-rust ]
+    container:
+      image: n8n-rust-runner:latest
     if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push'
     steps:
       - name: Checkout Code
