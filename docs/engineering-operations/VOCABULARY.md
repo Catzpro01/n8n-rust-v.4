@@ -435,13 +435,32 @@ the README declares equals `registerVersion`. A stale or self-promoting README f
 gate — which is what keeps a version label from turning a projection into a second
 authority.
 
-Two corrections the gate caught while writing this section, both in the direction of the
-register winning:
+Three corrections the gates caught while writing this section, all in the direction of
+canonical state winning over prose:
 
 - Program `P5` is `Identity / Authentication / Authorization / Credentials (Security)`.
-  The directive's summary dropped the trailing `(Security)`; the register is canonical.
+  The directive's summary dropped the trailing `(Security)`; the register is canonical, and
+  the gate compares the README table against `programs[].title` token-for-token.
 - The directive rendered `Priority-02` as `CI / Runner` and this protocol keeps that
   spelling, because it is what `terminology.namespaces.priority.scale` already said.
+- **The directive's illustrative record used concrete IDs (a `Slice:` written as a live
+  `Pn-Snn`, and a `Milestone:` written as a live `Milestone-NN`). The README layer must not.** A pre-existing invariant on
+  `main`, `apps/n8n-lego/test/governance-register.test.mjs:331` *"README states no
+  milestone truth outside the generated block"*, rejects any `Pn.m` / `Pn-Snn` / `Pn-Mnn`
+  outside the marker-delimited block — precisely so a curated layer cannot become a second
+  authority or go stale. The first draft of this section listed `P2-S07`, `P5-M05`,
+  `P2.11`, `P2.13` and `P2.27` as examples and failed that gate.
+
+  The gate was **not** weakened to accommodate the new prose; the prose was corrected. The
+  layer now teaches *shapes* — `Pn-Snn`, `Pn-Mnn`, `Pn.m`, `Milestone-nn` — and leaves
+  every concrete ID to the generated table, which the generator keeps current. Bare
+  `P0`–`P11` remain allowed outside the block, because a Program ID is permanent identity
+  rather than state. `governance-vocabulary.test.mjs` now asserts the same invariant from
+  the vocabulary side (*"the README layer teaches shapes and states no canonical slice or
+  milestone fact"*), so the two gates cannot drift apart.
+
+  This is the worked form of the layer rule: a projection may **explain** canonical state,
+  it may not **restate** it.
 
 ## 12. The register version decision: 2.5.0, not 3.0.0
 

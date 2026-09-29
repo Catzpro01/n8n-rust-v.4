@@ -478,10 +478,25 @@ test('the README layer states the non-inference rule with worked contrasts', () 
   const block = LEGEND.split('```text')[1].split('```')[0];
   const contrasts = block.split('\n').map((l) => l.trim()).filter((l) => l.includes('!=')).map((l) => l.split('!=')[0].trim());
   assert.ok(contrasts.length >= 5, `${contrasts.length} worked contrasts`);
-  for (const pair of ['P2', 'P5', 'P5-M05', 'UI-PHASE-05', 'telemetry P0']) {
+  for (const pair of ['P2', 'P5', 'Pn-Mnn', 'UI-PHASE-05', 'telemetry P0']) {
     assert.ok(contrasts.includes(pair), `"${pair}" is contrasted against the namespace it is confused with`);
   }
-  assert.match(block, /P5-M05\s*!=\s*Milestone-05/, 'the M in a slice id is Maintenance, not Milestone');
+  assert.match(block, /Pn-Mnn\s*!=\s*Milestone-nn/, 'the M in a slice id is Maintenance, not Milestone');
+});
+
+test('the README layer teaches shapes and states no canonical slice or milestone fact', () => {
+  // governance-register.test.mjs:331 forbids milestone/slice IDs outside the generated block,
+  // because a curated layer that recites canonical state becomes a second authority and goes
+  // stale. This asserts the same invariant from the vocabulary side, so the two gates agree.
+  const liveIds = LEGEND.match(/\bP\d+(?:\.\d+|-[SM]\d{2})\b/g) ?? [];
+  assert.deepEqual(liveIds, [], 'no Pn.m / Pn-Snn / Pn-Mnn in the curated layer');
+  for (const shape of ['`Pn.m`', '`Pn-Snn`', '`Pn-Mnn`']) {
+    assert.ok(LEGEND.includes(shape), `${shape} is taught as a shape, with n and nn as placeholders`);
+  }
+  assert.match(LEGEND, /shapes, not facts/, 'and it says why');
+  assert.match(LEGEND, /would be a second authority/, 'naming the failure mode it avoids');
+  // Bare Program IDs are permanent identity, not state, so the legend may name all twelve.
+  assert.equal((LEGEND.match(/^\| `P\d{1,2}` \|/gm) ?? []).length, 12, 'the twelve Programs may be named');
 });
 
 test('the README layer says it is a projection, not an authority', () => {
@@ -579,10 +594,14 @@ test('no Milestone-NN was invented in the canonical register', () => {
   }
   assert.match(TERMINOLOGY.namespaces.milestone.rule, /NOT evidence of one global Milestone namespace/,
     'the rule says the M in P5-M05 is not a milestone namespace');
-  // README may only mention Milestone-05 as the counter-example the protocol requires.
+  // The counter-example is written with placeholders, so no Milestone-NN token exists anywhere
+  // in the repo: not as a grouping, not even as an illustration.
   const readmeHits = README.match(/Milestone-[0-9]+/g) ?? [];
-  assert.deepEqual(readmeHits, ['Milestone-05'], 'exactly one README mention');
-  assert.match(LEGEND, /P5-M05\s*!=\s*Milestone-05/, 'and it is the non-inference contrast, not a grouping');
+  assert.deepEqual(readmeHits, [], 'README invents no Milestone-NN either');
+  const docHits = read(VOCAB_DOC).match(/Milestone-[0-9]+/g) ?? [];
+  assert.deepEqual(docHits, [], 'and neither does the protocol document');
+  assert.match(LEGEND, /Pn-Mnn\s*!=\s*Milestone-nn/, 'the contrast is taught with placeholders');
+  assert.match(LEGEND, /no global `Milestone-XX` namespace/, 'README states plainly that the namespace does not exist here');
 });
 
 test('the slice shapes in the README are governance.sliceNaming, verbatim in meaning', () => {
