@@ -35,7 +35,7 @@ concurrency:
 jobs:
   format_and_check:
     name: Level 0 (Check & Format)
-    runs-on: [ self-hosted, Windows, X64, rust-build, n8n-rust, linux-container ]
+    runs-on: [ self-hosted, Windows, X64, rust-build, n8n-rust ]
     if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push'
     steps:
       - name: Checkout Code
