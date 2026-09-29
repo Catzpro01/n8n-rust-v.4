@@ -16,15 +16,10 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # Linux workspace tests: Windows runner + Docker container
+  # Linux workspace tests: Windows runner + Explicit Docker container
   integration_linux:
-    name: Level 2 Workspace Tests (linux)
+    name: Level 2 Workspace Tests (linux via Docker)
     runs-on: [ self-hosted, Windows, X64, rust-build, n8n-rust ]
-    container:
-      image: n8n-rust-runner:latest
-    defaults:
-      run:
-        shell: bash
     if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Checkout Code
@@ -34,26 +29,19 @@ jobs:
           submodules: false
           lfs: false
 
-      - name: Level 2 - sccache daemon self-heal
-        shell: bash
+      - name: Level 2 - Full Rust Workspace Tests in Linux Container
+        shell: powershell
         run: |
-          if command -v sccache >/dev/null 2>&1; then
-            sccache --stop-server 2>/dev/null || true
-            if sccache --start-server 2>/dev/null; then
-              echo "RUSTC_WRAPPER=sccache" >> "$GITHUB_ENV"
-              sccache --show-stats 2>/dev/null || true
-            else
-              echo "::warning::sccache daemon gagal start, kompilasi tanpa cache"
-              echo "RUSTC_WRAPPER=" >> "$GITHUB_ENV"
-            fi
-          fi
-
-      - name: Level 2 - Full Rust Workspace Tests
-        run: cargo test --workspace
+          $repoPath = $env:GITHUB_WORKSPACE -replace '\\', '/'
+          docker run --rm `
+            -v "${repoPath}:/workspace" `
+            -w /workspace `
+            n8n-rust-runner:latest `
+            bash -lc "cargo test --workspace"
 
   # Windows native workspace tests
   integration_windows:
-    name: Level 2 Workspace Tests (windows)
+    name: Level 2 Workspace Tests (windows native)
     runs-on: [ self-hosted, Windows, X64, rust-build, n8n-rust ]
     if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
@@ -82,18 +70,14 @@ jobs:
             }
           }
 
-      - name: Level 2 - Full Rust Workspace Tests
+      - name: Level 2 - Full Rust Workspace Tests (Native Windows)
+        shell: powershell
         run: cargo test --workspace
 
-  # Conformance tests: container-based
+  # Conformance tests: container-based via explicit Docker
   conformance:
-    name: Level 2 Conformance LEGO & Node Catalog
+    name: Level 2 Conformance LEGO & Node Catalog (linux via Docker)
     runs-on: [ self-hosted, Windows, X64, rust-build, n8n-rust ]
-    container:
-      image: n8n-rust-runner:latest
-    defaults:
-      run:
-        shell: bash
     if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Checkout Code
@@ -103,8 +87,12 @@ jobs:
           submodules: false
           lfs: false
 
-      - name: Level 2 - Localization & Catalog Tests
-        run: node --test packages/reconstructed-engine/localization.test.mjs packages/reconstructed-engine/node-catalog.test.mjs
-
-      - name: Level 2 - Execution LEGO Conformance Tests
-        run: node --experimental-strip-types --test packages/execution-lego/test/02-runtime.test.mjs packages/execution-lego/test/03-context-recovery.test.mjs
+      - name: Level 2 - Conformance Tests in Linux Container
+        shell: powershell
+        run: |
+          $repoPath = $env:GITHUB_WORKSPACE -replace '\\', '/'
+          docker run --rm `
+            -v "${repoPath}:/workspace" `
+            -w /workspace `
+            n8n-rust-runner:latest `
+            bash -lc "node --test packages/reconstructed-engine/localization.test.mjs packages/reconstructed-engine/node-catalog.test.mjs && node --experimental-strip-types --test packages/execution-lego/test/02-runtime.test.mjs packages/execution-lego/test/03-context-recovery.test.mjs"

@@ -15,96 +15,66 @@ jobs:
   cleanup:
     name: Post-Merge Verification & Branch Cleanup
     runs-on: [ self-hosted, Windows, X64, rust-build, n8n-rust ]
-    container:
-      image: n8n-rust-runner:latest
-    defaults:
-      run:
-        shell: bash
     if: github.event.pull_request.merged == true
     steps:
       # Full history: when another PR merged in the meantime, main has advanced past
-      # merge_commit_sha and a depth-1 checkout no longer contains it. The runner also
-      # fetches the SHA explicitly / deepens on its own, so a shallow checkout would
-      # still work, but a complete history keeps the ancestry check conclusive.
+      # merge_commit_sha and a depth-1 checkout no longer contains it.
       - name: Checkout main
         uses: actions/checkout@v5
         with:
           ref: main
           fetch-depth: 0
 
-      # Rust toolchain is pre-installed in the container image. This step
-      # ensures the PATH is set correctly for subsequent steps.
-      - name: Rust toolchain preflight
-        shell: bash
+      - name: Post-Merge Main Verification in Linux Container
+        shell: powershell
         run: |
-          set -euo pipefail
-          if [ -f "$HOME/.cargo/env" ]; then . "$HOME/.cargo/env"; fi
-          if ! command -v cargo >/dev/null 2>&1; then
-            echo "cargo not found on PATH - installing rustup (minimal + rustfmt)"
-            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --component rustfmt
-            . "$HOME/.cargo/env"
-          fi
-          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
-          echo "cargo: $(command -v cargo) ($(cargo --version))"
-          rustc --version
-
-      - name: sccache daemon self-heal
-        shell: bash
-        run: |
-          if command -v sccache >/dev/null 2>&1; then
-            sccache --stop-server 2>/dev/null || true
-            if sccache --start-server 2>/dev/null; then
-              echo "RUSTC_WRAPPER=sccache" >> "$GITHUB_ENV"
-              sccache --show-stats 2>/dev/null || true
-            else
-              echo "::warning::sccache daemon gagal start, kompilasi tanpa cache"
-              echo "RUSTC_WRAPPER=" >> "$GITHUB_ENV"
-            fi
-          fi
-
-      - name: Post-Merge Main Verification (Level 0 + Level 2)
-        run: |
-          cargo check --workspace
-          cargo test -p n8n-workflow
+          $repoPath = $env:GITHUB_WORKSPACE -replace '\\', '/'
+          docker run --rm `
+            -v "${repoPath}:/workspace" `
+            -w /workspace `
+            n8n-rust-runner:latest `
+            bash -lc "cargo check --workspace && cargo test -p n8n-workflow"
 
       # The runner verifies that merge_commit_sha is on main (fetching it if main moved on),
       # never deletes main or arena-manager (DEC-0019), and
       # exits 0 with a clear message when the head branch is already gone.
-      # --skip-tests: the step above already ran the same cargo commands on this checkout.
       - name: Execute Cleanup & Delete Task Branch
+        shell: powershell
         env:
           BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
           MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python3 tools/orchestration/cleanup_runner.py \
-            --branch "$BRANCH_NAME" \
-            --merge-sha "$MERGE_SHA" \
-            --pr "$PR_NUMBER" \
-            --skip-tests
+          $repoPath = $env:GITHUB_WORKSPACE -replace '\\', '/'
+          docker run --rm `
+            -v "${repoPath}:/workspace" `
+            -w /workspace `
+            -e "BRANCH_NAME=$env:BRANCH_NAME" `
+            -e "MERGE_SHA=$env:MERGE_SHA" `
+            -e "PR_NUMBER=$env:PR_NUMBER" `
+            -e "GITHUB_TOKEN=$env:GITHUB_TOKEN" `
+            n8n-rust-runner:latest `
+            bash -lc 'python3 tools/orchestration/cleanup_runner.py --branch "$BRANCH_NAME" --merge-sha "$MERGE_SHA" --pr "$PR_NUMBER" --skip-tests'
 
-      # The merged PR's artifacts have finished their job: they existed to prove the
-      # PR was green, and the merge is that proof. Left alone they accumulate against
-      # the org quota, which on 2026-09-29 was exhausted (1681 live artifacts,
-      # 8.07 GB, 0 expired) and turned three green jobs red - blocking every merge
-      # under DEC-0015 while every test step in them had passed.
-      #
-      # Selection is by exact commit SHA (the PR head and the merge commit), never by
-      # branch name or artifact-name pattern, so this cannot sweep anything unrelated.
-      # Non-fatal on purpose: post-merge verification and branch cleanup above are the
-      # steps that matter, and a storage problem must never block them again.
+      # Delete the merged PR workflow artifacts
       - name: Delete the merged PR workflow artifacts
         if: always()
         continue-on-error: true
+        shell: powershell
         env:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python3 tools/orchestration/cleanup_artifacts.py \
-            --sha "$HEAD_SHA" \
-            --sha "$MERGE_SHA" \
-            --pr "$PR_NUMBER" \
-            --apply
+          $repoPath = $env:GITHUB_WORKSPACE -replace '\\', '/'
+          docker run --rm `
+            -v "${repoPath}:/workspace" `
+            -w /workspace `
+            -e "HEAD_SHA=$env:HEAD_SHA" `
+            -e "MERGE_SHA=$env:MERGE_SHA" `
+            -e "PR_NUMBER=$env:PR_NUMBER" `
+            -e "GITHUB_TOKEN=$env:GITHUB_TOKEN" `
+            n8n-rust-runner:latest `
+            bash -lc 'python3 tools/orchestration/cleanup_artifacts.py --sha "$HEAD_SHA" --sha "$MERGE_SHA" --pr "$PR_NUMBER" --apply'
