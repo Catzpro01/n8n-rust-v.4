@@ -18,7 +18,7 @@ concurrency:
 jobs:
   integration_workspace_linux:
     name: Level 2 Workspace Tests (linux)
-    runs-on: [ self-hosted, Windows, X64, rust-build, n8n-rust, linux-container ]
+    runs-on: [ self-hosted, Windows, X64, rust-build, n8n-rust ]
     if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Checkout Code
@@ -57,7 +57,7 @@ jobs:
 
   conformance:
     name: Level 2 Conformance LEGO & Node Catalog
-    runs-on: [ self-hosted, Windows, X64, rust-build, n8n-rust, linux-container ]
+    runs-on: [ self-hosted, Windows, X64, rust-build, n8n-rust ]
     if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Checkout Code
