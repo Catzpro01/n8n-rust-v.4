@@ -12,11 +12,13 @@
     "historicalLastP2Milestone": "P2.27",
     "lastVerifiedMain": "59b8d2ea74347b2db6f4c95e83bfdf5a43285219",
     "latestCompletedSlice": {"id": "P2-S03", "pr": 392, "mergeSha": "972b5afe3c5aa14bf907568a74156f491517a4a0"},
-"activeSlices": [],
+"activeSlices": [
+      "P2-M01"
+    ],
     "verifyingSlices": [],
 "plannedQueue": [],
     "blockedSlices": [],
-    "notAuthorized": "planned is not authorized by itself: the Manager starts a queued slice by moving it to in-progress in a PR on main. AUTHORIZED QUEUE: EMPTY - every slice of the owner master prompt marathon BLOCKER-ZERO authorization has been delivered. That authorization named P8-S01, P5-M06, P5-M05, P5-M10, P5-M11..P5-M18 and P2-S10..P2-S29; all 32 now carry status implemented, so the list authorizes no remaining work and is retained here only as the record of what it covered. No delivery slice is authorized at present: a new authorization is an owner act, and planned or proposed status never substitutes for one. COMPLETED: P6-S05 (PR #355, merge d549d40d) and P5-M02 (same chain). DECIDED (DEC-0029): the P2-S03 Layer 6 legacy UI decommission executes NO removal - reference/n8n and n8n-editor-ui preserved per #240 permanent invariants 1-2, umbrella formally re-scoped; P6-S03, P6-S04 (proposed, no owner authorization for their scope); P10-S01 and P11-S01 (placeholders).",
+    "notAuthorized": "AUTHORIZED QUEUE: P2-M01, by owner instruction in issue #418 (2026-09-30T16:03:42Z), Priority-04 Authorized Delivery - delivered by Manager-2 in parallel with Manager-1's owner-authorized P3-M01 (issue #229 comment 5910726264). Nothing else is authorized. P3-M02..P3-M04 (where registered by that delivery) and the rest of the planned queue stay planned until the owner authorizes them; P6-S03 and P6-S04 are proposed with no owner authorization for their scope; P10-S01, P11-S01 and P11-M02 stay unauthorized. The governing rule is unchanged and still exact: planned is not authorized by itself. The Manager starts a queued slice by moving it to in-progress in a PR on main, which is what this PR does for P2-M01. RETAINED RECORD: the earlier authorization that named P8-S01, P5-M06, P5-M05, P5-M10, P5-M11..P5-M18 and P2-S10..P2-S29 is spent - all 32 carry status implemented, so it authorizes no remaining work. COMPLETED: P6-S05 (PR #355, merge d549d40d) and P5-M02 (same chain). DECIDED (DEC-0029): the P2-S03 Layer 6 legacy UI decommission executes NO removal - reference/n8n and n8n-editor-ui preserved per #240 permanent invariants 1-2, umbrella formally re-scoped.",
     "updateRule": "Two paths, never mixed (DEC-0020 + DEC-0021). DELIVERY STATE — implementation, then delivery PR, then merge, then post-merge verification, then ONE governance PR reconciles the canonical state: a slice status becoming implemented, its merge SHA, its completion evidence, the executionPointer and the projections. PROGRESS TELEMETRY — evidence, then a checkpoint update, then this register, then README, then .ai, then a governance(progress): commit, then main: the Manager may commit that straight to main with no governance PR. Governance PRs are not delivery PRs (DEC-0014 keeps one delivery PR per slice), and telemetry never carries delivery state."
   },
   "governance": {
@@ -4270,13 +4272,62 @@
           "id": "P2-M01",
           "title": "Lazy tool/skill discovery + token-aware capability budgets (activated from FUTURE-AI-ECOSYSTEM-S01; legacy P18)",
           "kind": "maintenance",
-          "status": "planned",
+          "status": "in-progress",
+          "checkpoints": [
+            {
+              "id": "CP-01",
+              "title": "Lazy tool/skill discovery: L0/L1 registry with lazy loaders that discovery never invokes",
+              "purpose": "Tools and skills register lightweight frozen L0/L1 declaration metadata plus lazy loadSchema/loadProcedure callbacks. Indexing, summarizing, filtering and searching answer from declarations only and provably never invoke a loader, so listing the catalog can no longer exhaust a context window before any work starts. loadStats counts every loader invocation so laziness is proven, not trusted.",
+              "weight": 25,
+              "status": "planned",
+              "evidence": "",
+              "reference": "issue #234 F-P18-001; house precedent: ai.skill@1.0.0 lazy discovery (P2.12)"
+            },
+            {
+              "id": "CP-02",
+              "title": "Progressive capability discovery: four disclosure tiers with bounded scans",
+              "purpose": "Discovery is explicit about depth (L0_INDEX, L1_SUMMARY, L2_SCHEMA, L3_PROCEDURE). Broad scans operate strictly at L0/L1 under a bounded discovery result count and a discovery token budget with honest truncation accounting (truncatedByBudget, droppedCount, consumedTokens); bulk endpoints refuse L2/L3 tiers so a wide scan can never silently pull full schemas.",
+              "weight": 25,
+              "status": "planned",
+              "evidence": "",
+              "reference": "issue #234 F-P18-002"
+            },
+            {
+              "id": "CP-03",
+              "title": "On-demand tool schema loading: bounded, validated, frozen, optionally cached",
+              "purpose": "Full parameter schemas (L2) and skill procedures (L3) load one capability at a time only when selected. Every loaded artifact passes structural validation (type, bounded properties, closed depth) and byte/token ceilings, is deep-frozen before it can enter a context, may be memoized per capability, and loader failures surface as explicit unavailability rather than silent emptiness.",
+              "weight": 20,
+              "status": "planned",
+              "evidence": "",
+              "reference": "issue #234 F-P18-003"
+            },
+            {
+              "id": "CP-04",
+              "title": "Token/context-aware capability budgets: honest provenance, CAS versioning, fail-closed exhaustion",
+              "purpose": "A bounded ledger tracks what capability material actually costs in tokens across call/run/session scopes against the live context window (context minus reserve). Provenance is reported or estimated with a named estimator and never fabricated zero; every mutation takes an optimistic version token; exhaustion refuses with a closed error vocabulary instead of over-admitting.",
+              "weight": 15,
+              "status": "planned",
+              "evidence": "",
+              "reference": "issue #234 F-P18-004; house precedent: ai.token-usage@1.0.0 honest accounting (P2.24)"
+            },
+            {
+              "id": "CP-05",
+              "title": "Agent runtime workload admission: discovery is NOT authorization, secrets never enter context",
+              "purpose": "Workloads admit against declaration, P5 caller authorization, availability, secret hygiene and budget BEFORE execution. Discovery never grants authority: unauthorized capabilities fail closed before any loader runs. Raw secret tokens and credential-shaped fields are refused at registration and at every load. Admission is atomic: reject rolls back all partial allocations; degrade-to-lazy steps L2/L3 down to L1 summaries without invoking the degraded loaders.",
+              "weight": 15,
+              "status": "planned",
+              "evidence": "",
+              "reference": "issue #234 F-P18-005 + #234 invariants (P5 remains authority; no raw secrets in context)"
+            }
+          ],
+          "updatedAt": "2026-09-30T17:14:48Z",
           "mergeSha": null,
           "issue": 234,
           "evidence": null,
-          "owner": "manager (unassigned)",
+          "owner": "manager (M01)",
           "sourceFutureProgram": "FUTURE-AI-ECOSYSTEM",
-          "sourceFutureSlice": "FUTURE-AI-ECOSYSTEM-S01"
+          "sourceFutureSlice": "FUTURE-AI-ECOSYSTEM-S01",
+          "authorizedBy": "owner instruction, issue #418 (Manager-2 feature delivery: P2-M01 lazy capability discovery + token-aware budgets), 2026-09-30T16:03:42Z"
         }
       ]
     },
@@ -14006,14 +14057,15 @@
       "note": "legacy P20 (#236)"
     },
     {
-      "id": "FUTURE-AI-ECOSYSTEM-F-P18-001",
+      "id": "P2-F-CAP-001",
       "title": "Lazy tool / skill discovery",
       "type": "feature",
       "sourceIssue": [
         234
       ],
-      "parent": "FUTURE-AI-ECOSYSTEM",
-      "slice": "FUTURE-AI-ECOSYSTEM-S01",
+      "parent": "P2",
+      "slice": "P2-M01",
+      "rehomedFrom": "FUTURE-AI-ECOSYSTEM-S01 (P2-M01 activation, owner issue #418, 2026-09-30T16:03:42Z)",
       "owner": "manager (unassigned)",
       "status": "planned",
       "relevance": "active",
@@ -14027,14 +14079,15 @@
       "note": "legacy P18 (#234)"
     },
     {
-      "id": "FUTURE-AI-ECOSYSTEM-F-P18-002",
+      "id": "P2-F-CAP-002",
       "title": "Progressive capability discovery",
       "type": "feature",
       "sourceIssue": [
         234
       ],
-      "parent": "FUTURE-AI-ECOSYSTEM",
-      "slice": "FUTURE-AI-ECOSYSTEM-S01",
+      "parent": "P2",
+      "slice": "P2-M01",
+      "rehomedFrom": "FUTURE-AI-ECOSYSTEM-S01 (P2-M01 activation, owner issue #418, 2026-09-30T16:03:42Z)",
       "owner": "manager (unassigned)",
       "status": "planned",
       "relevance": "active",
@@ -14048,14 +14101,15 @@
       "note": "legacy P18 (#234)"
     },
     {
-      "id": "FUTURE-AI-ECOSYSTEM-F-P18-003",
+      "id": "P2-F-CAP-003",
       "title": "On-demand tool schema loading",
       "type": "feature",
       "sourceIssue": [
         234
       ],
-      "parent": "FUTURE-AI-ECOSYSTEM",
-      "slice": "FUTURE-AI-ECOSYSTEM-S01",
+      "parent": "P2",
+      "slice": "P2-M01",
+      "rehomedFrom": "FUTURE-AI-ECOSYSTEM-S01 (P2-M01 activation, owner issue #418, 2026-09-30T16:03:42Z)",
       "owner": "manager (unassigned)",
       "status": "planned",
       "relevance": "active",
@@ -14069,15 +14123,16 @@
       "note": "legacy P18 (#234)"
     },
     {
-      "id": "FUTURE-AI-ECOSYSTEM-F-P18-004",
+      "id": "P2-F-CAP-004",
       "title": "Token / context-aware capability budgets",
       "type": "feature",
       "sourceIssue": [
         234,
         210
       ],
-      "parent": "FUTURE-AI-ECOSYSTEM",
-      "slice": "FUTURE-AI-ECOSYSTEM-S01",
+      "parent": "P2",
+      "slice": "P2-M01",
+      "rehomedFrom": "FUTURE-AI-ECOSYSTEM-S01 (P2-M01 activation, owner issue #418, 2026-09-30T16:03:42Z)",
       "owner": "manager (unassigned)",
       "status": "planned",
       "relevance": "active",
@@ -14091,14 +14146,15 @@
       "note": "legacy P18 (#234)"
     },
     {
-      "id": "FUTURE-AI-ECOSYSTEM-F-P18-005",
+      "id": "P2-F-CAP-005",
       "title": "Agent runtime workload admission",
       "type": "feature",
       "sourceIssue": [
         234
       ],
-      "parent": "FUTURE-AI-ECOSYSTEM",
-      "slice": "FUTURE-AI-ECOSYSTEM-S01",
+      "parent": "P2",
+      "slice": "P2-M01",
+      "rehomedFrom": "FUTURE-AI-ECOSYSTEM-S01 (P2-M01 activation, owner issue #418, 2026-09-30T16:03:42Z)",
       "owner": "manager (unassigned)",
       "status": "planned",
       "relevance": "active",

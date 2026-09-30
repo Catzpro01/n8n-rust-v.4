@@ -322,7 +322,11 @@ test('the executionPointer still resolves and uses no ambiguous Pn for urgency',
   const ep = REGISTER.executionPointer;
   assert.equal(typeof ep.lastVerifiedMain, 'string');
   assert.match(ep.lastVerifiedMain, /^[0-9a-f]{40}$/, 'lastVerifiedMain is a full 40-hex SHA');
-  assert.deepEqual(ep.activeSlices, [], 'no active slices at the time of this vocabulary change');
+  // Refresh 2026-09-30 (P2-M01 activation, owner issue #418, 2026-09-30T16:03:42Z): the owner
+  // authorized P2-M01 and the Manager moved it to in-progress in a delivery PR on main, which
+  // is what activeSlices records (DEC-0020). No other slice is active on this branch, and the
+  // guard below still proves the pointer carries no Pn-shaped urgency label.
+  assert.deepEqual(ep.activeSlices, ['P2-M01'], 'the only active slice is the owner-authorized P2-M01');
   assert.equal(ep.latestCompletedSlice.id, 'P2-S03');
   // No field of the pointer may carry a bare Pn as an urgency label.
   const json = JSON.stringify(ep);
@@ -366,7 +370,15 @@ test('no status, DEC id, merge SHA or queue entry was moved to make the vocabula
   // active denominator, which is why the five activated rows moved no percentage). Both are
   // pinned: the raw census proves no row changed status, the counted figures in the test above
   // prove no progress moved.
-  assert.deepEqual(counts, { implemented: 191, proposed: 2, planned: 7, superseded: 5 }, 'raw slice status census unchanged');
+  // Refresh 2026-09-30 (P2-M01 activation, owner issue #418, 2026-09-30T16:03:42Z): exactly one
+  // planned row moved to in-progress (P2-M01, the owner-authorized delivery), so the census
+  // gains an `in-progress` entry and planned drops 7 -> 6. No row was added, removed,
+  // implemented or superseded by this delivery PR; the counted figures above are untouched.
+  assert.deepEqual(
+    counts,
+    { implemented: 191, proposed: 2, planned: 6, 'in-progress': 1, superseded: 5 },
+    'raw slice status census: only the owner-authorized P2-M01 moved planned -> in-progress',
+  );
   assert.equal(Object.values(counts).reduce((a, b) => a + b, 0), 205, 'raw row count unchanged');
   const ep = REGISTER.executionPointer;
   assert.deepEqual(ep.verifyingSlices, []);
