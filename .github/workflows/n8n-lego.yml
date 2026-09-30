@@ -533,6 +533,11 @@ jobs:
 
           assert_browser_runnable() {
             local exe reason image_browser
+            reason=""
+            # Initialised, not defaulted later: on the path where the image carries a
+            # browser and the re-resolution succeeds, `reason` is never assigned, and
+            # `set -u` turns the check below into "unbound variable" and fails the job
+            # at exactly the moment it has succeeded. Observed 2026-09-30.
             : > /tmp/runner-temp/pptr.err
 
             exe="$(puppeteer_probe 'process.stdout.write(require("puppeteer").executablePath())')" || exe=""
@@ -643,7 +648,7 @@ jobs:
     name: Windows worker portability probe (runtime tests are Linux)
     runs-on: [self-hosted, windows, x64, rust-build, n8n-rust]
     if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name != 'pull_request'
-    timeout-minutes: 15
+    timeout-minutes: 35
     steps:
       - name: Checkout
         uses: actions/checkout@v5
