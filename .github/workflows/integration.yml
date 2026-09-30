@@ -67,7 +67,10 @@ jobs:
           submodules: false
           lfs: false
 
-      - name: Level 2 - Localization & Catalog Tests
+      # Keep both conformance suites in one Linux-container invocation.
+      # This avoids a second Docker daemon startup, image inspection and
+      # Windows↔Linux workspace mount setup while preserving both test sets.
+      - name: Level 2 - Localization, Catalog & Execution LEGO Conformance
         shell: powershell
         run: |
           & "$env:GITHUB_WORKSPACE\tools\ci\run-linux-container.ps1" -Command @'
@@ -75,12 +78,5 @@ jobs:
           command -v node
           node --version
           node --test packages/reconstructed-engine/localization.test.mjs packages/reconstructed-engine/node-catalog.test.mjs
-          '@
-
-      - name: Level 2 - Execution LEGO Conformance Tests
-        shell: powershell
-        run: |
-          & "$env:GITHUB_WORKSPACE\tools\ci\run-linux-container.ps1" -Command @'
-          set -euo pipefail
           node --experimental-strip-types --test packages/execution-lego/test/02-runtime.test.mjs packages/execution-lego/test/03-context-recovery.test.mjs
           '@
