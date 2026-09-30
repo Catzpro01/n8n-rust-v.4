@@ -77,10 +77,8 @@ test('cli: decisions-check succeeds; unknown command is a usage error', () => {
 /**
  * Storage regression guard (2026-09-29).
  *
- * The account is a personal Free plan: 0.50 GB of Actions/Packages storage. On
- * 2026-09-29 the repository alone held 5.94 GB of artifacts - 97% of it one artifact
- * class, `n8n-lego-release`, at ~17 MB per run - which put the account 12x over its
- * allowance and stopped GitHub-hosted jobs from starting at all.
+ * On 2026-09-29 the repository held 5.94 GB of artifacts - 97% of it one artifact
+ * class, `n8n-lego-release`, at ~17 MB per run.
  *
  * The rule this encodes is about PURPOSE, not size: Actions artifact storage is CI
  * scratch space for small, purposeful evidence. A build payload - a distributable
@@ -130,7 +128,7 @@ test('no workflow uploads a build payload as a CI artifact', () => {
     offenders,
     [],
     'A build payload must not be uploaded as a CI artifact: it is reproducible from the\n'
-      + 'commit, nothing downloads it, and it exhausts the Actions storage allowance.\n'
+      + 'commit, nothing downloads it, and it bloats Actions artifact storage.\n'
       + 'Upload a checksum or manifest instead, and publish real releases to a release store.\n'
       + offenders.join('\n'),
   );
@@ -257,4 +255,95 @@ test('the directory-name guard is not vacuous: it rejects the assertion it repla
     assert.ok(!DIRECTORY_NAME_ASSUMPTIONS.some((pattern) => pattern.test(line)),
       `guard must accept: ${line}`);
   }
+});
+
+// ---------------------------------------------------------------------------------
+// Self-hosted-only CI workflow guard: every workflow job must run on canonical
+// self-hosted runner labels, with zero GitHub-hosted runner labels or pinned hostnames.
+const CANONICAL_RUNNER_LABEL_SETS = new Set([
+  'self-hosted, Windows, X64, rust-build, n8n-rust',
+  'self-hosted, Linux, X64, rust-build, n8n-rust',
+  'self-hosted, Linux, X64, vps-runtime',
+]);
+
+const FORBIDDEN_HOSTED_LABELS = [
+  'ubuntu-latest',
+  'ubuntu-24.04',
+  'ubuntu-22.04',
+  'ubuntu-20.04',
+  'windows-latest',
+  'windows-2025',
+  'windows-2022',
+  'windows-2019',
+  'macos-latest',
+  'macos-15',
+  'macos-14',
+  'macos-13',
+];
+
+test('every workflow job uses canonical self-hosted runner labels and zero GitHub-hosted runners', () => {
+  const wfDir = join(REPO_ROOT, '.github', 'workflows');
+  assert.ok(existsSync(wfDir), `${wfDir} must exist`);
+  const files = readdirSync(wfDir)
+    .filter((f) => f.endsWith('.yml') || f.endsWith('.yaml'))
+    .sort();
+  assert.ok(files.length > 0, 'expected at least one workflow in .github/workflows');
+
+  let totalJobsChecked = 0;
+  for (const file of files) {
+    const text = readFileSync(join(wfDir, file), 'utf8');
+    const lines = text.split(/\r?\n/);
+
+    for (const forbidden of FORBIDDEN_HOSTED_LABELS) {
+      const hostedPattern = new RegExp(`\\b${forbidden.replace('.', '\\.')}\\b`, 'i');
+      assert.ok(
+        !hostedPattern.test(text),
+        `${file}: must not reference GitHub-hosted runner label '${forbidden}'`,
+      );
+    }
+
+    assert.ok(
+      !/laptop-build-worker-\d+|MDMTEST-n8n-wsl/i.test(text),
+      `${file}: must not pin a single runner hostname in workflow definitions`,
+    );
+
+    for (let i = 0; i < lines.length; i++) {
+      const inlineMatch = lines[i].match(/^\s*runs-on:\s*(.+?)\s*$/);
+      const blockMatch = !inlineMatch && lines[i].match(/^(\s*)runs-on:\s*$/);
+      if (!inlineMatch && !blockMatch) continue;
+      totalJobsChecked++;
+      let labels = [];
+      if (inlineMatch) {
+        const rawRunsOn = inlineMatch[1].trim();
+        assert.match(
+          rawRunsOn,
+          /^\[(.+)\]$/,
+          `${file}:${i + 1}: inline runs-on must be a bracketed self-hosted label array, got '${rawRunsOn}'`,
+        );
+        labels = rawRunsOn
+          .slice(1, -1)
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
+      } else {
+        const baseIndent = blockMatch[1].length;
+        for (let j = i + 1; j < lines.length; j++) {
+          const itemMatch = lines[j].match(/^(\s*)-\s*(\S+?)\s*$/);
+          if (!itemMatch || itemMatch[1].length <= baseIndent) break;
+          labels.push(itemMatch[2].trim());
+        }
+      }
+      assert.equal(
+        labels[0],
+        'self-hosted',
+        `${file}:${i + 1}: first runs-on label must be 'self-hosted', got '${labels[0]}'`,
+      );
+      const normalizedTuple = labels.join(', ');
+      assert.ok(
+        CANONICAL_RUNNER_LABEL_SETS.has(normalizedTuple),
+        `${file}:${i + 1}: runs-on labels '[${normalizedTuple}]' do not match canonical RUNNER-PROTOCOL.md label sets`,
+      );
+    }
+  }
+  assert.ok(totalJobsChecked >= 9, `expected at least 9 workflow jobs across .github/workflows, checked ${totalJobsChecked}`);
 });

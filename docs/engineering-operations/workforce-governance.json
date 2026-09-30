@@ -331,7 +331,7 @@
     "document": "docs/engineering-operations/RUNNER-PROTOCOL.md",
     "owner": "manager",
     "anchorIssue": 256,
-    "architecture": "5 Windows + 5 WSL self-hosted runners (10 total); do not reduce or change without a Manager decision",
+    "architecture": "Self-hosted-only CI execution across 10 self-hosted runners (5 Windows + 5 WSL Linux; Linux container execution via n8n-rust-runner:latest and n8n-node-ci:latest on Windows workers); GitHub Actions is control plane only, never execution compute; do not reduce or change without a Manager decision",
     "runners": {
       "windows": [
         "laptop-build-worker",
@@ -370,7 +370,7 @@
         "n8n-rust"
       ]
     },
-    "selection": "by label, never by runner name; at most 10 parallel self-hosted jobs",
+    "selection": "by canonical self-hosted label only, never by runner hostname and never on GitHub-hosted labels (ubuntu-latest, windows-latest, macos-latest); at most 10 parallel self-hosted jobs",
     "pollIntervalSeconds": 1,
     "maxSleepSeconds": 1,
     "pollRule": "every wait for a runner, CI run, job, health endpoint, process or queue sleeps at most 1 second (prefer exactly 1s) inside a bounded attempt budget; no sleep 2/5/10/30/60, no setTimeout/setInterval above 1000 ms, no backoff step above 1s",
@@ -386,7 +386,7 @@
       "pre-existing",
       "flaky"
     ],
-    "exhaustion": "jobs queue; the monitor keeps polling at 1s; after the job timeout the job is reported blocked (environmental) — never skipped, never moved to hosted runners to bypass the requirement",
+    "exhaustion": "when no self-hosted runner is available, jobs queue and classify explicitly as WAITING_RUNNER / BLOCKED_WITH_EVIDENCE (honest environmental blocker) — never silently substituted with a GitHub-hosted runner, never claimed as PASS, and never dependent on GitHub billing, spending limits, or hosted runner minutes; remote-capable work continues outside the blocked validation lane",
     "githubActionsMonitoring": "GET /repos/{owner}/{repo}/commits/{sha}/check-runs at 1s until all completed; merge only with all checks success on the exact head SHA, pinned in the merge call",
     "vpsMonitoring": "vps-runtime runner; 1s polling of /rest/settings (/healthz is 503 without the UI bundle); systemd supervises long-running processes",
     "workspaceLifecycle": [

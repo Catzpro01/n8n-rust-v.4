@@ -366,7 +366,7 @@ const GREEN_JOBS = [
   { name: 'Level 2 Workspace Tests (linux)', status: 'completed', conclusion: 'success', labels: ['self-hosted', 'Linux'], runner_name: 'MDMTEST-n8n-wsl-4', run_id: 36161486715 },
   { name: 'Level 2 Workspace Tests (windows)', status: 'completed', conclusion: 'success', labels: ['self-hosted', 'Windows'], runner_name: 'laptop-build-worker-4', run_id: 36161486715 },
   { name: 'Level 2 Conformance LEGO & Node Catalog', status: 'completed', conclusion: 'success', labels: ['self-hosted', 'Linux'], runner_name: 'MDMTEST-n8n-wsl-2', run_id: 36161486715 },
-  { name: 'Backend LEGO architecture gate (P2.6)', status: 'completed', conclusion: 'success', labels: ['ubuntu-latest'], runner_name: 'GitHub Actions', run_id: 36161486772 },
+  { name: 'Backend LEGO architecture gate (P2.6)', status: 'completed', conclusion: 'success', labels: ['self-hosted', 'Windows', 'X64', 'rust-build', 'n8n-rust'], runner_name: 'laptop-build-worker-2', run_id: 36161486772 },
 ];
 
 test('evidence resolver: all-green self-hosted checks derive completed, with run and runner identity', () => {
@@ -392,8 +392,10 @@ test('evidence resolver: WAITING_RUNNER, queued and hosted-only never derive com
   const waiting = GREEN_JOBS.map((job) => (job.name.startsWith('Level 0') ? { ...job, status: 'queued', conclusion: null } : job));
   const derivedWaiting = deriveCheckpointState(waiting, { onlineRunners: [] });
   assert.equal(derivedWaiting.status, 'in-progress');
-  assert.match(derivedWaiting.evidence, /WAITING_RUNNER is never PASS/);
-  assert.equal(derivedWaiting.verdict.verdict, 'ALLOWED_BY_DEC-0015');
+  assert.match(derivedWaiting.evidence, /WAITING_RUNNER \/ BLOCKED_WITH_EVIDENCE is never PASS/);
+  assert.equal(derivedWaiting.verdict.verdict, 'WAITING_RUNNER');
+  assert.equal(derivedWaiting.verdict.exhaustionState, 'BLOCKED_WITH_EVIDENCE');
+  assert.equal(derivedWaiting.verdict.mergeAllowed, false);
 
   // Runner availability unknown: still not earned.
   const unknown = deriveCheckpointState(waiting);
@@ -403,8 +405,11 @@ test('evidence resolver: WAITING_RUNNER, queued and hosted-only never derive com
   const running = GREEN_JOBS.map((job) => (job.name.startsWith('Level 2 Workspace Tests (windows)') ? { ...job, status: 'in_progress', conclusion: null } : job));
   assert.equal(deriveCheckpointState(running).status, 'in-progress');
 
-  const hostedOnly = GREEN_JOBS.filter((job) => !job.labels.includes('self-hosted'));
-  assert.equal(deriveCheckpointState(hostedOnly).status, 'in-progress', 'a hosted-only result is not runner verification');
+  const hostedOnly = [{ name: 'legacy-hosted-check', status: 'completed', conclusion: 'success', labels: ['hosted-runner'] }];
+  const derivedHostedOnly = deriveCheckpointState(hostedOnly);
+  assert.equal(derivedHostedOnly.status, 'in-progress', 'a hosted-only result is not runner verification');
+  assert.equal(derivedHostedOnly.verdict.verdict, 'BLOCKED');
+  assert.equal(derivedHostedOnly.verdict.mergeAllowed, false);
   assert.equal(deriveCheckpointState([]).status, 'in-progress', 'no checks at all is never PASS');
 });
 
