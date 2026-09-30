@@ -7,7 +7,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 
 ## Delivery progress (same two metrics as README.md)
 
-**Realtime Delivery Progress 95.5%** — 18900/19800 checkpoint-weighted points, P0–P11 only. Future programs are excluded (1 slices). 9 current-delivery slice(s) have no checkpoint model and contribute 0.
+**Realtime Delivery Progress 95.5%** — 18900/19800 checkpoint-weighted points, P0–P11 only. Future programs are excluded (1 slices). 8 current-delivery slice(s) have no checkpoint model and contribute 0.
 
 **Slice Completion 95.5%** — 189/198 implemented. Verifying and blocked contribute 0. Program status is not this percentage.
 
@@ -31,11 +31,11 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | | |
 | --- | --- |
 | Latest completed slice | `P2-S03` — Frontend Evolution layers 3-6 (PR #392, merge `972b5afe`) |
-| Active slices | — (none) |
+| Active slices | `P2-M01` — Lazy tool/skill discovery + token-aware capability budgets |
 | Verifying (merged, post-merge verification pending) | — (none) |
 | Planned queue (in order; planned ≠ authorized) | — |
 | Blocked | — |
-| Not authorized | planned is not authorized by itself: the Manager starts a queued slice by moving it to in-progress in a PR on main. AUTHORIZED QUEUE: EMPTY - every slice of the owner master prompt marathon BLOCKER-ZERO authorization has been delivered. That authorization named P8-S01, P5-M06, P5-M05, P5-M10, P5-M11..P5-M18 and P2-S10..P2-S29; all 32 now carry status implemented, so the list authorizes no remaining work and is retained here only as the record of what it covered. No delivery slice is authorized at present: a new authorization is an owner act, and planned or proposed status never substitutes for one. COMPLETED: P6-S05 (PR #355, merge d549d40d) and P5-M02 (same chain). DECIDED (DEC-0029): the P2-S03 Layer 6 legacy UI decommission executes NO removal - reference/n8n and n8n-editor-ui preserved per #240 permanent invariants 1-2, umbrella formally re-scoped; P6-S03, P6-S04 (proposed, no owner authorization for their scope); P10-S01 and P11-S01 (placeholders). |
+| Not authorized | AUTHORIZED QUEUE: P2-M01, by owner instruction in issue #418 (2026-09-30T16:03:42Z), Priority-04 Authorized Delivery - delivered by Manager-2 in parallel with Manager-1's owner-authorized P3-M01 (issue #229 comment 5910726264). Nothing else is authorized. P3-M02..P3-M04 (where registered by that delivery) and the rest of the planned queue stay planned until the owner authorizes them; P6-S03 and P6-S04 are proposed with no owner authorization for their scope; P10-S01, P11-S01 and P11-M02 stay unauthorized. The governing rule is unchanged and still exact: planned is not authorized by itself. The Manager starts a queued slice by moving it to in-progress in a PR on main, which is what this PR does for P2-M01. RETAINED RECORD: the earlier authorization that named P8-S01, P5-M06, P5-M05, P5-M10, P5-M11..P5-M18 and P2-S10..P2-S29 is spent - all 32 carry status implemented, so it authorizes no remaining work. COMPLETED: P6-S05 (PR #355, merge d549d40d) and P5-M02 (same chain). DECIDED (DEC-0029): the P2-S03 Layer 6 legacy UI decommission executes NO removal - reference/n8n and n8n-editor-ui preserved per #240 permanent invariants 1-2, umbrella formally re-scoped. |
 | Historical P2 ladder pointer | `P2.27` (history, not active work) |
 | Last verified main | `59b8d2ea` |
 
@@ -45,7 +45,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | --- | --- | --- | --- | --- | --- |
 | **P0** | Core Application Bootstrap | **COMPLETE** | 2/2 | 2 | — |
 | **P1** | n8n Compatibility / Behavioral Baseline | **COMPLETE** | 2/2 | 3 | — |
-| **P2** | LEGO / AI / Plugin Foundation | **COMPLETE** | 60/61 | 29 | `P2-M01` (planned) |
+| **P2** | LEGO / AI / Plugin Foundation | **COMPLETE** | 60/61 | 34 | `P2-M01` (in-progress) |
 | **P3** | Workflow + Execution + Unlimited Nodes | **COMPLETE** | 18/19 | 24 | `P3-M01` (planned) |
 | **P4** | Trigger / Webhook / Ingress | **COMPLETE** | 10/11 | 19 | `P4-M01` (planned) |
 | **P5** | Identity / Authentication / Authorization / Credentials (Security) | **COMPLETE** | 26/26 | 20 | — |
@@ -66,7 +66,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | **FUTURE-RELIABILITY** | Execution Reliability, Data Plane, Scheduling & Certification | P13, P16, P17, P21 | #229, #232, #233, #237 | planned | 31 | — |
 | **FUTURE-PLATFORM** | Release, Collaboration & Operator Platform | P14, P15, P22 | #230, #231, #238 | planned | 23 | — |
 | **FUTURE-DISTRIBUTION** | Worker Fabric, Storage Lifecycle & Disaster Recovery | P19, P20 | #235, #236 | planned | 21 | — |
-| **FUTURE-AI-ECOSYSTEM** | AI Runtime Optimization & Ecosystem Interoperability | P18, P23 | #234, #239 | planned | 29 | — |
+| **FUTURE-AI-ECOSYSTEM** | AI Runtime Optimization & Ecosystem Interoperability | P18, P23 | #234, #239 | planned | 24 | — |
 
 Legacy traceability: legacy issue → feature (`sourceIssue`) → program (`parent`) → future slice (`slice`).
 
@@ -224,11 +224,11 @@ Contract-driven LEGO architecture, FE/BE domain boundaries, AI foundation, Agent
 | `P2-S27` | Skills/Capabilities (Layer 5 surface split out of P2-S03) | implemented | #389 | `cd12208d` | #240 |
 | `P2-S28` | Agent/Runtime views (Layer 5 surface split out of P2-S03) | implemented | #390 | `eb0893b0` | #240 |
 | `P2-S29` | Approvals and artifacts (Layer 5 surface split out of P2-S03) | implemented | #391 | `49f9d001` | #240 |
-| `P2-M01` | Lazy tool/skill discovery + token-aware capability budgets (activated from FUTURE-AI-ECOSYSTEM-S01; legacy P18) | planned | — | — | #234 |
+| `P2-M01` | Lazy tool/skill discovery + token-aware capability budgets (activated from FUTURE-AI-ECOSYSTEM-S01; legacy P18) | in-progress | — | — | #234 |
 
 </details>
 
-<details><summary>Features (29: 24 implemented, 5 planned)</summary>
+<details><summary>Features (34: 24 implemented, 10 planned)</summary>
 
 | Feature | Title | Status | Relevance | Slice | Issues | Merge SHA |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -261,6 +261,11 @@ Contract-driven LEGO architecture, FE/BE domain boundaries, AI foundation, Agent
 | `P2-F-AI-004` | Honest token/usage accounting | implemented | active | `P2.24` | #86 | `a409d930` |
 | `P2-F-AI-005` | Declared external provider adapters; credentials handed per call, never stored | implemented | active | `P2.25` | #86 | `9cc6ba88` |
 | `P2-F-AI-006` | Approval-bound authority: artifacts, approvals, audit | implemented | active | `P2.19` | #86, #88 | `393622e3` |
+| `P2-F-CAP-001` | Lazy tool / skill discovery | planned | active | `P2-M01` | #234 | — |
+| `P2-F-CAP-002` | Progressive capability discovery | planned | active | `P2-M01` | #234 | — |
+| `P2-F-CAP-003` | On-demand tool schema loading | planned | active | `P2-M01` | #234 | — |
+| `P2-F-CAP-004` | Token / context-aware capability budgets | planned | active | `P2-M01` | #234, #210 | — |
+| `P2-F-CAP-005` | Agent runtime workload admission | planned | active | `P2-M01` | #234 | — |
 
 </details>
 
@@ -971,16 +976,11 @@ Thematic future program. Not a P number and not authorized: a slice starts only 
 
 </details>
 
-<details><summary>Features (29: 16 planned, 12 proposed, 1 rejected)</summary>
+<details><summary>Features (24: 11 planned, 12 proposed, 1 rejected)</summary>
 
 | Feature | Title | Status | Relevance | Slice | Issues | Merge SHA |
 | --- | --- | --- | --- | --- | --- | --- |
 | `FUTURE-AI-ECOSYSTEM-F-DECISION-001` | AI decision boundary: AI-assisted automation with human-controlled high-impact actions (product surface) | planned | active | — | #88 | — |
-| `FUTURE-AI-ECOSYSTEM-F-P18-001` | Lazy tool / skill discovery | planned | active | `FUTURE-AI-ECOSYSTEM-S01` | #234 | — |
-| `FUTURE-AI-ECOSYSTEM-F-P18-002` | Progressive capability discovery | planned | active | `FUTURE-AI-ECOSYSTEM-S01` | #234 | — |
-| `FUTURE-AI-ECOSYSTEM-F-P18-003` | On-demand tool schema loading | planned | active | `FUTURE-AI-ECOSYSTEM-S01` | #234 | — |
-| `FUTURE-AI-ECOSYSTEM-F-P18-004` | Token / context-aware capability budgets | planned | active | `FUTURE-AI-ECOSYSTEM-S01` | #234, #210 | — |
-| `FUTURE-AI-ECOSYSTEM-F-P18-005` | Agent runtime workload admission | planned | active | `FUTURE-AI-ECOSYSTEM-S01` | #234 | — |
 | `FUTURE-AI-ECOSYSTEM-F-P23-001` | Provider-neutral protocol boundaries | planned | active | — | #239 | — |
 | `FUTURE-AI-ECOSYSTEM-F-P23-002` | Canonical event interoperability + external event adapters | planned | active | — | #239 | — |
 | `FUTURE-AI-ECOSYSTEM-F-P23-003` | Plugin/runtime contract evolution beyond the initial ABI | planned | active | — | #239 | — |

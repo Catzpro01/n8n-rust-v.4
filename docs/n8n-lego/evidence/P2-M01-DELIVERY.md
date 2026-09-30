@@ -27,5 +27,7 @@
 - `node tools/lego/foundation-gate.mjs`: `OK` (`26 LEGOs, 12 node creation routes`)
 - `node tools/lego/scale-out-readiness.mjs`: `OK` (`190 files, 15 declared exceptions, 0 new findings`)
 - `node tools/lego/ai-pack.mjs --check`: `OK` (`64 generated, 37 curated, 101 total`)
-- `apps/n8n-lego` full test suite: `3138/3138 pass` (`+12` new tests from `3126` baseline, `0 fail`)
+- `apps/n8n-lego` full test suite: `3146/3146 pass` vs pristine `main` @ `554ebd61` baseline `3134/3134 pass` (99 suites both; `+12` new P2-M01 tests, failing set empty on both, `0 fail`)
 - `packages/frontend-lego` full test suite: `1041 pass, 1 skip, 0 fail` (unchanged from baseline)
+- `apps/n8n-lego/test/governance-vocabulary.test.mjs`: `pass` (refreshed: `activeSlices == ['P2-M01']`, raw census `+1 in-progress / planned 7 -> 6`, only the owner-authorized row moved)
+- Canonical register reconciliation (this delivery PR): `P2-M01 planned -> in-progress` with `authorizedBy: owner issue #418 (2026-09-30T16:03:42Z)`; checkpoint model installed by the official writer (`progress-event.mjs record --init-file`, 5 checkpoints, weights 25/25/20/15/15, all `planned`); five legacy `FUTURE-AI-ECOSYSTEM-F-P18-00N` features re-homed as `P2-F-CAP-001..005` onto slice `P2-M01` (`rehomedFrom` recorded); `executionPointer.activeSlices = ['P2-M01']` and `notAuthorized` no longer claims an EMPTY queue. Denominators unchanged (P2-M01 was already a counted planned leaf): current `189/198 = 95.5`, global `190/199 = 95.5`, checkpoint points `18900/19800` — this PR claims no unearned progress.
