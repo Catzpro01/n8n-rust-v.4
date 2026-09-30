@@ -163,10 +163,19 @@ test('the repository pins eol=lf, and no CI step depends on the checkout style',
   // the vendored reference/ tree, which `.gitattributes` marks `-text` and which
   // was never affected -- and pushed the architecture job past its 15-minute
   // timeout. Pinned here so it is not quietly added back as a "safety net".
+  //
+  // The pin looks at COMMANDS, not at the text: the workflow explains the CRLF
+  // cause in a comment and names `core.autocrlf` and `reset --hard` while doing
+  // so, and a substring match over the whole file would fail on the explanation
+  // of the thing it is meant to forbid. Only non-comment lines are considered.
   const workflow = read('.github/workflows/n8n-lego.yml');
-  assert.doesNotMatch(workflow, /checkout-index -a -f/);
-  assert.doesNotMatch(workflow, /core\.autocrlf/);
-  assert.doesNotMatch(workflow, /reset --hard/);
+  const commands = workflow
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line !== '' && !line.startsWith('#'));
+  assert.doesNotMatch(commands.join('\n'), /checkout-index -a -f/);
+  assert.doesNotMatch(commands.join('\n'), /core\.autocrlf/);
+  assert.doesNotMatch(commands.join('\n'), /reset --hard/);
 });
 
 test('the governance comparisons are canonical too, not just the generator', () => {
