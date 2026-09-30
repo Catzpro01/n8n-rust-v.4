@@ -487,17 +487,45 @@ jobs:
             ( cd "$RUNNER_TEMP/clean-clone/tests/e2e" && node -e "$1" 2>>/tmp/runner-temp/pptr.err )
           }
 
+          # The image builds with PUPPETEER_SKIP_DOWNLOAD=1, so `npm ci` installs the
+          # puppeteer API and no browser: the diagnostic on 2026-09-30 reported
+          # `skipDownload : 1` and an executablePath under /root/.cache/puppeteer that does
+          # not exist. Before concluding the image cannot run the smoke test, look for a
+          # browser the image may already carry -- many CI base images install Chrome for
+          # exactly this reason. If one is there, point puppeteer at it; that is using
+          # what exists, not downloading anything and not skipping the test.
+          find_image_browser() {
+            for candidate in \
+              /usr/bin/google-chrome /usr/bin/google-chrome-stable /opt/google/chrome/chrome \
+              /usr/bin/chromium /usr/bin/chromium-browser /snap/bin/chromium \
+              /usr/local/bin/chrome /usr/local/bin/chromium; do
+              [ -x "$candidate" ] && { printf '%s' "$candidate"; return 0; }
+            done
+            command -v google-chrome google-chrome-stable chromium chromium-browser 2>/dev/null | head -1
+          }
+
           assert_browser_runnable() {
-            local exe reason
+            local exe reason image_browser
             : > /tmp/runner-temp/pptr.err
-            if ! exe="$(puppeteer_probe 'process.stdout.write(require("puppeteer").executablePath())')"; then
+
+            exe="$(puppeteer_probe 'process.stdout.write(require("puppeteer").executablePath())')" || exe=""
+            if [ -z "$exe" ]; then
               reason="require('puppeteer').executablePath() threw"
-            elif [ -z "$exe" ]; then
-              reason="executablePath() returned an EMPTY path - puppeteer resolved no downloaded browser"
             elif [ ! -f "$exe" ]; then
+              image_browser="$(find_image_browser)"
+              if [ -n "$image_browser" ]; then
+                export PUPPETEER_EXECUTABLE_PATH="$image_browser"
+                echo "puppeteer's own download is absent, but the image carries $image_browser; using it"
+                exe="$(puppeteer_probe 'process.stdout.write(require("puppeteer").executablePath())')" || exe=""
+                if [ -z "$exe" ]; then
+                  reason="executablePath() threw even with PUPPETEER_EXECUTABLE_PATH=$image_browser"
+                fi
+              else
+                reason="puppeteer resolved $exe, which does not exist, and the image carries no Chrome or Chromium binary"
+              fi
+            fi
+            if [ -n "$exe" ] && [ -z "$reason" ] && [ ! -f "$exe" ]; then
               reason="resolved path does not exist on disk: $exe"
-            else
-              reason=""
             fi
 
             if [ -n "$reason" ]; then
@@ -511,8 +539,12 @@ jobs:
                 console.log("resolved from      :", require.resolve("puppeteer"));
                 console.log("cacheDirectory     :", process.env.PUPPETEER_CACHE_DIR || "(default)");
                 console.log("skipDownload       :", process.env.PUPPETEER_SKIP_DOWNLOAD || "(unset)");
+                console.log("executablePath env :", process.env.PUPPETEER_EXECUTABLE_PATH || "(unset)");
                 console.log("executablePath     :", JSON.stringify(require("puppeteer").executablePath()));
               ' 2>&1 || true
+              echo "-- browsers present in the image --"
+              find_image_browser || echo "  (none on PATH or at any known location)"
+              echo "PUPPETEER_SKIP_DOWNLOAD=${PUPPETEER_SKIP_DOWNLOAD:-0}"
               echo "This is an IMAGE capability gap in n8n-node-ci:latest, not an application failure."
               echo "The smoke test is deliberately NOT skipped and the job is deliberately NOT"
               echo "moved to a hosted runner; fixing the image is the only correct resolution."
@@ -600,7 +632,6 @@ jobs:
           $files = @()
           foreach ($dir in @('apps/n8n-lego/bin', 'apps/n8n-lego/src', 'apps/n8n-lego/scripts', 'apps/n8n-lego/test', 'tests/e2e')) {
             $files += Get-ChildItem -Path $dir -Recurse -Filter *.mjs -File | ForEach-Object { $_.FullName }
-          }
           foreach ($file in $files) { node --check $file; if ($LASTEXITCODE -ne 0) { throw "syntax error in $file" } }
           Write-Host "checked $($files.Count) module files"
 
@@ -651,9 +682,7 @@ jobs:
               $major = 0
               if ([int]::TryParse($node.Substring(1, $dot - 1), [ref]$major)) {
                 if ($major -ge 22) { $nodeOk = $true }
-              }
             }
-          }
           if (-not $nodeOk) {
             Write-Host "::notice::WSL has no usable Node >= 22 (got '$node') - the authoritative Linux runtime gate is the containerised clean-clone job on the self-hosted Windows fleet."
             exit 0
