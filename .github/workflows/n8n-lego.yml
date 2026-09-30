@@ -127,7 +127,7 @@ jobs:
       # Fail-closed evidence that the working tree is byte-identical to the blobs
       # for the text this job compares. See the comment above `checkout-index`.
       - name: Materialise the working tree without line-ending conversion
-        shell: pwsh
+        shell: powershell
         run: |
           # actions/checkout is invoked with `clean: true`, and its cleaning step
           # runs `git clean -ffdx` + `git reset --hard HEAD` BEFORE fetching and
@@ -166,7 +166,7 @@ jobs:
             'tools/lego/governance-register.mjs')) {
             $bytes = [System.IO.File]::ReadAllBytes($f)
             $cr = 0
-            foreach ($b in $bytes) { if ($b -eq 13) { $cr++ } }
+            for ($i = 0; $i -lt $bytes.Length; $i++) { if ($bytes[$i] -eq 13) { $cr++ } }
             Write-Host "  line-endings $f : CR bytes = $cr"
             if ($cr -ne 0) { Write-Host "  ::error::$f is CRLF in the working tree"; $fail++ }
           }
@@ -268,7 +268,7 @@ jobs:
       # Fail-closed evidence that the working tree is byte-identical to the blobs
       # for the text this job compares. See the comment above `checkout-index`.
       - name: Materialise the working tree without line-ending conversion
-        shell: pwsh
+        shell: powershell
         run: |
           # actions/checkout is invoked with `clean: true`, and its cleaning step
           # runs `git clean -ffdx` + `git reset --hard HEAD` BEFORE fetching and
@@ -307,7 +307,7 @@ jobs:
             'tools/lego/governance-register.mjs')) {
             $bytes = [System.IO.File]::ReadAllBytes($f)
             $cr = 0
-            foreach ($b in $bytes) { if ($b -eq 13) { $cr++ } }
+            for ($i = 0; $i -lt $bytes.Length; $i++) { if ($bytes[$i] -eq 13) { $cr++ } }
             Write-Host "  line-endings $f : CR bytes = $cr"
             if ($cr -ne 0) { Write-Host "  ::error::$f is CRLF in the working tree"; $fail++ }
           }
@@ -480,7 +480,7 @@ jobs:
       # Fail-closed evidence that the working tree is byte-identical to the blobs
       # for the text this job compares. See the comment above `checkout-index`.
       - name: Materialise the working tree without line-ending conversion
-        shell: pwsh
+        shell: powershell
         run: |
           # actions/checkout is invoked with `clean: true`, and its cleaning step
           # runs `git clean -ffdx` + `git reset --hard HEAD` BEFORE fetching and
@@ -519,7 +519,7 @@ jobs:
             'tools/lego/governance-register.mjs')) {
             $bytes = [System.IO.File]::ReadAllBytes($f)
             $cr = 0
-            foreach ($b in $bytes) { if ($b -eq 13) { $cr++ } }
+            for ($i = 0; $i -lt $bytes.Length; $i++) { if ($bytes[$i] -eq 13) { $cr++ } }
             Write-Host "  line-endings $f : CR bytes = $cr"
             if ($cr -ne 0) { Write-Host "  ::error::$f is CRLF in the working tree"; $fail++ }
           }
