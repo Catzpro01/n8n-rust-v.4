@@ -108,7 +108,7 @@ jobs:
   architecture:
     name: Backend LEGO architecture gate (P2.6)
     runs-on: [self-hosted, Windows, X64, rust-build, n8n-rust]
-    timeout-minutes: 15
+    timeout-minutes: 35
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -233,6 +233,33 @@ jobs:
           mkdir -p "$ws"
           started=$(date +%s)
           ( cd /workspace && tar cf - --exclude=./reference --exclude=./.git . ) | ( cd "$ws" && tar xf - )
+          # The copy above comes from the WINDOWS WORKING TREE, so every text file in it
+          # arrives CRLF: `actions/checkout` runs with `clean: true`, which wipes the tree
+          # -- including the .gitattributes pinning eol=lf -- before the checkout that
+          # would have honoured it, and core.autocrlf=true converts everything else.
+          #
+          # Comparisons are immune to that now: the generated projection and the governance
+          # register are compared canonically. EXECUTION is not. A CRLF shell script is not
+          # a shell script -- bash reads `set -euo pipefail\r` as an invalid option name and
+          # exits 2 before the script emits a line of its own:
+          #
+          #     ##[error]Release build (npm package + offline tarball) FAILED (exit 2)
+          #     with nothing above it, because the script died on its first line.
+          #
+          # This repository already carries that warning for the WSL runner script, where
+          # Set-Content writes CRLF. Same failure, different route. Only *.sh is normalised:
+          # a shell script must be LF to be executable, and rewriting every file would
+          # corrupt the binaries the copy also carries. Asserted, not assumed, because a
+          # silent miss here returns as an exit-2 failure with nothing to diagnose.
+          find "$ws" -type f -name '*.sh' -exec sed -i 's/\r$//' {} +
+          for script in "$ws"/scripts/*.sh; do
+            [ -e "$script" ] || continue
+            if grep -qU $'\r' "$script"; then
+              echo "::error::$script is still CRLF in the container copy and cannot be executed"
+              exit 1
+            fi
+          done
+          echo "shell scripts in the container copy are LF-terminated"
           echo "[runner] workspace copied to $ws in $(( $(date +%s) - started ))s"
 
           # dist/ is written inside the copy but the upload step reads it from the
