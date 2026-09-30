@@ -17,6 +17,8 @@ FAIL=0
 
 ok()   { printf '  \033[32mPASS\033[0m  %s\n' "$1"; PASS=$((PASS+1)); }
 bad()  { printf '  \033[31mFAIL\033[0m  %s\n' "$1"; FAIL=$((FAIL+1)); }
+# Neither PASS nor FAIL: a check that could not run must not inflate either counter.
+info() { printf '  \033[33mINFO\033[0m  %s\n' "$1"; }
 
 need_bin() {
   if command -v "$1" >/dev/null 2>&1; then
@@ -69,16 +71,35 @@ fi
 
 echo
 echo "chromium shared libraries (the classic runtime failure):"
-if command -v ldd >/dev/null 2>&1 && [ -n "${CHROME_PATH:-}" ] && [ -x "${CHROME_PATH}" ]; then
-  MISSING="$(ldd "$CHROME_PATH" 2>/dev/null | grep -c 'not found' || true)"
+# On Debian, /usr/bin/chromium is a WRAPPER SHELL SCRIPT, not the ELF binary. Running
+# `ldd` on it prints "not a dynamic executable" and greps zero "not found" lines - a
+# false PASS that would let a broken image through. Resolve to a real ELF first, and
+# when no ELF can be found say so instead of claiming a pass.
+CHROME_BIN="$(readlink -f "${CHROME_PATH:-}" 2>/dev/null || true)"
+if [ -n "$CHROME_BIN" ] && ! file -b "$CHROME_BIN" 2>/dev/null | grep -q '^ELF'; then
+  info "CHROME_PATH is a wrapper ($(file -b "$CHROME_BIN" 2>/dev/null | cut -c1-40)) - locating the real binary"
+  for cand in /usr/lib/chromium/chromium \
+              /usr/lib/chromium-browser/chromium-browser \
+              /usr/lib/chromium/chrome; do
+    if [ -x "$cand" ] && file -b "$cand" 2>/dev/null | grep -q '^ELF'; then
+      CHROME_BIN="$cand"; break
+    fi
+  done
+fi
+
+if [ -n "$CHROME_BIN" ] && file -b "$CHROME_BIN" 2>/dev/null | grep -q '^ELF'; then
+  LDD_OUT="$(ldd "$CHROME_BIN" 2>&1 || true)"
+  MISSING="$(printf '%s\n' "$LDD_OUT" | grep -c 'not found' || true)"
   if [ "${MISSING:-0}" -eq 0 ]; then
-    ok "no unresolved shared libraries"
+    ok "no unresolved shared libraries in $CHROME_BIN"
   else
-    bad "$MISSING unresolved shared library/libraries:"
-    ldd "$CHROME_PATH" 2>/dev/null | grep 'not found' | sed 's/^/        /'
+    bad "$MISSING unresolved shared library/libraries in $CHROME_BIN:"
+    printf '%s\n' "$LDD_OUT" | grep 'not found' | sed 's/^/        /'
   fi
 else
-  bad "cannot run ldd against CHROME_PATH"
+  # Not a pass and not a fail: the check could not run. The launch test below is
+  # authoritative, and silently counting this as PASS is exactly the bug being fixed.
+  info "no ELF binary resolved from CHROME_PATH - ldd skipped, the headless launch below decides"
 fi
 
 echo

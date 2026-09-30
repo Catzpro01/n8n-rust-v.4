@@ -47,6 +47,9 @@ RUN set -eux; \
       coreutils tar xz-utils \
       # bash is the shell every `run:` block declares
       bash \
+      # file: the verifier must distinguish an ELF binary from a wrapper script
+      # before it trusts ldd. Not present in node:*-slim.
+      file \
       # the browser itself
       chromium \
       # Chromium's runtime libraries. Missing one of these is the classic
@@ -63,8 +66,7 @@ WORKDIR /workspace
 # git refuses to operate on a bind-mounted tree owned by a different uid, which is
 # exactly what a Windows host mount looks like. The contract job runs with
 # fetch-depth: 0 and reads history, so this is required, not cosmetic.
-RUN git config --system --add safe.directory /workspace \
- && git config --system --add safe.directory '*'
+RUN git config --system --add safe.directory /workspace
 
 COPY tools/ci/verify-node-ci-image.sh /opt/ci/verify-node-ci-image.sh
 RUN chmod +x /opt/ci/verify-node-ci-image.sh
