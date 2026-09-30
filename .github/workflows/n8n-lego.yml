@@ -124,6 +124,56 @@ jobs:
       # hosted runner. The job therefore sees the same OS and filesystem it saw
       # on ubuntu-latest -- this migration changes the machine, never the
       # assertion.
+      # Fail-closed evidence that the working tree is byte-identical to the blobs
+      # for the text this job compares. See the comment above `checkout-index`.
+      - name: Materialise the working tree without line-ending conversion
+        shell: pwsh
+        run: |
+          # actions/checkout is invoked with `clean: true`, and its cleaning step
+          # runs `git clean -ffdx` + `git reset --hard HEAD` BEFORE fetching and
+          # checking out the ref. That deletes the working tree -- including the
+          # .gitattributes that pins `eol=lf` -- so the checkout that is supposed
+          # to honour the attribute resolves it against an index that predates it,
+          # falls back to core.autocrlf=true, and materialises all 1200+ tracked
+          # files with CRLF.
+          #
+          # The consequence was concrete, not theoretical: on 2026-09-30 the
+          # architecture job reported every one of the 101 generated .ai files and
+          # the README governance block as stale, because ai-pack.mjs compares
+          # generated text against the working tree. Fixing it at the checkout is
+          # the only place that makes every downstream text comparison -- the
+          # projection check, the governance tests, the register writer --
+          # platform-independent at once, instead of patching each of them.
+          #
+          # `checkout-index` re-materialises tracked files from the existing index
+          # without touching it, so nothing about which commit is checked out, or
+          # which refs exist, changes here.
+          git -c core.autocrlf=false -c core.eol=lf checkout-index -a -f
+          if ($LASTEXITCODE -ne 0) { throw "could not re-materialise the working tree (exit $LASTEXITCODE)" }
+
+          # Evidence, not trust. The generated projection, the register and the
+          # generator itself are LF in the index, so they must be LF on disk.
+          # A few committed blobs genuinely are CRLF (Cargo.toml, some contracts,
+          # two scripts); those are excluded deliberately rather than papered over.
+          $fail = 0
+          foreach ($f in @(
+            '.ai/master/MILESTONE_REGISTER.md',
+            '.ai/index.md',
+            'README.md',
+            'ROADMAP.md',
+            'docs/n8n-lego/milestones.json',
+            'tools/lego/ai-pack.mjs',
+            'tools/lego/governance-register.mjs')) {
+            $bytes = [System.IO.File]::ReadAllBytes($f)
+            $cr = 0
+            foreach ($b in $bytes) { if ($b -eq 13) { $cr++ } }
+            Write-Host "  line-endings $f : CR bytes = $cr"
+            if ($cr -ne 0) { Write-Host "  ::error::$f is CRLF in the working tree"; $fail++ }
+          }
+          if ($fail -ne 0) {
+            throw "$fail projection file(s) arrived with CRLF; every text comparison in this job is untrustworthy"
+          }
+          Write-Host "  working tree matches the blobs: LF-terminated, conversion off"
       - name: Run the gate family in a Linux container on the self-hosted runner
         shell: powershell
         run: |
@@ -215,6 +265,56 @@ jobs:
       # same spawn on a local filesystem is under 0.5 s. This job starts ~3100
       # test processes, so running it on the mount would be unusable.
       # `reference/` and `.git` are not read by this job and stay out of the copy.
+      # Fail-closed evidence that the working tree is byte-identical to the blobs
+      # for the text this job compares. See the comment above `checkout-index`.
+      - name: Materialise the working tree without line-ending conversion
+        shell: pwsh
+        run: |
+          # actions/checkout is invoked with `clean: true`, and its cleaning step
+          # runs `git clean -ffdx` + `git reset --hard HEAD` BEFORE fetching and
+          # checking out the ref. That deletes the working tree -- including the
+          # .gitattributes that pins `eol=lf` -- so the checkout that is supposed
+          # to honour the attribute resolves it against an index that predates it,
+          # falls back to core.autocrlf=true, and materialises all 1200+ tracked
+          # files with CRLF.
+          #
+          # The consequence was concrete, not theoretical: on 2026-09-30 the
+          # architecture job reported every one of the 101 generated .ai files and
+          # the README governance block as stale, because ai-pack.mjs compares
+          # generated text against the working tree. Fixing it at the checkout is
+          # the only place that makes every downstream text comparison -- the
+          # projection check, the governance tests, the register writer --
+          # platform-independent at once, instead of patching each of them.
+          #
+          # `checkout-index` re-materialises tracked files from the existing index
+          # without touching it, so nothing about which commit is checked out, or
+          # which refs exist, changes here.
+          git -c core.autocrlf=false -c core.eol=lf checkout-index -a -f
+          if ($LASTEXITCODE -ne 0) { throw "could not re-materialise the working tree (exit $LASTEXITCODE)" }
+
+          # Evidence, not trust. The generated projection, the register and the
+          # generator itself are LF in the index, so they must be LF on disk.
+          # A few committed blobs genuinely are CRLF (Cargo.toml, some contracts,
+          # two scripts); those are excluded deliberately rather than papered over.
+          $fail = 0
+          foreach ($f in @(
+            '.ai/master/MILESTONE_REGISTER.md',
+            '.ai/index.md',
+            'README.md',
+            'ROADMAP.md',
+            'docs/n8n-lego/milestones.json',
+            'tools/lego/ai-pack.mjs',
+            'tools/lego/governance-register.mjs')) {
+            $bytes = [System.IO.File]::ReadAllBytes($f)
+            $cr = 0
+            foreach ($b in $bytes) { if ($b -eq 13) { $cr++ } }
+            Write-Host "  line-endings $f : CR bytes = $cr"
+            if ($cr -ne 0) { Write-Host "  ::error::$f is CRLF in the working tree"; $fail++ }
+          }
+          if ($fail -ne 0) {
+            throw "$fail projection file(s) arrived with CRLF; every text comparison in this job is untrustworthy"
+          }
+          Write-Host "  working tree matches the blobs: LF-terminated, conversion off"
       - name: Unit, integration, release build and checksums in a Linux container
         shell: powershell
         run: |
@@ -377,6 +477,56 @@ jobs:
       # bind-mounted workspace: the evidence and the server logs must land on the
       # host where the upload step reads them, and the instance must not outlive
       # the container.
+      # Fail-closed evidence that the working tree is byte-identical to the blobs
+      # for the text this job compares. See the comment above `checkout-index`.
+      - name: Materialise the working tree without line-ending conversion
+        shell: pwsh
+        run: |
+          # actions/checkout is invoked with `clean: true`, and its cleaning step
+          # runs `git clean -ffdx` + `git reset --hard HEAD` BEFORE fetching and
+          # checking out the ref. That deletes the working tree -- including the
+          # .gitattributes that pins `eol=lf` -- so the checkout that is supposed
+          # to honour the attribute resolves it against an index that predates it,
+          # falls back to core.autocrlf=true, and materialises all 1200+ tracked
+          # files with CRLF.
+          #
+          # The consequence was concrete, not theoretical: on 2026-09-30 the
+          # architecture job reported every one of the 101 generated .ai files and
+          # the README governance block as stale, because ai-pack.mjs compares
+          # generated text against the working tree. Fixing it at the checkout is
+          # the only place that makes every downstream text comparison -- the
+          # projection check, the governance tests, the register writer --
+          # platform-independent at once, instead of patching each of them.
+          #
+          # `checkout-index` re-materialises tracked files from the existing index
+          # without touching it, so nothing about which commit is checked out, or
+          # which refs exist, changes here.
+          git -c core.autocrlf=false -c core.eol=lf checkout-index -a -f
+          if ($LASTEXITCODE -ne 0) { throw "could not re-materialise the working tree (exit $LASTEXITCODE)" }
+
+          # Evidence, not trust. The generated projection, the register and the
+          # generator itself are LF in the index, so they must be LF on disk.
+          # A few committed blobs genuinely are CRLF (Cargo.toml, some contracts,
+          # two scripts); those are excluded deliberately rather than papered over.
+          $fail = 0
+          foreach ($f in @(
+            '.ai/master/MILESTONE_REGISTER.md',
+            '.ai/index.md',
+            'README.md',
+            'ROADMAP.md',
+            'docs/n8n-lego/milestones.json',
+            'tools/lego/ai-pack.mjs',
+            'tools/lego/governance-register.mjs')) {
+            $bytes = [System.IO.File]::ReadAllBytes($f)
+            $cr = 0
+            foreach ($b in $bytes) { if ($b -eq 13) { $cr++ } }
+            Write-Host "  line-endings $f : CR bytes = $cr"
+            if ($cr -ne 0) { Write-Host "  ::error::$f is CRLF in the working tree"; $fail++ }
+          }
+          if ($fail -ne 0) {
+            throw "$fail projection file(s) arrived with CRLF; every text comparison in this job is untrustworthy"
+          }
+          Write-Host "  working tree matches the blobs: LF-terminated, conversion off"
       - name: Clean clone, start, health, browser smoke, restart, verify
         shell: powershell
         run: |
