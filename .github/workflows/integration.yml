@@ -43,6 +43,10 @@ jobs:
           fetch-depth: 1
           submodules: false
           lfs: false
+          sparse-checkout: |
+            /*
+            !/reference
+          sparse-checkout-cone-mode: false
 
       - name: Level 2 - Full Workspace + LEGO & Node Conformance
         shell: powershell

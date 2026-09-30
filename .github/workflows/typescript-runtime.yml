@@ -48,6 +48,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          submodules: false
+          lfs: false
+          sparse-checkout: |
+            /*
+            !/reference
+          sparse-checkout-cone-mode: false
 
       - name: Execute Runtime Gate in Linux Container
         shell: powershell

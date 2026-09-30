@@ -112,6 +112,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          submodules: false
+          lfs: false
+          sparse-checkout: |
+            /*
+            !/reference
+          sparse-checkout-cone-mode: false
 
       # No install: the gate is pure Node with zero dependencies, so a boundary
       # violation is reported in seconds instead of after a full bootstrap.
@@ -133,6 +141,14 @@ jobs:
           set -euo pipefail
           mkdir -p /tmp/runner-temp /workspace/ci-evidence
           export RUNNER_TEMP=/tmp/runner-temp
+
+          ws=/tmp/arena-workspace
+          rm -rf "$ws"
+          mkdir -p "$ws"
+          started=$(date +%s)
+          ( cd /workspace && tar cf - --exclude=./reference --exclude=./.git . ) | ( cd "$ws" && tar xf - )
+          echo "[runner] workspace copied to $ws in $(( $(date +%s) - started ))s"
+          cd "$ws"
 
           # One gate per group, fail fast, naming the gate that failed. A single
           # bare `node a.mjs && node b.mjs` chain would turn any regression into
@@ -203,6 +219,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          submodules: false
+          lfs: false
+          sparse-checkout: |
+            /*
+            !/reference
+          sparse-checkout-cone-mode: false
 
       # SELF-HOSTED ONLY -- the Linux work runs in a container on the self-hosted
       # Windows runner via tools/ci/run-linux-container.ps1 (the pattern merged
@@ -394,6 +418,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          submodules: false
+          lfs: false
+          sparse-checkout: |
+            /*
+            !/reference
+          sparse-checkout-cone-mode: false
 
       # SELF-HOSTED ONLY -- the Linux work runs in a container on the self-hosted
       # Windows runner via tools/ci/run-linux-container.ps1 (the #402/#403
@@ -470,7 +502,7 @@ jobs:
           trap 'stop_instance; for f in shots p2-shots lego-start.log lego-restart.log smoke-state.json settings-visibility-p2.json; do [ -e "$RUNNER_TEMP/$f" ] && cp -a "$RUNNER_TEMP/$f" /workspace/ci-evidence/ 2>/dev/null || true; done' EXIT
 
           clone_clean() {
-            git clone --quiet --no-hardlinks /workspace "$RUNNER_TEMP/clean-clone"
+            git clone --depth 1 --quiet --no-hardlinks file:///workspace "$RUNNER_TEMP/clean-clone"
             cd "$RUNNER_TEMP/clean-clone"
             git checkout --quiet --detach "${GITHUB_SHA:-HEAD}"
             echo "clone at $(git log --oneline -1)"
@@ -660,6 +692,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          submodules: false
+          lfs: false
+          sparse-checkout: |
+            /*
+            !/reference
+          sparse-checkout-cone-mode: false
 
       - name: Set up Node.js
         uses: actions/setup-node@v5
@@ -671,10 +711,36 @@ jobs:
         run: |
           $files = @()
           foreach ($dir in @('apps/n8n-lego/bin', 'apps/n8n-lego/src', 'apps/n8n-lego/scripts', 'apps/n8n-lego/test', 'tests/e2e')) {
-            $files += Get-ChildItem -Path $dir -Recurse -Filter *.mjs -File | ForEach-Object { $_.FullName }
+            if (Test-Path $dir) {
+              $files += Get-ChildItem -Path $dir -Recurse -Filter *.mjs -File | ForEach-Object { $_.FullName.Replace('\', '/') }
+            }
           }
-          foreach ($file in $files) { node --check $file; if ($LASTEXITCODE -ne 0) { throw "syntax error in $file" } }
-          Write-Host "checked $($files.Count) module files"
+          $filesJson = ($files | ConvertTo-Json -Compress)
+          $script = @"
+          const vm = require('vm');
+          const fs = require('fs');
+          const files = $filesJson;
+          let count = 0;
+          for (const f of files) {
+            try {
+              const src = fs.readFileSync(f, 'utf8');
+              new vm.SourceTextModule(src, { identifier: f });
+              count++;
+            } catch (e) {
+              console.error('Syntax error in ' + f + ': ' + e.message);
+              process.exit(1);
+            }
+          }
+          console.log('checked ' + count + ' module files');
+          "@
+          $tmp = [System.IO.Path]::GetTempFileName() + ".js"
+          [System.IO.File]::WriteAllText($tmp, $script)
+          try {
+            & node --experimental-vm-modules $tmp
+            if ($LASTEXITCODE -ne 0) { throw "syntax validation failed" }
+          } finally {
+            Remove-Item $tmp -Force -ErrorAction SilentlyContinue
+          }
 
       - name: The runtime declares its platform and Node requirement
         shell: powershell

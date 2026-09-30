@@ -34,6 +34,7 @@ $runnerName = if ([string]::IsNullOrWhiteSpace($env:RUNNER_NAME)) { "default" } 
 $volumeSuffix = $runnerName.ToLowerInvariant() -replace '[^a-z0-9_.-]', '-'
 $cargoTargetVolume = "n8n-rust-runner-cargo-target-$volumeSuffix"
 $cargoHomeVolume = "n8n-rust-runner-cargo-home-$volumeSuffix"
+$npmCacheVolume = "n8n-rust-runner-npm-cache"
 $scriptPath = Join-Path $env:RUNNER_TEMP ("arena-linux-command-" + [guid]::NewGuid().ToString("N") + ".sh")
 
 # Keep the command script Linux-native regardless of PowerShell line endings.
@@ -45,17 +46,36 @@ $lfCommand = [regex]::Replace($Command, "
   [System.Text.UTF8Encoding]::new($false)
 )
 
-# Reserve two logical host CPUs for Windows/Docker Desktop responsiveness.
-# This changes only the CI process parallelism; no Windows settings are modified.
+# Dynamic Fleet Resource Quota (Anti-Lag Guarantee)
+$quotaFile = "C:\actions-runner-fleet\fleet-quota.json"
+$dockerResourceArgs = @()
 $hostLogicalCores = [Environment]::ProcessorCount
-$cargoJobs = [Math]::Max(1, $hostLogicalCores - 2)
+$reservedCores = 2
+$cargoJobs = [Math]::Max(1, $hostLogicalCores - $reservedCores)
+
+if (Test-Path $quotaFile) {
+  try {
+    $quota = Get-Content $quotaFile -Raw -ErrorAction SilentlyContinue | ConvertFrom-Json
+    if ($quota -and $quota.cargo_jobs_per_runner -gt 0) {
+      $cargoJobs = $quota.cargo_jobs_per_runner
+    }
+    if ($quota -and $quota.cores_per_runner -gt 0) {
+      $dockerResourceArgs += "--cpus=$($quota.cores_per_runner)"
+    }
+    if ($quota -and $quota.memory_per_runner_mb -gt 0) {
+      $dockerResourceArgs += "-m=$($quota.memory_per_runner_mb)m"
+    }
+    Write-Host "Dynamic Fleet Quota: active=$($quota.active_runner_count), cpus/runner=$($quota.cores_per_runner), mem/runner=$($quota.memory_per_runner_mb)MB, cargo_jobs=$cargoJobs"
+  } catch {}
+}
 
 Write-Host "Linux container image: $Image"
 Write-Host "Workspace: $resolved"
 Write-Host "Runner: $runnerName"
 Write-Host "Cargo target volume: $cargoTargetVolume"
 Write-Host "Cargo home volume: $cargoHomeVolume"
-Write-Host "Cargo build jobs: $cargoJobs (host logical CPUs: $hostLogicalCores; reserved: 2)"
+Write-Host "NPM cache volume: $npmCacheVolume"
+Write-Host "Cargo build jobs: $cargoJobs (host logical CPUs: $hostLogicalCores; reserved: $reservedCores)"
 Write-Host "Command script: $scriptPath"
 
 # ── Performance telemetry (lightweight, no secrets) ──────────────────────────
@@ -64,7 +84,7 @@ Write-Host "::group::CI Telemetry"
 Write-Host "[CI_TELEMETRY] CONTAINER_START $(Get-Date -Format 'o')"
 
 try {
-  docker run --pull=never --rm --mount "type=bind,source=$resolved,target=/workspace" --mount "type=volume,source=$cargoTargetVolume,target=/workspace/target" --mount "type=volume,source=$cargoHomeVolume,target=/cargo" --env CARGO_HOME=/cargo --env CARGO_TARGET_DIR=/workspace/target --env CARGO_BUILD_JOBS=$cargoJobs --mount "type=bind,source=$scriptPath,target=/tmp/arena-command.sh,readonly" --workdir /workspace $Image bash /tmp/arena-command.sh
+  docker run --pull=never --rm @dockerResourceArgs --mount "type=bind,source=$resolved,target=/workspace" --mount "type=volume,source=$cargoTargetVolume,target=/workspace/target" --mount "type=volume,source=$cargoHomeVolume,target=/cargo" --mount "type=volume,source=$npmCacheVolume,target=/root/.npm" --env CARGO_HOME=/cargo --env CARGO_TARGET_DIR=/workspace/target --env npm_config_cache=/root/.npm --env CARGO_BUILD_JOBS=$cargoJobs --mount "type=bind,source=$scriptPath,target=/tmp/arena-command.sh,readonly" --workdir /workspace $Image bash /tmp/arena-command.sh
   $dockerExit = $LASTEXITCODE
 }
 finally {
