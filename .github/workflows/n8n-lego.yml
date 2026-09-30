@@ -418,7 +418,7 @@ jobs:
             fi
             if [ "$smoke_attempt" -eq 2 ]; then exit 1; fi
             echo "::notice::Retrying browser smoke create after transient container CPU load"
-            sleep 2
+            sleep 1
           done
 
           echo "=== P2 browser gate - settings visibility, route guards, unsupported semantics ==="
@@ -430,7 +430,7 @@ jobs:
             fi
             if [ "$p2_attempt" -eq 2 ]; then exit 1; fi
             echo "::notice::Retrying P2 browser gate after transient container CPU load"
-            sleep 2
+            sleep 1
           done
 
           echo "=== Restart the instance on the same data directory ==="
@@ -467,7 +467,7 @@ jobs:
             fi
             if [ "$verify_attempt" -eq 2 ]; then exit 1; fi
             echo "::notice::Retrying browser smoke verify after transient container CPU load"
-            sleep 2
+            sleep 1
           done
           '@
 
@@ -544,7 +544,9 @@ jobs:
             console.log(`checked ${files.length} module files`);
           });
           '@
-          node -e $script
+          $checkFile = Join-Path $env:RUNNER_TEMP 'check-mjs.cjs'
+          [System.IO.File]::WriteAllText($checkFile, $script)
+          node $checkFile
           if ($LASTEXITCODE -ne 0) { throw "module syntax check failed" }
 
       - name: The runtime declares its platform and Node requirement
