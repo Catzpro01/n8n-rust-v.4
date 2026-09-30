@@ -1,0 +1,72 @@
+# n8n-node-ci:latest — the Linux CI image for the Node / TypeScript / browser jobs.
+#
+# Companion to n8n-rust-runner:latest, not a replacement for it. Keeping them apart is
+# deliberate: n8n-rust-runner exists for the Rust toolchain, and folding Node, npm and a
+# browser into it would turn it into an everything-image that every Rust job then has to
+# pull and every Chromium CVE then applies to.
+#
+#   Windows self-hosted runner
+#     ├── Rust workload  -> n8n-rust-runner:latest
+#     └── Node workload  -> n8n-node-ci:latest      (this file)
+#
+# Both are driven by the same helper, tools/ci/run-linux-container.ps1, selected with
+# -Image. One mechanism, two environments.
+#
+# The contents are derived from what the five remaining ubuntu-latest jobs actually
+# invoke, read out of the workflows rather than guessed:
+#
+#   n8n-lego.yml  architecture   node
+#   n8n-lego.yml  gate           bash node npm sha256sum tar
+#   n8n-lego.yml  clean-clone    curl git node npm setsid + puppeteer/Chromium
+#   typescript-runtime.yml  gate     bash node npm
+#   typescript-runtime.yml  contract git   (with fetch-depth: 0)
+#
+# Build:
+#   docker build -f tools/ci/Dockerfile.node-ci -t n8n-node-ci:latest .
+# Verify (do this before migrating any workflow):
+#   docker run --rm n8n-node-ci:latest bash /opt/ci/verify-node-ci-image.sh
+
+FROM node:22.18-bookworm-slim
+
+# System Chromium instead of the copy puppeteer downloads. Two reasons: the download
+# pulls a second browser into every image layer and every `npm ci`, and a distro
+# Chromium gets security updates from apt. tests/e2e/*.mjs already read CHROME_PATH
+# (`executablePath: process.env.CHROME_PATH || undefined`) and already pass
+# --no-sandbox, so nothing in the test harness has to change.
+ENV PUPPETEER_SKIP_DOWNLOAD=1 \
+    PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1 \
+    CHROME_PATH=/usr/bin/chromium \
+    DEBIAN_FRONTEND=noninteractive
+
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+      # clean-clone: git clone, curl health polling, setsid to detach the instance
+      ca-certificates curl git util-linux procps \
+      # gate: sha256sum (coreutils) and tar for the release tarball
+      coreutils tar xz-utils \
+      # bash is the shell every `run:` block declares
+      bash \
+      # the browser itself
+      chromium \
+      # Chromium's runtime libraries. Missing one of these is the classic
+      # "Failed to launch the browser process" that only shows up at runtime.
+      libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+      libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
+      libgbm1 libpango-1.0-0 libcairo2 libasound2 libatspi2.0-0 \
+      fonts-liberation; \
+    rm -rf /var/lib/apt/lists/*
+
+# The workspace bind-mount target used by run-linux-container.ps1.
+WORKDIR /workspace
+
+# git refuses to operate on a bind-mounted tree owned by a different uid, which is
+# exactly what a Windows host mount looks like. The contract job runs with
+# fetch-depth: 0 and reads history, so this is required, not cosmetic.
+RUN git config --system --add safe.directory /workspace \
+ && git config --system --add safe.directory '*'
+
+COPY tools/ci/verify-node-ci-image.sh /opt/ci/verify-node-ci-image.sh
+RUN chmod +x /opt/ci/verify-node-ci-image.sh
+
+CMD ["bash"]
