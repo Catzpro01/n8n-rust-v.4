@@ -632,6 +632,7 @@ jobs:
           $files = @()
           foreach ($dir in @('apps/n8n-lego/bin', 'apps/n8n-lego/src', 'apps/n8n-lego/scripts', 'apps/n8n-lego/test', 'tests/e2e')) {
             $files += Get-ChildItem -Path $dir -Recurse -Filter *.mjs -File | ForEach-Object { $_.FullName }
+          }
           foreach ($file in $files) { node --check $file; if ($LASTEXITCODE -ne 0) { throw "syntax error in $file" } }
           Write-Host "checked $($files.Count) module files"
 
@@ -682,7 +683,9 @@ jobs:
               $major = 0
               if ([int]::TryParse($node.Substring(1, $dot - 1), [ref]$major)) {
                 if ($major -ge 22) { $nodeOk = $true }
+              }
             }
+          }
           if (-not $nodeOk) {
             Write-Host "::notice::WSL has no usable Node >= 22 (got '$node') - the authoritative Linux runtime gate is the containerised clean-clone job on the self-hosted Windows fleet."
             exit 0
