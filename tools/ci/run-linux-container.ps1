@@ -37,8 +37,7 @@ $cargoHomeVolume = "n8n-rust-runner-cargo-home-$volumeSuffix"
 $scriptPath = Join-Path $env:RUNNER_TEMP ("arena-linux-command-" + [guid]::NewGuid().ToString("N") + ".sh")
 
 # Keep the command script Linux-native regardless of PowerShell line endings.
-$lfCommand = [regex]::Replace($Command, "
-?", ([char]10).ToString())
+$lfCommand = $Command.Replace(([char]13).ToString() + ([char]10).ToString(), ([char]10).ToString()).Replace(([char]13).ToString(), ([char]10).ToString())
 [System.IO.File]::WriteAllText(
   $scriptPath,
   $lfCommand + [char]10,

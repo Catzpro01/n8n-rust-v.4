@@ -265,7 +265,14 @@ jobs:
           npm --prefix "$APP_DIR" ci --no-audit --no-fund
 
           echo "=== Fetch the pinned node catalog (n8n-nodes-base + icons + roles) ==="
-          node "$APP_DIR/scripts/fetch-n8n-catalog.mjs" --dir "$CATALOG_DIR"
+          for catalog_attempt in 1 2 3; do
+            if node "$APP_DIR/scripts/fetch-n8n-catalog.mjs" --dir "$CATALOG_DIR"; then
+              break
+            fi
+            if [ "$catalog_attempt" -eq 3 ]; then exit 1; fi
+            echo "::notice::Retrying fetch-n8n-catalog after transient npm registry error"
+            sleep 1
+          done
           node "$APP_DIR/scripts/fetch-n8n-roles.mjs" --dir "$CATALOG_DIR"
           test -f "$APP_DIR/data/roles.json"
           node -e "const roles=require('./' + process.env.APP_DIR + '/data/roles.json'); console.log('bundled roles.json present:', Object.keys(roles).length, 'groups')"
