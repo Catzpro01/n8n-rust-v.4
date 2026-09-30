@@ -148,7 +148,19 @@ jobs:
           # `checkout-index` re-materialises tracked files from the existing index
           # without touching it, so nothing about which commit is checked out, or
           # which refs exist, changes here.
-          git -c core.autocrlf=false -c core.eol=lf checkout-index -a -f
+          # checkout-index -a -f was tried first and is the cheaper operation, but
+          # on the fleet it exited 0 and rewrote nothing: the files kept every CR.
+          # `reset --hard` re-reads the tree into the index AND the working tree,
+          # so it cannot skip a file the stat cache considers current. That is
+          # the operation the working tree actually needs here.
+          git config core.autocrlf false
+          git config core.eol lf
+          if ($LASTEXITCODE -ne 0) { throw "could not disable line-ending conversion (exit $LASTEXITCODE)" }
+
+          git rm -r --cached -q .
+          if ($LASTEXITCODE -ne 0) { throw "could not clear the index (exit $LASTEXITCODE)" }
+
+          git -c core.autocrlf=false -c core.eol=lf reset --hard -q HEAD
           if ($LASTEXITCODE -ne 0) { throw "could not re-materialise the working tree (exit $LASTEXITCODE)" }
 
           # Evidence, not trust. The generated projection, the register and the
@@ -160,10 +172,19 @@ jobs:
             '.ai/master/MILESTONE_REGISTER.md',
             '.ai/index.md',
             'README.md',
-            'ROADMAP.md',
+            'docs/n8n-lego/ROADMAP.md',
             'docs/n8n-lego/milestones.json',
             'tools/lego/ai-pack.mjs',
             'tools/lego/governance-register.mjs')) {
+            # A missing assertion target is itself the failure. The previous
+            # revision listed a root-level ROADMAP.md that does not exist --
+            # the file is docs/n8n-lego/ROADMAP.md -- and ReadAllBytes threw,
+            # which aborted the loop before three of the seven were ever checked.
+            if (-not (Test-Path -LiteralPath $f)) {
+              Write-Host "  ::error::$f is missing, so its line endings cannot be asserted"
+              $fail++
+              continue
+            }
             $bytes = [System.IO.File]::ReadAllBytes($f)
             $cr = 0
             for ($i = 0; $i -lt $bytes.Length; $i++) { if ($bytes[$i] -eq 13) { $cr++ } }
@@ -289,7 +310,19 @@ jobs:
           # `checkout-index` re-materialises tracked files from the existing index
           # without touching it, so nothing about which commit is checked out, or
           # which refs exist, changes here.
-          git -c core.autocrlf=false -c core.eol=lf checkout-index -a -f
+          # checkout-index -a -f was tried first and is the cheaper operation, but
+          # on the fleet it exited 0 and rewrote nothing: the files kept every CR.
+          # `reset --hard` re-reads the tree into the index AND the working tree,
+          # so it cannot skip a file the stat cache considers current. That is
+          # the operation the working tree actually needs here.
+          git config core.autocrlf false
+          git config core.eol lf
+          if ($LASTEXITCODE -ne 0) { throw "could not disable line-ending conversion (exit $LASTEXITCODE)" }
+
+          git rm -r --cached -q .
+          if ($LASTEXITCODE -ne 0) { throw "could not clear the index (exit $LASTEXITCODE)" }
+
+          git -c core.autocrlf=false -c core.eol=lf reset --hard -q HEAD
           if ($LASTEXITCODE -ne 0) { throw "could not re-materialise the working tree (exit $LASTEXITCODE)" }
 
           # Evidence, not trust. The generated projection, the register and the
@@ -301,10 +334,19 @@ jobs:
             '.ai/master/MILESTONE_REGISTER.md',
             '.ai/index.md',
             'README.md',
-            'ROADMAP.md',
+            'docs/n8n-lego/ROADMAP.md',
             'docs/n8n-lego/milestones.json',
             'tools/lego/ai-pack.mjs',
             'tools/lego/governance-register.mjs')) {
+            # A missing assertion target is itself the failure. The previous
+            # revision listed a root-level ROADMAP.md that does not exist --
+            # the file is docs/n8n-lego/ROADMAP.md -- and ReadAllBytes threw,
+            # which aborted the loop before three of the seven were ever checked.
+            if (-not (Test-Path -LiteralPath $f)) {
+              Write-Host "  ::error::$f is missing, so its line endings cannot be asserted"
+              $fail++
+              continue
+            }
             $bytes = [System.IO.File]::ReadAllBytes($f)
             $cr = 0
             for ($i = 0; $i -lt $bytes.Length; $i++) { if ($bytes[$i] -eq 13) { $cr++ } }
@@ -501,7 +543,19 @@ jobs:
           # `checkout-index` re-materialises tracked files from the existing index
           # without touching it, so nothing about which commit is checked out, or
           # which refs exist, changes here.
-          git -c core.autocrlf=false -c core.eol=lf checkout-index -a -f
+          # checkout-index -a -f was tried first and is the cheaper operation, but
+          # on the fleet it exited 0 and rewrote nothing: the files kept every CR.
+          # `reset --hard` re-reads the tree into the index AND the working tree,
+          # so it cannot skip a file the stat cache considers current. That is
+          # the operation the working tree actually needs here.
+          git config core.autocrlf false
+          git config core.eol lf
+          if ($LASTEXITCODE -ne 0) { throw "could not disable line-ending conversion (exit $LASTEXITCODE)" }
+
+          git rm -r --cached -q .
+          if ($LASTEXITCODE -ne 0) { throw "could not clear the index (exit $LASTEXITCODE)" }
+
+          git -c core.autocrlf=false -c core.eol=lf reset --hard -q HEAD
           if ($LASTEXITCODE -ne 0) { throw "could not re-materialise the working tree (exit $LASTEXITCODE)" }
 
           # Evidence, not trust. The generated projection, the register and the
@@ -513,10 +567,19 @@ jobs:
             '.ai/master/MILESTONE_REGISTER.md',
             '.ai/index.md',
             'README.md',
-            'ROADMAP.md',
+            'docs/n8n-lego/ROADMAP.md',
             'docs/n8n-lego/milestones.json',
             'tools/lego/ai-pack.mjs',
             'tools/lego/governance-register.mjs')) {
+            # A missing assertion target is itself the failure. The previous
+            # revision listed a root-level ROADMAP.md that does not exist --
+            # the file is docs/n8n-lego/ROADMAP.md -- and ReadAllBytes threw,
+            # which aborted the loop before three of the seven were ever checked.
+            if (-not (Test-Path -LiteralPath $f)) {
+              Write-Host "  ::error::$f is missing, so its line endings cannot be asserted"
+              $fail++
+              continue
+            }
             $bytes = [System.IO.File]::ReadAllBytes($f)
             $cr = 0
             for ($i = 0; $i -lt $bytes.Length; $i++) { if ($bytes[$i] -eq 13) { $cr++ } }

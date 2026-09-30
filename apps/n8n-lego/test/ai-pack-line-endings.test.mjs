@@ -152,7 +152,32 @@ test('the repository pins eol=lf, and CI still re-materialises without conversio
   const workflow = read('.github/workflows/n8n-lego.yml');
   assert.match(workflow, /core\.autocrlf=false/);
   assert.match(workflow, /core\.eol=lf/);
-  assert.match(workflow, /checkout-index -a -f/);
+  // `checkout-index -a -f` is the cheaper way to re-materialise a worktree, and
+  // it was the first attempt. On the fleet it exited 0 and rewrote nothing, so
+  // the step now uses `reset --hard`, which re-reads the tree into the index and
+  // the working tree together and cannot skip a file the stat cache considers
+  // current. Pinned here so the change is not silently reverted to the form that
+  // does not work.
+  assert.match(workflow, /reset --hard -q HEAD/);
   // Fail-closed, not hopeful: the job must assert the tree really is LF.
   assert.match(workflow, /projection file\(s\) arrived with CRLF/);
+});
+
+test('every file the workflow asserts line endings on actually exists', () => {
+  // The previous revision listed a root-level `ROADMAP.md`. The file is
+  // `docs/n8n-lego/ROADMAP.md`, so ReadAllBytes threw on the fourth entry and
+  // the loop aborted before the other three were ever checked -- the step failed
+  // for a typo while the condition it exists to detect went unreported. An
+  // assertion target that does not exist is silently a vacuous check.
+  const workflow = read('.github/workflows/n8n-lego.yml');
+  const block = workflow.match(/\$f in @\(([\s\S]*?)\)\) \{/);
+  assert.ok(block, 'the line-ending step must enumerate the files it checks');
+  const targets = [...block[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
+  assert.ok(targets.length >= 5, `expected the enumerated list, parsed ${targets.length} entries`);
+  for (const target of targets) {
+    assert.ok(
+      existsSync(join(REPO_ROOT, target)),
+      `the workflow asserts line endings on ${target}, which does not exist`,
+    );
+  }
 });
