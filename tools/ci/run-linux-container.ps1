@@ -31,7 +31,7 @@ if ($LASTEXITCODE -ne 0) {
 $resolved = (Resolve-Path -LiteralPath $Workspace).Path
 $scriptPath = Join-Path $env:RUNNER_TEMP ("arena-linux-command-" + [guid]::NewGuid().ToString("N") + ".sh")
 
-$lfCommand = $Command.Replace([char]13 + [char]10, [char]10).Replace([char]13, [char]10)
+$lfCommand = $Command.Replace("`r`n", "`n").Replace("`r", "`n")
 [System.IO.File]::WriteAllText(
   $scriptPath,
   $lfCommand + [char]10,
