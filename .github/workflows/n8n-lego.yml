@@ -469,13 +469,35 @@ jobs:
           # instead of letting Chrome die with an unrecognised shared object --
           # and never paper over it by moving the job to a hosted runner.
           assert_browser_runnable() {
-            local exe
-            exe="$(cd "$RUNNER_TEMP/clean-clone" && node -e 'process.stdout.write(require("puppeteer").executablePath())')"
-            if [ ! -x "$exe" ]; then
-              echo "::error::the CI image cannot launch the puppeteer browser: $exe is missing."
+            local exe reason
+            if ! exe="$(cd "$RUNNER_TEMP/clean-clone" && node -e 'process.stdout.write(require("puppeteer").executablePath())' 2>/tmp/runner-temp/pptr.err)"; then
+              reason="require('puppeteer').executablePath() threw"
+            elif [ -z "$exe" ]; then
+              reason="executablePath() returned an EMPTY path - puppeteer resolved no downloaded browser"
+            elif [ ! -f "$exe" ]; then
+              reason="resolved path does not exist on disk: $exe"
+            else
+              reason=""
+            fi
+
+            if [ -n "$reason" ]; then
+              echo "::error::the CI image cannot launch the puppeteer browser: ${reason}"
+              echo "-- puppeteer resolution error (if any) --"
+              cat /tmp/runner-temp/pptr.err 2>/dev/null || echo "(none)"
+              echo "-- what the image actually holds --"
+              ( cd "$RUNNER_TEMP/clean-clone" && node -e '
+                const p = require("puppeteer/package.json").version;
+                console.log("puppeteer version:", p);
+                console.log("cacheDirectory     :", process.env.PUPPETEER_CACHE_DIR || "(default)");
+                console.log("skipDownload       :", process.env.PUPPETEER_SKIP_DOWNLOAD || "(unset)");
+                console.log("executablePath     :", JSON.stringify(require("puppeteer").executablePath()));
+              ' ) 2>&1 || true
               echo "This is an IMAGE capability gap in n8n-node-ci:latest, not an application failure."
+              echo "The smoke test is deliberately NOT skipped and the job is deliberately NOT"
+              echo "moved to a hosted runner; fixing the image is the only correct resolution."
               return 1
             fi
+
             if ! ldd "$exe" > /dev/null 2>&1; then
               echo "::error::the CI image cannot launch the puppeteer browser: $exe has unresolved shared libraries."
               ldd "$exe" | grep 'not found' || true
