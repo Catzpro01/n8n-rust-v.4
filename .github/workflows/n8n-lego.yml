@@ -583,13 +583,21 @@ jobs:
               return 1
             fi
 
-            if ! ldd "$exe" > /dev/null 2>&1; then
-              echo "::error::the CI image cannot launch the puppeteer browser: $exe has unresolved shared libraries."
-              ldd "$exe" | grep 'not found' || true
+            # Launch probe, NOT `ldd`. On Debian, /usr/bin/chromium is a /bin/sh
+            # wrapper that execs /usr/lib/chromium/chromium, and `ldd` on that
+            # wrapper always prints "not a dynamic executable" and exits
+            # non-zero -- so an ldd gate reports a perfectly healthy Chromium as
+            # broken, while validating none of the libraries the wrapper's
+            # target actually needs. Executing `--version` goes through the
+            # wrapper, the dynamic linker and every real dependency, and fails
+            # loudly with the library name if one is genuinely missing.
+            if ! browser_version="$("$exe" --version 2>&1)"; then
+              echo "::error::the CI image cannot launch the puppeteer browser: $exe failed to start."
+              echo "$browser_version" | head -5
               echo "This is an IMAGE capability gap in n8n-node-ci:latest, not an application failure."
               return 1
             fi
-            echo "puppeteer browser ok: $exe"
+            echo "puppeteer browser ok: $exe -> $browser_version"
           }
 
           smoke_create() { cd "$RUNNER_TEMP/clean-clone" && node tests/e2e/lego-smoke.mjs "$LEGO_URL" --mode=create; }
