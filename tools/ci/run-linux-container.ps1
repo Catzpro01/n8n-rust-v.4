@@ -43,7 +43,7 @@ Write-Host "Workspace: $resolved"
 Write-Host "Command script: $scriptPath"
 
 try {
-  docker run --rm --mount "type=bind,source=$resolved,target=/workspace" --mount "type=bind,source=$scriptPath,target=/tmp/arena-command.sh,readonly" --workdir /workspace $Image bash /tmp/arena-command.sh
+  docker run --rm --mount "type=bind,source=$resolved,target=/workspace" --mount "type=volume,source=n8n-rust-runner-cargo-target,target=/workspace/target" --mount "type=bind,source=$scriptPath,target=/tmp/arena-command.sh,readonly" --workdir /workspace $Image bash /tmp/arena-command.sh
   if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
   }
