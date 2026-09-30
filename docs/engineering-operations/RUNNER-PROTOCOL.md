@@ -8,10 +8,7 @@
 > Scope boundary: this is ENGINEERING OPERATIONS (how the repository is built and verified),
 > not n8n LEGO product architecture. Nothing here is a product domain or capability.
 
-## 1. Runner inventory (fixed: 5 Windows + 5 WSL = 10)
-
-The architecture is ten self-hosted runners. Do not reduce the count or change the architecture
-without a Manager decision recorded in the canonical register.
+## 1. Runner inventory (aktif: 4 Windows + 5 WSL = 9)
 
 | # | Runner name | OS | Labels |
 | --- | --- | --- | --- |
@@ -19,17 +16,31 @@ without a Manager decision recorded in the canonical register.
 | W2 | `laptop-build-worker-2` | Windows | `self-hosted, Windows, X64, rust-build, n8n-rust` |
 | W3 | `laptop-build-worker-3` | Windows | `self-hosted, Windows, X64, rust-build, n8n-rust` |
 | W4 | `laptop-build-worker-4` | Windows | `self-hosted, Windows, X64, rust-build, n8n-rust` |
-| W5 | `laptop-build-worker-5` | Windows | `self-hosted, Windows, X64, rust-build, n8n-rust` |
 | L1 | `MDMTEST-n8n-wsl` | Linux (WSL) | `self-hosted, Linux, X64, rust-build, n8n-rust` |
 | L2 | `MDMTEST-n8n-wsl-2` | Linux (WSL) | `self-hosted, Linux, X64, rust-build, n8n-rust` |
 | L3 | `MDMTEST-n8n-wsl-3` | Linux (WSL) | `self-hosted, Linux, X64, rust-build, n8n-rust` |
 | L4 | `MDMTEST-n8n-wsl-4` | Linux (WSL) | `self-hosted, Linux, X64, rust-build, n8n-rust` |
 | L5 | `MDMTEST-n8n-wsl-5` | Linux (WSL) | `self-hosted, Linux, X64, rust-build, n8n-rust` |
 
-**Observed** (GitHub API `GET /repos/{owner}/{repo}/actions/runners`, governance reset #256):
-10 runners, all `online`, none `busy`, with exactly the labels above. GitHub-hosted
-`ubuntu-latest` jobs in `.github/workflows/n8n-lego.yml` and `typescript-runtime.yml` are not part of
-this inventory and are unaffected.
+**Removed:** `laptop-build-worker-5` dan `laptop-build-worker-10` dihapus (offline, tidak terdaftar ulang).
+Penghapusan dilakukan via `tools/ci/remove-offline-runners.ps1`.
+
+**Observed** (GitHub API `GET /repos/{owner}/{repo}/actions/runners`, 2026-09-30):
+9 runners aktif. GitHub-hosted `ubuntu-latest` jobs dalam `.github/workflows/n8n-lego.yml`
+dan `typescript-runtime.yml` tidak termasuk inventori ini.
+
+### 1.1 Runner lifecycle policy
+
+| Runner | Lifecycle |
+| --- | --- |
+| W1 `laptop-build-worker` | **Selalu on** — dikelola `tools/ci/runner-demand-controller.ps1` |
+| W2–W4 `laptop-build-worker-{2-4}` | On-demand — auto-shutdown setelah idle **60 detik** |
+| L1 `MDMTEST-n8n-wsl` | **Selalu on** — dikelola `tools/ci/wsl-runner-demand-controller.ps1` |
+| L2–L5 `MDMTEST-n8n-wsl-{2-5}` | On-demand — auto-shutdown setelah idle **60 detik** |
+
+Controllers berjalan sebagai proses latar belakang Windows. Runner L1 bertugas sebagai
+**watchdog**: ia selalu siap menerima job "warm-up" yang mem-wake runner lain jika diperlukan.
+
 
 ## 2. Runner selection
 
