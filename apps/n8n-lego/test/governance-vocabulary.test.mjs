@@ -333,14 +333,20 @@ test('the executionPointer still resolves and uses no ambiguous Pn for urgency',
 
 test('progress is byte-for-byte unchanged by the vocabulary separation - no inflation', () => {
   const m = headlineMetrics(REGISTER);
-  // Pinned at the pre-change values (main b7776f3a). A vocabulary PR that moves any of these is
-  // claiming delivery it did not make.
-  assert.equal(m.current.total, 193, 'current-delivery denominator');
+  // Pinned at the accounting baseline of the register as it stands on main. A vocabulary PR
+  // that moves any of these is claiming delivery it did not make.
+  // Refresh 2026-09-30 (governance: five FUTURE-* slices activated into P0-P11 as P2-M01 /
+  // P3-M01 / P4-M01 / P8-M01 / P11-M02, their origin rows `superseded`, PR #412): denominator
+  // 193 -> 198, slice completion 97.9 -> 95.5, realtime 97.9 -> 95.5, checkpoint points
+  // 19300 -> 19800. The numerator 189, earned 18900 and the global 190/199 = 95.5 are
+  // untouched. That movement is #412's activation - it is not delivery claimed by this
+  // vocabulary PR, and the census guard below still proves no row changed status here.
+  assert.equal(m.current.total, 198, 'current-delivery denominator');
   assert.equal(m.current.implemented, 189, 'current-delivery numerator');
-  assert.equal(m.current.percent, 97.9, 'current slice completion');
-  assert.equal(m.current.realtime, 97.9, 'current realtime delivery progress');
+  assert.equal(m.current.percent, 95.5, 'current slice completion');
+  assert.equal(m.current.realtime, 95.5, 'current realtime delivery progress');
   assert.equal(m.current.earned, 18900, 'checkpoint-weighted earned points');
-  assert.equal(m.current.points, 19300, 'checkpoint-weighted total points');
+  assert.equal(m.current.points, 19800, 'checkpoint-weighted total points');
   const g = accountingBreakdown(REGISTER).global;
   assert.equal(g.total, 199, 'global denominator');
   assert.equal(g.implemented, 190, 'global numerator');
@@ -353,12 +359,15 @@ test('no status, DEC id, merge SHA or queue entry was moved to make the vocabula
   const all = [...REGISTER.programs, ...REGISTER.futurePrograms].flatMap((e) => (e.slices ?? []));
   const counts = {};
   for (const s of all) counts[s.status] = (counts[s.status] ?? 0) + 1;
-  // RAW ROWS across programs + futurePrograms = 200: 191 implemented, 2 proposed, 7 planned.
+  // RAW ROWS across programs + futurePrograms = 205: 191 implemented, 2 proposed, 7 planned,
+  // 5 superseded (the FUTURE-* rows PR #412 activated into P0-P11 keep their history here).
   // The COUNTED figures are 199 / 190 because governance excludes the aggregate parent `P2.27`
-  // (its delivery is represented by its P2.27.x children). Both are pinned: the raw census proves
-  // no row changed status, the counted figures in the test above prove no progress moved.
-  assert.deepEqual(counts, { implemented: 191, proposed: 2, planned: 7 }, 'raw slice status census unchanged');
-  assert.equal(Object.values(counts).reduce((a, b) => a + b, 0), 200, 'raw row count unchanged');
+  // (its delivery is represented by its P2.27.x children) and superseded rows (they left the
+  // active denominator, which is why the five activated rows moved no percentage). Both are
+  // pinned: the raw census proves no row changed status, the counted figures in the test above
+  // prove no progress moved.
+  assert.deepEqual(counts, { implemented: 191, proposed: 2, planned: 7, superseded: 5 }, 'raw slice status census unchanged');
+  assert.equal(Object.values(counts).reduce((a, b) => a + b, 0), 205, 'raw row count unchanged');
   const ep = REGISTER.executionPointer;
   assert.deepEqual(ep.verifyingSlices, []);
   assert.deepEqual(ep.plannedQueue, []);
