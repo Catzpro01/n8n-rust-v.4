@@ -474,9 +474,23 @@ jobs:
           # IMAGE capability gap, not an application failure. Report it as such
           # instead of letting Chrome die with an unrecognised shared object --
           # and never paper over it by moving the job to a hosted runner.
+          # Resolve puppeteer from tests/e2e, which is where it is installed and where the
+          # smoke scripts live. tests/e2e is an independent package with its own lockfile,
+          # not an npm workspace, so `npm --prefix tests/e2e ci` populates
+          # tests/e2e/node_modules and nothing else. Node resolves a bare `require` by
+          # walking UP from the requiring file, so a probe run from the repository root
+          # looks in clean-clone/node_modules, then clean-clone/.., and never reaches
+          # tests/e2e/node_modules -- it reports "Cannot find module 'puppeteer'" for a
+          # browser that is installed and working. The probe must ask from the same
+          # directory the smoke scripts ask from, or it is testing the wrong thing.
+          puppeteer_probe() {
+            ( cd "$RUNNER_TEMP/clean-clone/tests/e2e" && node -e "$1" 2>>/tmp/runner-temp/pptr.err )
+          }
+
           assert_browser_runnable() {
             local exe reason
-            if ! exe="$(cd "$RUNNER_TEMP/clean-clone" && node -e 'process.stdout.write(require("puppeteer").executablePath())' 2>/tmp/runner-temp/pptr.err)"; then
+            : > /tmp/runner-temp/pptr.err
+            if ! exe="$(puppeteer_probe 'process.stdout.write(require("puppeteer").executablePath())')"; then
               reason="require('puppeteer').executablePath() threw"
             elif [ -z "$exe" ]; then
               reason="executablePath() returned an EMPTY path - puppeteer resolved no downloaded browser"
@@ -491,13 +505,14 @@ jobs:
               echo "-- puppeteer resolution error (if any) --"
               cat /tmp/runner-temp/pptr.err 2>/dev/null || echo "(none)"
               echo "-- what the image actually holds --"
-              ( cd "$RUNNER_TEMP/clean-clone" && node -e '
+              puppeteer_probe '
                 const p = require("puppeteer/package.json").version;
-                console.log("puppeteer version:", p);
+                console.log("puppeteer version  :", p);
+                console.log("resolved from      :", require.resolve("puppeteer"));
                 console.log("cacheDirectory     :", process.env.PUPPETEER_CACHE_DIR || "(default)");
                 console.log("skipDownload       :", process.env.PUPPETEER_SKIP_DOWNLOAD || "(unset)");
                 console.log("executablePath     :", JSON.stringify(require("puppeteer").executablePath()));
-              ' ) 2>&1 || true
+              ' 2>&1 || true
               echo "This is an IMAGE capability gap in n8n-node-ci:latest, not an application failure."
               echo "The smoke test is deliberately NOT skipped and the job is deliberately NOT"
               echo "moved to a hosted runner; fixing the image is the only correct resolution."
