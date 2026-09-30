@@ -322,7 +322,11 @@ test('the executionPointer still resolves and uses no ambiguous Pn for urgency',
   const ep = REGISTER.executionPointer;
   assert.equal(typeof ep.lastVerifiedMain, 'string');
   assert.match(ep.lastVerifiedMain, /^[0-9a-f]{40}$/, 'lastVerifiedMain is a full 40-hex SHA');
-  assert.deepEqual(ep.activeSlices, [], 'no active slices at the time of this vocabulary change');
+  // Refresh 2026-09-30 (P3-M01 activation, owner issue #229 comment 5910726264): the queue was
+  // EMPTY until the owner authorized P3-M01; the Manager moved it to in-progress in a PR on
+  // main, which is what activeSlices records (DEC-0020). No other slice is active, and the
+  // guard below still proves the pointer carries no Pn-shaped urgency label.
+  assert.deepEqual(ep.activeSlices, ['P3-M01'], 'the only active slice is the owner-authorized P3-M01');
   assert.equal(ep.latestCompletedSlice.id, 'P2-S03');
   // No field of the pointer may carry a bare Pn as an urgency label.
   const json = JSON.stringify(ep);
@@ -341,16 +345,23 @@ test('progress is byte-for-byte unchanged by the vocabulary separation - no infl
   // 19300 -> 19800. The numerator 189, earned 18900 and the global 190/199 = 95.5 are
   // untouched. That movement is #412's activation - it is not delivery claimed by this
   // vocabulary PR, and the census guard below still proves no row changed status here.
-  assert.equal(m.current.total, 198, 'current-delivery denominator');
+  // Refresh 2026-09-30 (P3-M01 activation, owner issue #229 comment 5910726264): the legacy
+  // P13 scope is decomposed into P3-M01..P3-M04, so three new `planned` maintenance rows
+  // exist. Denominator 198 -> 201, global 199 -> 202, checkpoint points 19800 -> 20100, and
+  // therefore completion 95.5 -> 94.0 and global 95.5 -> 94.1. The percentages FALL because
+  // planned rows are added to the denominator and no row was delivered by this PR: the
+  // numerator 189, the global numerator 190 and the earned 18900 are all unchanged. Evidence:
+  // docs/n8n-lego/milestones.json (P3-M01 in-progress, P3-M02..P3-M04 planned).
+  assert.equal(m.current.total, 201, 'current-delivery denominator');
   assert.equal(m.current.implemented, 189, 'current-delivery numerator');
-  assert.equal(m.current.percent, 95.5, 'current slice completion');
-  assert.equal(m.current.realtime, 95.5, 'current realtime delivery progress');
+  assert.equal(m.current.percent, 94, 'current slice completion');
+  assert.equal(m.current.realtime, 94, 'current realtime delivery progress');
   assert.equal(m.current.earned, 18900, 'checkpoint-weighted earned points');
-  assert.equal(m.current.points, 19800, 'checkpoint-weighted total points');
+  assert.equal(m.current.points, 20100, 'checkpoint-weighted total points');
   const g = accountingBreakdown(REGISTER).global;
-  assert.equal(g.total, 199, 'global denominator');
+  assert.equal(g.total, 202, 'global denominator');
   assert.equal(g.implemented, 190, 'global numerator');
-  assert.equal(g.percent, 95.5, 'global completion');
+  assert.equal(g.percent, 94.1, 'global completion');
   assert.match(TERMINOLOGY.notDelivery, /Vocabulary cleanup is not delivery/);
   assert.match(TERMINOLOGY.notDelivery, /contributes 0 to Realtime Delivery Progress/);
 });
@@ -359,15 +370,19 @@ test('no status, DEC id, merge SHA or queue entry was moved to make the vocabula
   const all = [...REGISTER.programs, ...REGISTER.futurePrograms].flatMap((e) => (e.slices ?? []));
   const counts = {};
   for (const s of all) counts[s.status] = (counts[s.status] ?? 0) + 1;
-  // RAW ROWS across programs + futurePrograms = 205: 191 implemented, 2 proposed, 7 planned,
-  // 5 superseded (the FUTURE-* rows PR #412 activated into P0-P11 keep their history here).
-  // The COUNTED figures are 199 / 190 because governance excludes the aggregate parent `P2.27`
+  // RAW ROWS across programs + futurePrograms = 208: 191 implemented, 2 proposed, 9 planned,
+  // 1 in-progress, 5 superseded (the FUTURE-* rows PR #412 activated into P0-P11 keep their
+  // history here). Refresh 2026-09-30 (P3-M01 activation, owner #229 comment 5910726264):
+  // 205 -> 208 rows. Three are the new P3-M02/M03/M04 maintenance slices (planned), and
+  // P3-M01 itself moved planned -> in-progress, which is the authorized start of work, not a
+  // completion: implemented stays 191 and no row was moved INTO implemented here.
+  // The COUNTED figures are 202 / 190 because governance excludes the aggregate parent `P2.27`
   // (its delivery is represented by its P2.27.x children) and superseded rows (they left the
   // active denominator, which is why the five activated rows moved no percentage). Both are
   // pinned: the raw census proves no row changed status, the counted figures in the test above
   // prove no progress moved.
-  assert.deepEqual(counts, { implemented: 191, proposed: 2, planned: 7, superseded: 5 }, 'raw slice status census unchanged');
-  assert.equal(Object.values(counts).reduce((a, b) => a + b, 0), 205, 'raw row count unchanged');
+  assert.deepEqual(counts, { implemented: 191, proposed: 2, planned: 9, 'in-progress': 1, superseded: 5 }, 'raw slice status census');
+  assert.equal(Object.values(counts).reduce((a, b) => a + b, 0), 208, 'raw row count');
   const ep = REGISTER.executionPointer;
   assert.deepEqual(ep.verifyingSlices, []);
   assert.deepEqual(ep.plannedQueue, []);
@@ -388,14 +403,23 @@ test('no status, DEC id, merge SHA or queue entry was moved to make the vocabula
   assert.equal(typeof ep.latestCompletedSlice.id, 'string');
   assert.equal(typeof ep.latestCompletedSlice.pr, 'number');
   // the pointer keeps exactly its declared shape: a vocabulary change adds no key and drops none
+  // Refresh 2026-09-30 (P3-M01 activation, owner issue #229 comment 5910726264): two keys were
+  // added, and both are the register recording what its own rules already require.
+  //   authorizedQueue     - the owner authorized P3-M01, and `notAuthorized` now names it;
+  //                         the queue was previously inferable only from an EMPTY `plannedQueue`
+  //   lastVerifiedMainNote - executionPointer.authority requires an EXPLICIT RECORDED REASON when
+  //                         lastVerifiedMain lags current main. It does lag (the GitHub-hosted
+  //                         runner quota is exhausted, so no newer main passed post-merge
+  //                         verification), so the reason is now recorded rather than assumed.
+  // No key was dropped and no existing key changed meaning.
   assert.deepEqual(
     Object.keys(ep).sort(),
     [
-      'activeSlices', 'authority', 'blockedSlices', 'historicalLastP2Milestone',
-      'latestCompletedSlice', 'lastVerifiedMain', 'notAuthorized', 'plannedQueue',
-      'updateRule', 'verifyingSlices',
+      'activeSlices', 'authority', 'authorizedQueue', 'blockedSlices', 'historicalLastP2Milestone',
+      'latestCompletedSlice', 'lastVerifiedMain', 'lastVerifiedMainNote', 'notAuthorized',
+      'plannedQueue', 'updateRule', 'verifyingSlices',
     ].sort(),
-    'executionPointer key set unchanged by the vocabulary work',
+    'executionPointer key set',
   );
   // and the pointer still says what it said: main-owned authority, planned != authorized
   assert.match(ep.authority, /main \(DEC-0020\)/, 'authority still names main as the owner');

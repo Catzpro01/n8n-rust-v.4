@@ -11,12 +11,28 @@
     "authority": "main (DEC-0020). This block, read together with the slice statuses it names, is the only active-work pointer. lastVerifiedMain is the newest main SHA that passed post-merge verification; it is bumped at each governance reconciliation and must never lag current main without an explicit recorded reason. arena-manager is Manager memory and handoff, never a milestone source; README.md and .ai/ are generated projections of this file.",
     "historicalLastP2Milestone": "P2.27",
     "lastVerifiedMain": "59b8d2ea74347b2db6f4c95e83bfdf5a43285219",
+    "lastVerifiedMainNote": [
+      {
+        "sha": "59b8d2ea74347b2db6f4c95e83bfdf5a43285219",
+        "state": "STALE BY DESIGN",
+        "reason": "main has advanced past this SHA, but no newer main passed post-merge verification: the GitHub-hosted runner quota is exhausted (Priority-02 CI blocker), so there is no CI evidence to reconcile against. lastVerifiedMain is bumped only when real evidence exists, never because HEAD moved."
+      }
+    ],
     "latestCompletedSlice": {"id": "P2-S03", "pr": 392, "mergeSha": "972b5afe3c5aa14bf907568a74156f491517a4a0"},
-"activeSlices": [],
+"activeSlices": ["P3-M01"],
+    "authorizedQueue": [
+      {
+        "state": "AUTHORIZED",
+        "slices": ["P3-M01"],
+        "by": "owner instruction, issue #229 comment 5910726264 (2026-09-30T11:55:41Z)",
+        "priority": "Priority-04 Authorized Delivery",
+        "note": "P3-M01 only. P3-M02, P3-M03 and P3-M04 are planned and NOT authorized. P11-M02 and the rest of the planned queue are NOT authorized; they are re-evaluated only after P3-M01 completes. The queue was EMPTY before this authorization - it is non-empty now because the owner made it so, not because the register inferred it."
+      }
+    ],
     "verifyingSlices": [],
 "plannedQueue": [],
     "blockedSlices": [],
-    "notAuthorized": "planned is not authorized by itself: the Manager starts a queued slice by moving it to in-progress in a PR on main. AUTHORIZED QUEUE: EMPTY - every slice of the owner master prompt marathon BLOCKER-ZERO authorization has been delivered. That authorization named P8-S01, P5-M06, P5-M05, P5-M10, P5-M11..P5-M18 and P2-S10..P2-S29; all 32 now carry status implemented, so the list authorizes no remaining work and is retained here only as the record of what it covered. No delivery slice is authorized at present: a new authorization is an owner act, and planned or proposed status never substitutes for one. COMPLETED: P6-S05 (PR #355, merge d549d40d) and P5-M02 (same chain). DECIDED (DEC-0029): the P2-S03 Layer 6 legacy UI decommission executes NO removal - reference/n8n and n8n-editor-ui preserved per #240 permanent invariants 1-2, umbrella formally re-scoped; P6-S03, P6-S04 (proposed, no owner authorization for their scope); P10-S01 and P11-S01 (placeholders).",
+    "notAuthorized": "AUTHORIZED QUEUE: P3-M01 ONLY, by owner instruction in issue #229 comment 5910726264 (2026-09-30T11:55:41Z), Priority-04 Authorized Delivery. Nothing else is authorized. P3-M02, P3-M03 and P3-M04 are the remaining decomposed P13 deliveries and stay planned until the owner authorizes them; P11-M02 and the rest of the planned queue are likewise unauthorized. The governing rule is unchanged and still exact: planned is not authorized by itself. The Manager starts a queued slice by moving it to in-progress in a PR on main, which is what this PR does for P3-M01. RETAINED RECORD: the earlier authorization that named P8-S01, P5-M06, P5-M05, P5-M10, P5-M11..P5-M18 and P2-S10..P2-S29 is spent - all 32 carry status implemented, so it authorizes no remaining work. COMPLETED: P6-S05 (PR #355, merge d549d40d) and P5-M02 (same chain). DECIDED (DEC-0029): the P2-S03 Layer 6 legacy UI decommission executes NO removal - reference/n8n and n8n-editor-ui preserved per #240 permanent invariants 1-2, umbrella formally re-scoped; P6-S03, P6-S04 (proposed, no owner authorization for their scope); P10-S01 and P11-S01 (placeholders).",
     "updateRule": "Two paths, never mixed (DEC-0020 + DEC-0021). DELIVERY STATE — implementation, then delivery PR, then merge, then post-merge verification, then ONE governance PR reconciles the canonical state: a slice status becoming implemented, its merge SHA, its completion evidence, the executionPointer and the projections. PROGRESS TELEMETRY — evidence, then a checkpoint update, then this register, then README, then .ai, then a governance(progress): commit, then main: the Manager may commit that straight to main with no governance PR. Governance PRs are not delivery PRs (DEC-0014 keeps one delivery PR per slice), and telemetry never carries delivery state."
   },
   "governance": {
@@ -4475,15 +4491,103 @@
         },
         {
           "id": "P3-M01",
-          "title": "Side-effect reliability: effect ledger, outbox/inbox, idempotency before retry (activated from FUTURE-RELIABILITY-S02; legacy P13)",
+          "title": "Side-effect reliability, delivery 1 of 4: effect ledger + idempotency before retry",
+          "kind": "maintenance",
+          "status": "in-progress",
+          "checkpoints": [
+            {
+              "id": "CP-01",
+              "title": "Effect ledger core: durable pending record written BEFORE the side effect runs",
+              "purpose": "The ledger is a decision model, never an executor. It records the effect intent (caller-authored idempotencyKey + explicit kind) and returns a decision. The pending record is persisted before the caller runs anything, so a crash always leaves an explicit UNKNOWN trace instead of a silent success. Closed state vocabulary pending|applied|failed|abandoned and a closed error set; pure CAS transitions on an injected storage facade with an injected clock and idFactory.",
+              "weight": 25,
+              "status": "planned",
+              "evidence": "",
+              "reference": "issue #229 (P13 side-effect reliability); P5-M17 execution-retry-model is the house precedent for a decision model that never runs anything"
+            },
+            {
+              "id": "CP-02",
+              "title": "IDEMPOTENCY BEFORE AUTOMATIC RETRY: the decision vocabulary forbids a duplicate run",
+              "purpose": "beginEffect returns execute|skip|in-flight|retry|abandoned and the caller must branch on it. An effect already applied is never re-run; a pending effect is reported in-flight (unknown), never as a licence to re-run. Only a failed effect is retriable and the attempt counter increments so the retry history stays visible. This is the #229 invariant 'idempotency before automatic retry' expressed as a decision the caller cannot ignore by accident.",
+              "weight": 25,
+              "status": "planned",
+              "evidence": "",
+              "reference": "issue #229 invariant: idempotency before automatic retry; no fake exactly-once"
+            },
+            {
+              "id": "CP-03",
+              "title": "Explicit side-effect semantics: caller-authored key, declared kind, refusal on mismatch",
+              "purpose": "There is no derived or implicit idempotency key. The key is the caller's own statement of which logical operation this is, validated against a closed charset because it becomes part of a storage key. The kind is a closed vocabulary. Reusing one key with a different kind is refused rather than silently reinterpreted, so two different intents can never collapse into one record.",
+              "weight": 20,
+              "status": "planned",
+              "evidence": "",
+              "reference": "issue #229 invariant: side effects require explicit semantics"
+            },
+            {
+              "id": "CP-04",
+              "title": "BOUNDED STATE is fail-closed, never a silent eviction",
+              "purpose": "The ledger refuses a new effect with EFFECT_LEDGER_FULL once maxEffects is reached instead of evicting. Silent eviction would destroy exactly the evidence the ledger exists to keep: an evicted applied record would let a retry re-run a completed side effect. Growth is therefore an explicit, visible condition an operator must resolve, never a background event. The refusal is proven to leave every existing record intact.",
+              "weight": 15,
+              "status": "planned",
+              "evidence": "",
+              "reference": "issue #229 invariant: bounded state"
+            },
+            {
+              "id": "CP-05",
+              "title": "Durable recovery surface and CAS discipline",
+              "purpose": "listPending is the recovery surface: a host that comes back after a crash sees the effects whose outcome is unknown and resolves them explicitly. Every mutation requires a version token, so a stale writer loses instead of resurrecting a completed effect. Tested across two hosts sharing one provider, which is the cross-host case the invariants care about.",
+              "weight": 15,
+              "status": "planned",
+              "evidence": "",
+              "reference": "issue #229 invariant: durable recovery"
+            }
+          ],
+          "updatedAt": "2026-09-30T12:09:59Z",
+          "mergeSha": null,
+          "issue": 229,
+          "evidence": null,
+          "owner": "manager (M01)",
+          "sourceFutureProgram": "FUTURE-RELIABILITY",
+          "sourceFutureSlice": "FUTURE-RELIABILITY-S02",
+          "authorizedBy": "owner instruction, issue #229 comment 5910726264, 2026-09-30T11:55:41Z"
+        },
+        {
+          "id": "P3-M02",
+          "title": "Transactional outbox/inbox + saga/compensation (delivery 2 of 4)",
           "kind": "maintenance",
           "status": "planned",
           "mergeSha": null,
           "issue": 229,
           "evidence": null,
           "owner": "manager (unassigned)",
-          "sourceFutureProgram": "FUTURE-RELIABILITY",
-          "sourceFutureSlice": "FUTURE-RELIABILITY-S02"
+          "activatedFrom": "P3-M01 decomposition; P3-F-REL-001, P3-F-REL-003",
+          "legacyMilestone": "P13 transactional outbox/inbox; saga/compensation",
+          "rationale": "A committed state and its published intent must not be able to diverge, so the intent is written durably first and published from there. Depends on the P3-M01 effect ledger for the idempotency evidence it needs."
+        },
+        {
+          "id": "P3-M03",
+          "title": "Per-key concurrency semantics + entity-sharded stateful execution (delivery 3 of 4)",
+          "kind": "maintenance",
+          "status": "planned",
+          "mergeSha": null,
+          "issue": 229,
+          "evidence": null,
+          "owner": "manager (unassigned)",
+          "activatedFrom": "P3-M01 decomposition; P3-F-REL-004, P3-F-REL-005",
+          "legacyMilestone": "P13 per-key concurrency; entity-sharded state",
+          "rationale": "Two workers must not interleave on one entity, so ordering and sharding become explicit per key. Depends on P3-M01 (durable recovery) and P3-M02 (durable intent)."
+        },
+        {
+          "id": "P3-M04",
+          "title": "Circuit-breaker-aware global retry budget (delivery 4 of 4)",
+          "kind": "maintenance",
+          "status": "planned",
+          "mergeSha": null,
+          "issue": 229,
+          "evidence": null,
+          "owner": "manager (unassigned)",
+          "activatedFrom": "P3-M01 decomposition; P3-F-REL-008",
+          "legacyMilestone": "P13 circuit-breaker-aware retry budget",
+          "rationale": "A global retry budget that respects an open circuit breaker, so a failing dependency cannot be retried into a storm. Depends on P3-M01 (idempotency before retry)."
         }
       ]
     },
@@ -12398,14 +12502,15 @@
       "note": "legacy P12 (#228)"
     },
     {
-      "id": "FUTURE-RELIABILITY-F-P13-001",
+      "id": "P3-F-REL-001",
       "title": "Transactional outbox / inbox",
       "type": "feature",
       "sourceIssue": [
         229
       ],
-      "parent": "FUTURE-RELIABILITY",
-      "slice": "FUTURE-RELIABILITY-S02",
+      "parent": "P3",
+      "rehomedFrom": "FUTURE-RELIABILITY-S02 (P3-M01 activation, owner #229 comment 5910726264)",
+      "slice": "P3-M02",
       "owner": "manager (unassigned)",
       "status": "planned",
       "relevance": "active",
@@ -12419,14 +12524,15 @@
       "note": "legacy P13 (#229)"
     },
     {
-      "id": "FUTURE-RELIABILITY-F-P13-002",
+      "id": "P3-F-REL-002",
       "title": "Effect ledger",
       "type": "feature",
       "sourceIssue": [
         229
       ],
-      "parent": "FUTURE-RELIABILITY",
-      "slice": "FUTURE-RELIABILITY-S02",
+      "parent": "P3",
+      "rehomedFrom": "FUTURE-RELIABILITY-S02 (P3-M01 activation, owner #229 comment 5910726264)",
+      "slice": "P3-M01",
       "owner": "manager (unassigned)",
       "status": "planned",
       "relevance": "active",
@@ -12440,14 +12546,15 @@
       "note": "legacy P13 (#229)"
     },
     {
-      "id": "FUTURE-RELIABILITY-F-P13-003",
+      "id": "P3-F-REL-003",
       "title": "Saga / compensation",
       "type": "feature",
       "sourceIssue": [
         229
       ],
-      "parent": "FUTURE-RELIABILITY",
-      "slice": "FUTURE-RELIABILITY-S02",
+      "parent": "P3",
+      "rehomedFrom": "FUTURE-RELIABILITY-S02 (P3-M01 activation, owner #229 comment 5910726264)",
+      "slice": "P3-M02",
       "owner": "manager (unassigned)",
       "status": "planned",
       "relevance": "active",
@@ -12461,14 +12568,15 @@
       "note": "legacy P13 (#229)"
     },
     {
-      "id": "FUTURE-RELIABILITY-F-P13-004",
+      "id": "P3-F-REL-004",
       "title": "Per-key concurrency semantics",
       "type": "feature",
       "sourceIssue": [
         229
       ],
-      "parent": "FUTURE-RELIABILITY",
-      "slice": "FUTURE-RELIABILITY-S02",
+      "parent": "P3",
+      "rehomedFrom": "FUTURE-RELIABILITY-S02 (P3-M01 activation, owner #229 comment 5910726264)",
+      "slice": "P3-M03",
       "owner": "manager (unassigned)",
       "status": "planned",
       "relevance": "active",
@@ -12482,14 +12590,15 @@
       "note": "legacy P13 (#229)"
     },
     {
-      "id": "FUTURE-RELIABILITY-F-P13-005",
+      "id": "P3-F-REL-005",
       "title": "Entity-sharded stateful execution",
       "type": "feature",
       "sourceIssue": [
         229
       ],
-      "parent": "FUTURE-RELIABILITY",
-      "slice": "FUTURE-RELIABILITY-S02",
+      "parent": "P3",
+      "rehomedFrom": "FUTURE-RELIABILITY-S02 (P3-M01 activation, owner #229 comment 5910726264)",
+      "slice": "P3-M03",
       "owner": "manager (unassigned)",
       "status": "planned",
       "relevance": "active",
@@ -12503,15 +12612,16 @@
       "note": "legacy P13 (#229)"
     },
     {
-      "id": "FUTURE-RELIABILITY-F-P13-006",
+      "id": "P3-F-REL-006",
       "title": "Idempotency engine before automatic retry",
       "type": "feature",
       "sourceIssue": [
         229,
         224
       ],
-      "parent": "FUTURE-RELIABILITY",
-      "slice": "FUTURE-RELIABILITY-S02",
+      "parent": "P3",
+      "rehomedFrom": "FUTURE-RELIABILITY-S02 (P3-M01 activation, owner #229 comment 5910726264)",
+      "slice": "P3-M01",
       "owner": "manager (unassigned)",
       "status": "planned",
       "relevance": "active",
@@ -12527,15 +12637,16 @@
       "note": "legacy P13 (#229)"
     },
     {
-      "id": "FUTURE-RELIABILITY-F-P13-007",
+      "id": "P3-F-REL-007",
       "title": "Durable execution that never repeats a completed side effect",
       "type": "feature",
       "sourceIssue": [
         229,
         224
       ],
-      "parent": "FUTURE-RELIABILITY",
-      "slice": "FUTURE-RELIABILITY-S02",
+      "parent": "P3",
+      "rehomedFrom": "FUTURE-RELIABILITY-S02 (P3-M01 activation, owner #229 comment 5910726264)",
+      "slice": "P3-M01",
       "owner": "manager (unassigned)",
       "status": "planned",
       "relevance": "active",
@@ -12551,15 +12662,16 @@
       "note": "legacy P13 (#229)"
     },
     {
-      "id": "FUTURE-RELIABILITY-F-P13-008",
+      "id": "P3-F-REL-008",
       "title": "Circuit-breaker-aware global retry budget",
       "type": "feature",
       "sourceIssue": [
         229,
         225
       ],
-      "parent": "FUTURE-RELIABILITY",
-      "slice": "FUTURE-RELIABILITY-S02",
+      "parent": "P3",
+      "rehomedFrom": "FUTURE-RELIABILITY-S02 (P3-M01 activation, owner #229 comment 5910726264)",
+      "slice": "P3-M04",
       "owner": "manager (unassigned)",
       "status": "planned",
       "relevance": "active",

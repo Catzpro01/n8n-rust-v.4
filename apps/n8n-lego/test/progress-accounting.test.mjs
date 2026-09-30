@@ -212,7 +212,11 @@ test('G the plannedQueue is an execution queue, not the program inventory', () =
   // Refresh 2026-09-29 (START P2-S26): queue popped 4 -> 3 (q0 P2-S27);
   // Refresh 2026-09-29 (START P2-S29): queue popped 1 -> 0 (queue now empty; P2 tail complete);
   assert.equal(queue.length, 0, 'the queue holds the executable P2 tail only');
-  assert.equal(BREAKDOWN.global.total, 199, 'the denominator is the inventory, not the queue');
+  // Refresh 2026-09-30 (P3-M01 activation, owner issue #229 comment 5910726264): the legacy P13
+  // scope is decomposed into P3-M01..P3-M04, so three new planned maintenance rows joined the
+  // inventory: 199 -> 202. The queue itself is still empty, which is the point of this test -
+  // the denominator is the inventory, and the owner did not authorize P3-M02..P3-M04.
+  assert.equal(BREAKDOWN.global.total, 202, 'the denominator is the inventory, not the queue');
   for (const id of queue) {
     const slice = BY_ID.get(id);
     assert.equal(slice.status, 'planned', `${id} is queued and planned`);
@@ -364,16 +368,22 @@ test('I progress figures are pinned to the reconciled accounting (refresh with e
   // rows joined the programs while five superseded rows left the future bucket; P2
   // 59/59 -> 59/60 (P2-M01 is a counted planned leaf); current 189/193 = 97.9 ->
   // 189/198 = 95.5; future 1/6 -> 1/1. Evidence: docs/n8n-lego/milestones.json.
+  // Refresh 2026-09-30 (P3-M01 activation, owner issue #229 comment 5910726264): three new
+  // planned rows (P3-M02/M03/M04) raise the global denominator 199 -> 202 and the current
+  // denominator 198 -> 201, so global 190/202 = 94.1 and current 189/201 = 94.0. The completion
+  // figures FALL because planned work was added and nothing was delivered by this PR: the
+  // numerators 190 and 189 are unchanged. Evidence: docs/n8n-lego/milestones.json
+  // (P3-M01 in-progress with a 5-checkpoint model; P3-M02..P3-M04 planned, unauthorized).
   assert.equal(BREAKDOWN.global.implemented, 190);
-  assert.equal(BREAKDOWN.global.total, 199);
-  assert.equal(BREAKDOWN.global.percent, 95.5);
+  assert.equal(BREAKDOWN.global.total, 202);
+  assert.equal(BREAKDOWN.global.percent, 94.1);
   const p2 = BREAKDOWN.programs.find((program) => program.id === 'P2');
   assert.equal(p2.implemented, 59);
   assert.equal(p2.counted, 60);
   assert.deepEqual(p2.excluded.map((entry) => entry.id), ['P2.27']);
   const metrics = headlineMetrics(REGISTER);
   assert.equal(metrics.current.implemented, 189);
-  assert.equal(metrics.current.total, 198);
+  assert.equal(metrics.current.total, 201);
   assert.equal(metrics.future.implemented, 1);
   assert.equal(metrics.future.total, 1);
 });
