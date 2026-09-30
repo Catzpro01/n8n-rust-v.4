@@ -44,9 +44,16 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { generate, check, normalizeEol, detectEol, applyEol } from '../../../tools/lego/ai-pack.mjs';
+import { syncSliceText } from '../../../tools/lego/progress-event.mjs';
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const read = (relative) => readFileSync(join(REPO_ROOT, relative), 'utf8');
+
+const canonical = normalizeEol;
+
+/** The first slice the register declares, used to exercise the surgical writer. */
+const firstSlice = (registerText) => JSON.parse(registerText).programs[0].slices[0];
+const firstSliceId = (registerText) => firstSlice(registerText).id;
 
 test('normalizeEol treats CRLF and a bare CR as one line break', () => {
   assert.equal(normalizeEol('a\r\nb\r\n'), 'a\nb\n');
@@ -140,44 +147,60 @@ test('check() names the line and both sides, so a stale file is actionable', () 
   assert.equal(sides[2][1], 'X', 'the generated side must show what was expected instead');
 });
 
-test('the repository pins eol=lf, and CI still re-materialises without conversion', () => {
-  // Two independent safeguards, because the second only works if the first was
-  // already loaded when the working tree was wiped. If either is removed, the
-  // 101-file failure returns on the Windows runners and nowhere else — which is
-  // exactly how it stayed invisible.
+test('the repository pins eol=lf, and no CI step depends on the checkout style', () => {
+  // `.gitattributes` is hygiene, not the fix: it makes ordinary checkouts and
+  // diffs sane on Windows. It cannot be the fix, because `actions/checkout` runs
+  // with `clean: true` and its cleaning step deletes the working tree -- this
+  // file included -- before the checkout that would have honoured it.
   const attributes = join(REPO_ROOT, '.gitattributes');
   assert.ok(existsSync(attributes), '.gitattributes must exist');
   assert.match(read('.gitattributes'), /^\*\s+text=auto\s+eol=lf$/m);
 
+  // A re-materialisation step was tried and removed, and the reason it could go
+  // is the whole point of this file: the comparison code is now canonical, so no
+  // job may reintroduce a dependency on how the runner materialised the tree.
+  // The `reset --hard` version rewrote all 16732 tracked files -- 15050 of them
+  // the vendored reference/ tree, which `.gitattributes` marks `-text` and which
+  // was never affected -- and pushed the architecture job past its 15-minute
+  // timeout. Pinned here so it is not quietly added back as a "safety net".
   const workflow = read('.github/workflows/n8n-lego.yml');
-  assert.match(workflow, /core\.autocrlf=false/);
-  assert.match(workflow, /core\.eol=lf/);
-  // `checkout-index -a -f` is the cheaper way to re-materialise a worktree, and
-  // it was the first attempt. On the fleet it exited 0 and rewrote nothing, so
-  // the step now uses `reset --hard`, which re-reads the tree into the index and
-  // the working tree together and cannot skip a file the stat cache considers
-  // current. Pinned here so the change is not silently reverted to the form that
-  // does not work.
-  assert.match(workflow, /reset --hard -q HEAD/);
-  // Fail-closed, not hopeful: the job must assert the tree really is LF.
-  assert.match(workflow, /projection file\(s\) arrived with CRLF/);
+  assert.doesNotMatch(workflow, /checkout-index -a -f/);
+  assert.doesNotMatch(workflow, /core\.autocrlf/);
+  assert.doesNotMatch(workflow, /reset --hard/);
 });
 
-test('every file the workflow asserts line endings on actually exists', () => {
-  // The previous revision listed a root-level `ROADMAP.md`. The file is
-  // `docs/n8n-lego/ROADMAP.md`, so ReadAllBytes threw on the fourth entry and
-  // the loop aborted before the other three were ever checked -- the step failed
-  // for a typo while the condition it exists to detect went unreported. An
-  // assertion target that does not exist is silently a vacuous check.
-  const workflow = read('.github/workflows/n8n-lego.yml');
-  const block = workflow.match(/\$f in @\(([\s\S]*?)\)\) \{/);
-  assert.ok(block, 'the line-ending step must enumerate the files it checks');
-  const targets = [...block[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
-  assert.ok(targets.length >= 5, `expected the enumerated list, parsed ${targets.length} entries`);
-  for (const target of targets) {
-    assert.ok(
-      existsSync(join(REPO_ROOT, target)),
-      `the workflow asserts line endings on ${target}, which does not exist`,
-    );
+test('the governance comparisons are canonical too, not just the generator', () => {
+  // The generator was only half the fix. These three functions read the working
+  // tree and compare it against rendered text, and every match in them is exact
+  // -- a README marker, a 10-space `"status":` key, a slice `"id":` line. On a
+  // CRLF tree each of those carries a trailing CR, so all of them miss, which is
+  // what made the architecture job report 101 stale files and the test job fail 7
+  // governance assertions on 2026-09-30.
+  const source = [
+    read('tools/lego/governance-register.mjs'),
+    read('tools/lego/progress-event.mjs'),
+  ].join('\n');
+  // Slice each function out of the source rather than pattern-matching across a
+  // character window: a long explanatory comment between the signature and the
+  // first statement is exactly the kind of edit a brittle regex rejects.
+  const bodyOf = (name) => {
+    const at = source.indexOf(`function ${name}(`);
+    assert.notEqual(at, -1, `${name} must still exist`);
+    const next = source.indexOf('\nexport function ', at + 1);
+    return source.slice(at, next === -1 ? undefined : next);
+  };
+  for (const fn of ['validateMilestoneProjections', 'syncReadmeMilestoneSection', 'syncSliceText']) {
+    assert.match(bodyOf(fn), /normalizeEol\(/, `${fn} must canonicalise its input before comparing`);
   }
+  // And the writer hands the terminator back, so a no-op rewrite stays byte-identical.
+  assert.match(bodyOf('syncSliceText'), /applyEol\(out\.join\('\\n'\), eol\)/);
+
+  // Behaviour, not just source shape: a CRLF register round-trips unchanged.
+  // Built with applyEol rather than `replace(/\n/g, '\r\n')` so the test is valid
+  // on BOTH tree styles — on an already-CRLF checkout the naive replace turns
+  // every `\r\n` into `\r\r\n` and the test fails for its own construction.
+  const register = read('docs/n8n-lego/milestones.json');
+  const crlf = applyEol(canonical(register), '\r\n');
+  assert.equal(canonical(crlf), canonical(register));
+  assert.equal(syncSliceText(crlf, firstSliceId(register), firstSlice(register)).text, crlf);
 });
