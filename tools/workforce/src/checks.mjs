@@ -1,28 +1,33 @@
-// DEC-0015: classify the exact-head checks of a PR into GitHub-hosted vs self-hosted and derive the
-// merge verdict. PURE: jobs come from the GitHub Actions jobs API ({ name, status, conclusion, labels }).
+// Self-hosted-only CI check classifier and merge-readiness verdict.
+// PURE: jobs come from the GitHub Actions jobs API ({ name, status, conclusion, labels }).
 //
-//   ALL_GREEN            every check completed successfully
-//   ALLOWED_BY_DEC-0015  every GitHub-hosted check is green, no check failed, and the remaining
-//                        self-hosted checks are WAITING_RUNNER (queued, no online runner can take them)
-//   PENDING              a GitHub-hosted check is not finished, or a self-hosted check is running /
-//                        may still be picked up by an online runner (or runner availability is unknown)
-//   BLOCKED              a check completed without success, or no check ran at all
+// Repository CI execution is self-hosted-only. GitHub Actions is control plane only;
+// GitHub-hosted runners are never repository CI capacity and never serve as a merge
+// or readiness fallback.
 //
-// WAITING_RUNNER is never PASS: it is reported separately and becomes runner verification debt that
-// the Slice (or manager-executed task) must clear before it can be COMPLETE.
+// Verdict values:
+//   ALL_GREEN        every self-hosted check is green, no check failed, and no check is
+//                    pending, running, or waiting for a self-hosted runner
+//   WAITING_RUNNER   at least one self-hosted check is queued with no matching online
+//                    self-hosted runner available (exhaustionState = 'BLOCKED_WITH_EVIDENCE');
+//                    never treated as PASS and never licenses a merge
+//   PENDING          a check is still running or queued with an online runner able to take it
+//   BLOCKED          no checks ran, a check failed, or no self-hosted check passed
 
-export const OK = new Set(['success', 'skipped', 'neutral']);
-const QUEUED = new Set(['queued', 'waiting', 'pending', 'requested']);
+export const OK = new Set(['success', 'neutral', 'skipped']);
+const QUEUED = new Set(['queued', 'waiting', 'requested', 'pending']);
+const norm = (s) => String(s).toLowerCase();
+const labelSet = (arr = []) => new Set(arr.map((l) => norm(typeof l === 'string' ? l : l?.name ?? '')));
 
-export const isSelfHosted = (job) => (job.labels ?? []).includes('self-hosted');
+export const isSelfHosted = (job) => labelSet(job.labels).has('self-hosted');
 
-/** Could an online runner take this job? onlineRunners: [{ labels: [...] }] or undefined (unknown). */
+/** True if at least one online runner carries every label the job asks for. */
 function runnerCanTake(job, onlineRunners) {
-  if (onlineRunners === undefined) return true;
-  const want = (job.labels ?? []).map((l) => l.toLowerCase());
+  if (!Array.isArray(onlineRunners)) return true; // unknown -> do not claim WAITING_RUNNER
+  const need = [...labelSet(job.labels)];
   return onlineRunners.some((r) => {
-    const have = new Set((r.labels ?? []).map((l) => (typeof l === 'string' ? l : l.name).toLowerCase()));
-    return want.every((l) => have.has(l));
+    const have = labelSet(r.labels);
+    return need.every((l) => have.has(l));
   });
 }
 
@@ -30,7 +35,12 @@ export function classifyChecks(jobs, { onlineRunners } = {}) {
   const out = {
     hosted: { pass: [], fail: [], pending: [] },
     selfHosted: { pass: [], fail: [], running: [], waitingRunner: [] },
-    verdict: 'PENDING', mergeAllowed: false, deferredRunnerChecks: [], reasons: [],
+    verdict: 'PENDING',
+    exhaustionState: 'NONE',
+    mergeAllowed: false,
+    hostedFallbackAllowed: false,
+    deferredRunnerChecks: [],
+    reasons: [],
   };
   for (const j of jobs) {
     const done = j.status === 'completed';
@@ -44,28 +54,37 @@ export function classifyChecks(jobs, { onlineRunners } = {}) {
     else out.selfHosted.running.push(j.name);
   }
   const failed = [...out.hosted.fail, ...out.selfHosted.fail];
-  if (!jobs.length) { out.verdict = 'BLOCKED'; out.reasons.push('no checks ran on this head: not treated as green'); }
-  else if (failed.length) { out.verdict = 'BLOCKED'; out.reasons.push(`failed: ${failed.join(', ')}`); }
-  else if (out.hosted.pending.length || out.selfHosted.running.length) {
+  if (!jobs.length) {
+    out.verdict = 'BLOCKED';
+    out.reasons.push('no checks ran on this head: not treated as green');
+  } else if (failed.length) {
+    out.verdict = 'BLOCKED';
+    out.reasons.push(`failed: ${failed.join(', ')}`);
+  } else if (out.selfHosted.waitingRunner.length) {
+    out.verdict = 'WAITING_RUNNER';
+    out.exhaustionState = 'BLOCKED_WITH_EVIDENCE';
+    out.deferredRunnerChecks = [...new Set(out.selfHosted.waitingRunner)].sort();
+    out.reasons.push(`self-hosted WAITING_RUNNER / BLOCKED_WITH_EVIDENCE (not PASS): ${out.deferredRunnerChecks.join(', ')}`);
+  } else if (out.hosted.pending.length || out.selfHosted.running.length) {
     out.verdict = 'PENDING';
     out.reasons.push(`waiting for: ${[...out.hosted.pending, ...out.selfHosted.running].join(', ')}`);
-  } else if (!out.hosted.pass.length) {
-    out.verdict = 'BLOCKED'; out.reasons.push('no GitHub-hosted check passed: a merge needs at least one hosted gate');
-  } else if (out.selfHosted.waitingRunner.length) {
-    out.verdict = 'ALLOWED_BY_DEC-0015';
-    out.deferredRunnerChecks = [...new Set(out.selfHosted.waitingRunner)].sort();
-    out.reasons.push(`self-hosted WAITING_RUNNER (not PASS): ${out.deferredRunnerChecks.join(', ')}`);
-  } else out.verdict = 'ALL_GREEN';
-  out.mergeAllowed = out.verdict === 'ALL_GREEN' || out.verdict === 'ALLOWED_BY_DEC-0015';
+  } else if (!out.selfHosted.pass.length) {
+    out.verdict = 'BLOCKED';
+    out.reasons.push('no self-hosted check passed: GitHub-hosted runners are not repository CI capacity');
+  } else {
+    out.verdict = 'ALL_GREEN';
+  }
+  out.mergeAllowed = out.verdict === 'ALL_GREEN';
   return out;
 }
 
-/** One-line transparent status, e.g. "GitHub-hosted: PASS 7/7 | Self-hosted: WAITING_RUNNER 4 | Merge: ALLOWED_BY_DEC-0015". */
+/** One-line transparent status, e.g. "Self-hosted: PASS 6/6 | Hosted fallback: disabled | Merge: ALL_GREEN". */
 export function formatChecks(c) {
-  const hostedTotal = c.hosted.pass.length + c.hosted.fail.length + c.hosted.pending.length;
-  const hosted = c.hosted.fail.length ? 'FAIL' : c.hosted.pending.length ? 'PENDING' : 'PASS';
   const sh = c.selfHosted;
-  const selfState = sh.fail.length ? 'FAIL' : sh.running.length ? 'PENDING' : sh.waitingRunner.length ? 'WAITING_RUNNER' : sh.pass.length ? 'PASS' : 'NONE';
-  const merge = c.verdict === 'ALL_GREEN' ? 'ALLOWED' : c.verdict === 'ALLOWED_BY_DEC-0015' ? 'ALLOWED_BY_DEC-0015' : c.verdict;
-  return `GitHub-hosted: ${hosted} ${c.hosted.pass.length}/${hostedTotal} | Self-hosted: ${selfState}${sh.waitingRunner.length ? ` ${sh.waitingRunner.length} (${sh.waitingRunner.join(', ')})` : ''} | Merge: ${merge}`;
+  const selfTotal = sh.pass.length + sh.fail.length + sh.running.length + sh.waitingRunner.length;
+  const selfState = sh.fail.length ? 'FAIL'
+    : sh.waitingRunner.length ? 'WAITING_RUNNER (BLOCKED_WITH_EVIDENCE)'
+    : sh.running.length ? 'RUNNING'
+    : selfTotal ? 'PASS' : 'NONE';
+  return `Self-hosted: ${selfState} ${sh.pass.length}/${selfTotal}${sh.waitingRunner.length ? ` (${c.deferredRunnerChecks.join(', ')})` : ''} | Hosted fallback: disabled | Merge: ${c.verdict}`;
 }

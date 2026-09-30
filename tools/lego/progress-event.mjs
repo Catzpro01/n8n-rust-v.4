@@ -269,11 +269,16 @@ export function deriveCheckpointState(jobs = [], { onlineRunners, head, required
       verdict,
     };
   }
-  if (verdict.verdict === 'PENDING' || verdict.verdict === 'ALLOWED_BY_DEC-0015' || !selfHosted.pass.length) {
+  if (
+    verdict.verdict === 'PENDING'
+    || verdict.verdict === 'WAITING_RUNNER'
+    || verdict.verdict === 'BLOCKED_WITH_EVIDENCE'
+    || !selfHosted.pass.length
+  ) {
     const waiting = [...selfHosted.running, ...selfHosted.waitingRunner, ...verdict.hosted.pending];
     return {
       status: 'in-progress',
-      evidence: `DEC-0015 verification not finished${where}: ${waiting.length ? waiting.join(', ') : verdict.reasons.join('; ')}. WAITING_RUNNER is never PASS, so the checkpoint is not earned.`,
+      evidence: `DEC-0015 verification not finished${where}: ${waiting.length ? waiting.join(', ') : verdict.reasons.join('; ')}. WAITING_RUNNER / BLOCKED_WITH_EVIDENCE is never PASS, so the checkpoint is not earned.`,
       verdict,
     };
   }
@@ -300,7 +305,7 @@ function jobLabel(jobs, name) {
 
 function formatChecksSummary(verdict) {
   const sh = verdict.selfHosted;
-  return `GitHub-hosted ${verdict.hosted.pass.length} pass, self-hosted ${sh.pass.length} pass / ${sh.fail.length} fail / ${sh.waitingRunner.length} waiting`;
+  return `self-hosted ${sh.pass.length} pass / ${sh.fail.length} fail / ${sh.waitingRunner.length} waiting (hosted fallback disabled)`;
 }
 
 /**

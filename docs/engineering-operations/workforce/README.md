@@ -19,7 +19,7 @@ What remains:
 | Decision records (canonical, immutable; replacement uses `supersedes`) | `decisions/DEC-nnnn.json` |
 | Decision record shape | `schemas/decision.schema.json` |
 | Validator + CLI | `tools/workforce/src/{schema,cli}.mjs`, run `node tools/workforce/src/cli.mjs decisions-check` |
-| DEC-0015 merge verdict (GitHub-hosted vs self-hosted checks, WAITING_RUNNER is never PASS) | `tools/workforce/src/checks.mjs`, run `node tools/workforce/src/cli.mjs checks <jobs.json>` |
+| Self-hosted-only CI merge verdict (WAITING_RUNNER / BLOCKED_WITH_EVIDENCE is never PASS; hosted fallback disabled) | `tools/workforce/src/checks.mjs`, run `node tools/workforce/src/cli.mjs checks <jobs.json>` |
 | Tests (run in CI by `n8n-lego.yml`) | `tools/workforce/test/*.test.mjs` |
 | Live milestone progress (DEC-0021) | `tools/lego/progress-event.mjs`, run `node tools/lego/progress-event.mjs record --slice <id> --checkpoint <CP-nn> --status <status> --evidence <ref>` |
 | Post-merge branch cleanup | `tools/orchestration/cleanup_runner.py` (`.github/workflows/cleanup.yml`) |

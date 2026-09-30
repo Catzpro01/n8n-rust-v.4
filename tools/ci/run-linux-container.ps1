@@ -64,7 +64,7 @@ Write-Host "::group::CI Telemetry"
 Write-Host "[CI_TELEMETRY] CONTAINER_START $(Get-Date -Format 'o')"
 
 try {
-  docker run --pull=never --rm --mount "type=bind,source=$resolved,target=/workspace" --mount "type=volume,source=$cargoTargetVolume,target=/workspace/target" --mount "type=volume,source=$cargoHomeVolume,target=/cargo" --env CARGO_HOME=/cargo --env CARGO_TARGET_DIR=/workspace/target --env CARGO_BUILD_JOBS=$cargoJobs --mount "type=bind,source=$scriptPath,target=/tmp/arena-command.sh,readonly" --workdir /workspace $Image bash /tmp/arena-command.sh
+  docker run --pull=never --rm --mount "type=bind,source=$resolved,target=/workspace" --mount "type=volume,source=$cargoTargetVolume,target=/workspace/target" --mount "type=volume,source=$cargoHomeVolume,target=/cargo" --env CARGO_HOME=/cargo --env CARGO_TARGET_DIR=/workspace/target --env CARGO_BUILD_JOBS=$cargoJobs --env "GITHUB_SHA=$($env:GITHUB_SHA)" --env "GITHUB_REF=$($env:GITHUB_REF)" --env "GITHUB_RUN_ID=$($env:GITHUB_RUN_ID)" --mount "type=bind,source=$scriptPath,target=/tmp/arena-command.sh,readonly" --workdir /workspace $Image bash /tmp/arena-command.sh
   $dockerExit = $LASTEXITCODE
 }
 finally {

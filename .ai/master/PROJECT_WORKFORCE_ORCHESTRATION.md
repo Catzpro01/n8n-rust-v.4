@@ -148,16 +148,16 @@ Task fields: `taskId`, `jobId`, `owner`, `status`, `scope`, `dependencies`, `blo
 
 **Authoritative document:** `docs/engineering-operations/RUNNER-PROTOCOL.md` (machine-readable: `docs/engineering-operations/workforce-governance.json#runnerProtocol`).
 
-- **Architecture:** 5 Windows + 5 WSL self-hosted runners (10 total); do not reduce or change without a Manager decision.
+- **Architecture:** Self-hosted-only CI execution across 10 self-hosted runners (5 Windows + 5 WSL Linux; Linux container execution via n8n-rust-runner:latest and n8n-node-ci:latest on Windows workers); GitHub Actions is control plane only, never execution compute; do not reduce or change without a Manager decision.
 - **Windows (5):** `laptop-build-worker`, `laptop-build-worker-2`, `laptop-build-worker-3`, `laptop-build-worker-4`, `laptop-build-worker-5` — labels `self-hosted, windows, x64, rust-build, n8n-rust`.
 - **WSL (5):** `MDMTEST-n8n-wsl`, `MDMTEST-n8n-wsl-2`, `MDMTEST-n8n-wsl-3`, `MDMTEST-n8n-wsl-4`, `MDMTEST-n8n-wsl-5` — labels `self-hosted, linux, x64, rust-build, n8n-rust`.
-- **Selection:** by label, never by runner name; at most 10 parallel self-hosted jobs.
+- **Selection:** by canonical self-hosted label only, never by runner hostname and never on GitHub-hosted labels (ubuntu-latest, windows-latest, macos-latest); at most 10 parallel self-hosted jobs.
 - **Polling:** **1s** (max sleep 1s) — every wait for a runner, CI run, job, health endpoint, process or queue sleeps at most 1 second (prefer exactly 1s) inside a bounded attempt budget; no sleep 2/5/10/30/60, no setTimeout/setInterval above 1000 ms, no backoff step above 1s.
 - **Only exception:** only a documented external API rate limit (name the API + limit next to the wait; honour Retry-After / x-ratelimit-reset).
 - **Decoupling:** a loop wakes every <= 1s but may emit an expensive external call on its own slower cadence.
 - **Job retry:** at most 2, only for environmental failures (runner lost, network, checkout/cache infrastructure).
 - **Failure classes:** implementation, environmental, pre-existing, flaky.
-- **Exhaustion:** jobs queue; the monitor keeps polling at 1s; after the job timeout the job is reported blocked (environmental) — never skipped, never moved to hosted runners to bypass the requirement.
+- **Exhaustion:** when no self-hosted runner is available, jobs queue and classify explicitly as WAITING_RUNNER / BLOCKED_WITH_EVIDENCE (honest environmental blocker) — never silently substituted with a GitHub-hosted runner, never claimed as PASS, and never dependent on GitHub billing, spending limits, or hosted runner minutes; remote-capable work continues outside the blocked validation lane.
 - **GitHub Actions monitoring:** GET /repos/{owner}/{repo}/commits/{sha}/check-runs at 1s until all completed; merge only with all checks success on the exact head SHA, pinned in the merge call.
 - **VPS monitoring:** vps-runtime runner; 1s polling of /rest/settings (/healthz is 503 without the UI bundle); systemd supervises long-running processes.
 - **Workspace lifecycle:** fresh checkout per job; temporary files under the runner temp directory; clean temp files, patches, logs, duplicate clones and stale worktrees; keep dependency/build caches; never commit runtime artifacts (.arena/gateway_tokens.json is gitignored); persistent branches: main and arena-manager only (DEC-0019); Manager PR branches are temporary and deleted after merge.

@@ -1,30 +1,30 @@
 name: n8n-lego Gate
 
 # Phase P0 gate for the n8n-lego baseline (real n8n editor UI served by the LEGO
-# runtime). It answers one question: does `git clone → start → n8n UI → create
-# workflow → edit → save → execute → inspect → restart` still work?
+# runtime). It answers one question: does `git clone -> start -> n8n UI -> create
+# workflow -> edit -> save -> execute -> inspect -> restart` still work?
 #
 #   architecture        backend LEGO isolation gate: domain boundaries,
 #                       dependency direction, public/private surfaces, frozen
 #                       legacy zone, contract versions, nested (sub-)LEGO rules
-#                       and scale-out readiness — plus the selftest that proves
+#                       and scale-out readiness - plus the selftest that proves
 #                       the gate still catches real violations (P2.6 + P2.7)
 #   gate                unit + REST/contract integration tests (incl. the P2.6
 #                       foundation contract tests), then the release package
 #                       (npm tarball + offline tarball + checksums)
-#   clean-clone         git clone → install → start → /healthz → real n8n UI,
-#                       browser smoke (owner setup → create workflow → canvas →
-#                       add node → save → execute → execution result) → P2 gate
+#   clean-clone         git clone -> install -> start -> /healthz -> real n8n UI,
+#                       browser smoke (owner setup -> create workflow -> canvas ->
+#                       add node -> save -> execute -> execution result) -> P2 gate
 #                       (settings visibility, route guards, 501 unsupported
-#                       semantics) → restart → verify that the workflow survived
-#   windows-portability self-hosted Windows worker: syntax/metadata probe only.
-#                       The runtime is Linux-only (apps/n8n-lego/package.json
-#                       "os": ["linux"]), so the Linux runtime tests stay on
-#                       ubuntu-latest; WSL is used for the unit tests only when
-#                       that worker actually has a usable WSL + Node >= 22.
+#                       semantics) -> restart -> verify that the workflow survived
+#   windows-portability self-hosted Windows worker: syntax/metadata probe plus
+#                       optional WSL unit check when native Linux Node >= 22 is
+#                       present on the worker.
 #
-# To run the Linux jobs on a self-hosted Linux worker instead of GitHub-hosted
-# runners, change `runs-on` to: [self-hosted, linux, x64, vps-runtime]
+# All repository CI execution is self-hosted-only on the canonical runner pool
+# ([self-hosted, Windows, X64, rust-build, n8n-rust]). Linux runtime jobs execute
+# inside the pinned local Linux Docker container (n8n-node-ci:latest) via
+# tools/ci/run-linux-container.ps1. GitHub-hosted runners are never used.
 
 on:
   pull_request:
@@ -35,7 +35,10 @@ on:
       - 'tests/e2e/**'
       - 'tools/lego/**'
       - 'tools/workforce/**'
+      - 'tools/ci/**'
       - 'docs/engineering-operations/workforce/**'
+      - 'docs/engineering-operations/RUNNER-PROTOCOL.md'
+      - 'docs/engineering-operations/runner-demand-controller.md'
       - '.arena/*.md'
       # Inputs the gate reads outside the paths above (TASK-0022): register and
       # decisions, ADRs, governance JSON, generated .ai, contracts, recorded
@@ -52,6 +55,7 @@ on:
       - 'scripts/release.sh'
       - 'package.json'
       - '.github/workflows/n8n-lego.yml'
+      - '.github/workflows/vps-runner-smoke.yml'
   push:
     branches: [main]
     paths:
@@ -59,7 +63,10 @@ on:
       - 'tests/e2e/**'
       - 'tools/lego/**'
       - 'tools/workforce/**'
+      - 'tools/ci/**'
       - 'docs/engineering-operations/workforce/**'
+      - 'docs/engineering-operations/RUNNER-PROTOCOL.md'
+      - 'docs/engineering-operations/runner-demand-controller.md'
       - '.arena/*.md'
       # Inputs the gate reads outside the paths above (TASK-0022): register and
       # decisions, ADRs, governance JSON, generated .ai, contracts, recorded
@@ -76,6 +83,7 @@ on:
       - 'scripts/release.sh'
       - 'package.json'
       - '.github/workflows/n8n-lego.yml'
+      - '.github/workflows/vps-runner-smoke.yml'
   workflow_dispatch:
 
 concurrency:
@@ -92,81 +100,66 @@ env:
 jobs:
   architecture:
     name: Backend LEGO architecture gate (P2.6)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    runs-on: [self-hosted, Windows, X64, rust-build, n8n-rust]
+    if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name != 'pull_request'
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: '22.18'
-
-      # No install: the gate is pure Node with zero dependencies, so a boundary
-      # violation is reported in seconds instead of after a full bootstrap.
-      - name: Domain boundaries, dependency direction, contract versions
-        run: node tools/lego/architecture-gate.mjs
-
-      - name: The gate provably detects forbidden dependencies
-        # A gate nobody has seen fail proves nothing: this plants real
-        # violations (storage->workflow internals, execution->workflow
-        # internals, node->credential/storage persistence, undeclared imports,
-        # internal-path reach, legacy-zone growth, unowned files) in a throwaway
-        # tree and requires each to be caught, plus a negative control.
-        run: node tools/lego/architecture-gate.mjs --selftest
-
-      - name: The 501 capability contract matches the LEGO registry
-        run: node tools/lego/capability-conformance.mjs
-
-      - name: The foundation gate provably detects incomplete contracts
-        # Same principle as the architecture selftest: a gate nobody has watched
-        # fail is a decoration. Plants a capability with no operations, an
-        # unknown transport, a fifth interaction class, an undeclared stream
-        # policy and an ambiguous surface alias, and requires each to be caught
-        # — plus a negative control on the real registry.
-        run: node tools/lego/foundation-gate.mjs --selftest
-
-      - name: Foundation 1.0 profiles are declared and coherent
-        # Every LEGO must describe itself in the foundation vocabulary: tier,
-        # trust, capabilities, data owner, state class, failure boundary and
-        # resources. Also enforces the lightweight security checks — no secret
-        # in a public contract, no external endpoint without the network
-        # capability, no untrusted code left in-process.
-        run: node tools/lego/foundation-gate.mjs
-
-      - name: The AI knowledge pack is not stale
-        # .ai/ is GENERATED from the manifest so it cannot drift into being
-        # confidently wrong. If the manifest moved and the pack did not, this
-        # fails rather than letting an agent read stale architecture.
-        run: node tools/lego/ai-pack.mjs --check
-
-      - name: Scale-out readiness (no undeclared process-local coupling)
-        # P2.7 implements no worker/scaling infrastructure. This only asserts
-        # that new contract-first LEGO code is process-agnostic and that every
-        # finding in existing code is a declared, owned exception in the
-        # manifest — so the list can shrink but never grow silently.
-        run: node tools/lego/scale-out-readiness.mjs
-
-      - name: Machine-readable reports for the integration record
-        if: always()
+      - name: Run architecture and foundation gates in Linux container
+        shell: powershell
         run: |
-          node tools/lego/architecture-gate.mjs --json > architecture-gate.json || true
-          node tools/lego/scale-out-readiness.mjs --json > scale-out-readiness.json || true
-          node tools/lego/foundation-gate.mjs --json > foundation-gate.json || true
-          node tools/lego/impact-graph.mjs --json > impact-graph.json || true
+          & "$env:GITHUB_WORKSPACE\tools\ci\run-linux-container.ps1" -Image n8n-node-ci:latest -Command @'
+          set -euo pipefail
+          ws=/var/tmp/arena-arch-ws
+          rm -rf "$ws"
+          mkdir -p "$ws"
+          export_reports() {
+            if [ -d "$ws" ]; then
+              (
+                cd "$ws"
+                node tools/lego/architecture-gate.mjs --json > /workspace/architecture-gate.json || true
+                node tools/lego/scale-out-readiness.mjs --json > /workspace/scale-out-readiness.json || true
+                node tools/lego/foundation-gate.mjs --json > /workspace/foundation-gate.json || true
+                node tools/lego/impact-graph.mjs --json > /workspace/impact-graph.json || true
+              ) || true
+              rm -rf "$ws"
+            fi
+          }
+          trap export_reports EXIT
+          ( cd /workspace && tar cf - --exclude=./reference --exclude=./.git --exclude=./target --exclude=./node_modules . ) | ( cd "$ws" && tar xf - )
+          cd "$ws"
+
+          echo "=== Node version ==="
+          node -v
+
+          echo "=== Domain boundaries, dependency direction, contract versions ==="
+          node tools/lego/architecture-gate.mjs
+
+          echo "=== The gate provably detects forbidden dependencies ==="
+          node tools/lego/architecture-gate.mjs --selftest
+
+          echo "=== The 501 capability contract matches the LEGO registry ==="
+          node tools/lego/capability-conformance.mjs
+
+          echo "=== The foundation gate provably detects incomplete contracts ==="
+          node tools/lego/foundation-gate.mjs --selftest
+
+          echo "=== Foundation 1.0 profiles are declared and coherent ==="
+          node tools/lego/foundation-gate.mjs
+
+          echo "=== The AI knowledge pack is not stale ==="
+          node tools/lego/ai-pack.mjs --check
+
+          echo "=== Scale-out readiness (no undeclared process-local coupling) ==="
+          node tools/lego/scale-out-readiness.mjs
+          '@
 
       # Evidence, not an assertion. The gate's verdict is already recorded by the JSON
       # the steps above wrote; this upload only archives it for humans. Nothing in the
       # repo ever downloads an artifact (`download-artifact` has zero hits repo-wide),
-      # so these are write-only and must not accumulate against the 10 GB quota.
-      #
-      # `continue-on-error` keeps a GitHub-side storage problem from being reported as
-      # a code failure. That failure mode is not hypothetical: on 2026-09-29 the org
-      # artifact quota was exhausted (1681 live artifacts, 8.07 GB, 0 expired) and
-      # "Failed to CreateArtifact: Artifact storage quota has been hit" turned three
-      # green jobs red, blocking every merge on main under DEC-0015 while every single
-      # test step in them had passed.
+      # so these keep a short retention window for operator inspection.
       - name: Upload the architecture report
         if: always()
         continue-on-error: true
@@ -183,122 +176,109 @@ jobs:
 
   gate:
     name: Unit + integration tests and release package
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
+    runs-on: [self-hosted, Windows, X64, rust-build, n8n-rust]
+    if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name != 'pull_request'
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: '22.18'
-          cache: npm
-          cache-dependency-path: |
-            apps/n8n-lego/package-lock.json
-            tests/e2e/package-lock.json
-
-      - name: Node and npm versions
-        run: node -v && npm -v
-
-      - name: Install app dependencies
-        run: npm --prefix "$APP_DIR" ci --no-audit --no-fund
-
-      - name: Fetch the pinned node catalog (n8n-nodes-base + icons + roles)
+      - name: Run unit, integration, workforce and release gates in Linux container
+        shell: powershell
         run: |
-          node "$APP_DIR/scripts/fetch-n8n-catalog.mjs" --dir "$RUNNER_TEMP/catalog"
-          node "$APP_DIR/scripts/fetch-n8n-roles.mjs" --dir "$RUNNER_TEMP/catalog"
+          & "$env:GITHUB_WORKSPACE\tools\ci\run-linux-container.ps1" -Image n8n-node-ci:latest -Command @'
+          set -euo pipefail
+          git config --global --add safe.directory '*' 2>/dev/null || true
+
+          ws=/var/tmp/arena-gate-ws
+          ci_bin=/var/tmp/arena-ci-bin
+          rm -rf "$ws" "$ci_bin"
+          mkdir -p "$ws" "$ci_bin"
+
+          REAL_NODE="$(command -v node)"
+          cat > "$ci_bin/node" <<SHIM
+          #!/usr/bin/env bash
+          if [ "\${1:-}" = "--test" ]; then
+            shift
+            exec "$REAL_NODE" --test --test-concurrency=2 "\$@"
+          fi
+          exec "$REAL_NODE" "\$@"
+          SHIM
+          chmod +x "$ci_bin/node"
+          export PATH="$ci_bin:$PATH"
+
+          export_release_evidence() {
+            if [ -d "$ws" ]; then
+              mkdir -p "$ws/dist" /workspace/dist
+              (
+                cd "$ws"
+                {
+                  echo "commit=${GITHUB_SHA:-$(git -C /workspace rev-parse HEAD 2>/dev/null || echo unknown)}"
+                  echo "ref=${GITHUB_REF:-unknown}"
+                  echo "built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                  echo "---"
+                  for f in dist/n8n-lego-*.tgz dist/n8n-lego-*.tar.gz; do
+                    [ -e "$f" ] || continue
+                    printf '%s %s %s\n' "$(basename "$f")" "$(stat -c%s "$f")" "$(sha256sum "$f" | cut -d' ' -f1)"
+                  done
+                } > dist/release-manifest.txt
+                echo "::notice::release manifest recorded ($(stat -c%s dist/release-manifest.txt) bytes); payload intentionally not uploaded"
+                cat dist/release-manifest.txt
+                cp -f dist/release-manifest.txt /workspace/dist/release-manifest.txt || true
+                if [ -f dist/n8n-lego-0.1.0.tar.gz.sha256 ]; then
+                  cp -f dist/n8n-lego-0.1.0.tar.gz.sha256 /workspace/dist/n8n-lego-0.1.0.tar.gz.sha256 || true
+                fi
+              ) || true
+              rm -rf "$ws" "$ci_bin"
+            fi
+          }
+          trap export_release_evidence EXIT
+
+          ( cd /workspace && tar cf - --exclude=./reference --exclude=./target --exclude=./node_modules . ) | ( cd "$ws" && tar xf - )
+          if [ -d /workspace/reference/n8n/packages/@n8n/permissions ]; then
+            mkdir -p "$ws/reference/n8n/packages/@n8n"
+            cp -a /workspace/reference/n8n/packages/@n8n/permissions "$ws/reference/n8n/packages/@n8n/"
+          fi
+
+          cd "$ws"
+          export APP_DIR="apps/n8n-lego"
+          CATALOG_DIR="$ws/.ci-catalog"
+          UNIT_DATA_DIR="$ws/.ci-unit-data"
+
+          echo "=== Node and npm versions ==="
+          node -v && npm -v
+
+          echo "=== Install app dependencies ==="
+          npm --prefix "$APP_DIR" ci --no-audit --no-fund
+
+          echo "=== Fetch the pinned node catalog (n8n-nodes-base + icons + roles) ==="
+          node "$APP_DIR/scripts/fetch-n8n-catalog.mjs" --dir "$CATALOG_DIR"
+          node "$APP_DIR/scripts/fetch-n8n-roles.mjs" --dir "$CATALOG_DIR"
           test -f "$APP_DIR/data/roles.json"
           node -e "const roles=require('./' + process.env.APP_DIR + '/data/roles.json'); console.log('bundled roles.json present:', Object.keys(roles).length, 'groups')"
 
-      - name: Frontend LEGO contract + architecture tests (P2.5, agent-1)
-        # Reconciled in P2.11: agent-1's frontend LEGO ships 30 suites that the
-        # backend gate never ran. Kept as its own step so a frontend failure is
-        # attributable on sight rather than buried in the backend glob.
-        run: node --test packages/frontend-lego/test/*.test.mjs
+          echo "=== Frontend LEGO contract + architecture tests (P2.5, agent-1) ==="
+          node --test packages/frontend-lego/test/*.test.mjs
 
-      - name: Workforce control-plane tests (#259-#267)
-        # Governance tooling, not product code: engine, schemas, policy, scheduler,
-        # recovery, crash injection and multi-process CAS races (DEC-0001, DEC-0002).
-        run: node --test tools/workforce/test/*.test.mjs
+          echo "=== Workforce control-plane tests (#259-#267) ==="
+          node --test tools/workforce/test/*.test.mjs
 
-      - name: Unit + REST contract integration tests
-        # The glob covers every suite, including the P2.9 additions:
-        #   lego-boundary.test.mjs      surfaces are upper bounds; the allowance
-        #                               count may shrink but never grow
-        #   lego-communication.test.mjs CALL/EVENT/STREAM/BATCH semantics,
-        #                               cancellation, deadlines, backpressure,
-        #                               lifecycle and capability negotiation
-        env:
-          N8N_LEGO_CATALOG_DIR: ${{ runner.temp }}/catalog
-          N8N_LEGO_USER_FOLDER: ${{ runner.temp }}/unit-data
-        run: node --test apps/n8n-lego/test/*.test.mjs
+          echo "=== Unit + REST contract integration tests ==="
+          N8N_LEGO_CATALOG_DIR="$CATALOG_DIR" N8N_LEGO_USER_FOLDER="$UNIT_DATA_DIR" node --test apps/n8n-lego/test/*.test.mjs
 
-      - name: Release build (npm package + offline tarball)
-        env:
-          N8N_LEGO_CATALOG_DIR: ${{ runner.temp }}/catalog
-        run: bash scripts/release.sh --no-docker
+          echo "=== Release build (npm package + offline tarball) ==="
+          N8N_LEGO_CATALOG_DIR="$CATALOG_DIR" bash scripts/release.sh --no-docker
 
-      - name: Verify the artifact checksums
-        run: |
-          set -euo pipefail
-          cd dist
-          sha256sum -c n8n-lego-0.1.0.tar.gz.sha256
+          echo "=== Verify the artifact checksums ==="
+          (
+            cd dist
+            sha256sum -c n8n-lego-0.1.0.tar.gz.sha256
+          )
+          '@
 
-      # This step was the quota killer. ~16 MB uploaded on EVERY pull request and every
-      # push to main: 503 live copies measured 2026-09-29 = 8.03 GB of a 10 GB quota,
-      # 97% of all artifact storage in the repository - and not one workflow ever
-      # downloaded any of them.
-      #
-      # The gate's actual assertion is the "Verify the artifact checksums" step above,
-      # which stays exactly as strict as it was. The tarball itself is deterministically
-      # reproducible from any commit via `scripts/release.sh --no-docker` / `npm run
-      # lego:pack`, so archiving it on a pull request proved nothing that the checksum
-      # step had not already proved.
-      #
-      # 2026-09-29, second pass: gating the upload to main was not enough. 338 copies
-      # still accumulated at ~17 MB each = 5.77 GB, 97% of all artifact storage in the
-      # repository, and the account (personal, Free plan, 0.50 GB included) sat 12x over
-      # its allowance - which is what actually stopped ubuntu-latest from starting jobs,
-      # not a failed payment.
-      #
-      # The payload is now not uploaded at all, because uploading it never proved
-      # anything:
-      #   * the assertion is the "Verify the artifact checksums" step above, unchanged
-      #     and exactly as strict - it runs `sha256sum -c` against the real tarball;
-      #   * `download-artifact` has zero occurrences repo-wide, so nothing consumed it;
-      #   * the tarball is deterministically reproducible from any commit with
-      #     `bash scripts/release.sh --no-docker`;
-      #   * the repository has 0 releases and 0 npm packages, and all 25 tags are
-      #     `archive/*` branch archives - 0 semver tags - so no release has ever
-      #     depended on this artifact.
-      #
-      # What is archived instead is the evidence that the build happened and what it
-      # produced: the checksum file plus a manifest of names, byte sizes and hashes.
-      # That is a few hundred bytes and is strictly more useful than the tarball, which
-      # had to be downloaded in full to learn the same facts.
-      #
-      # If a real release is ever cut, the destination is GitHub Releases (an immutable,
-      # addressable artifact store that already exists), never Actions artifact storage,
-      # which is a 90-day-max CI scratch space shared with the storage allowance.
-      - name: Record the release manifest (evidence, not payload)
-        if: always()
-        run: |
-          set -euo pipefail
-          mkdir -p dist
-          {
-            echo "commit=${GITHUB_SHA}"
-            echo "ref=${GITHUB_REF}"
-            echo "built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            echo "---"
-            for f in dist/n8n-lego-*.tgz dist/n8n-lego-*.tar.gz; do
-              [ -e "$f" ] || continue
-              printf '%s %s %s\n' "$(basename "$f")" "$(stat -c%s "$f")" "$(sha256sum "$f" | cut -d' ' -f1)"
-            done
-          } > dist/release-manifest.txt
-          echo "::notice::release manifest recorded ($(stat -c%s dist/release-manifest.txt) bytes); payload intentionally not uploaded"
-          cat dist/release-manifest.txt
-
+      # Archive only the compact release manifest and SHA256 checksum file rather than
+      # the reproducible ~16 MB tarball payload. The step above already verifies the
+      # tarball via `sha256sum -c` against the built artifact in place.
       - name: Upload the release manifest
         if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
         continue-on-error: true
@@ -313,60 +293,82 @@ jobs:
 
   clean-clone:
     name: Clean clone → start → health → browser smoke → restart
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Windows, X64, rust-build, n8n-rust]
+    if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name != 'pull_request'
     timeout-minutes: 35
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: '22.18'
-
-      - name: Clone the repository into a directory that has no local state
+      - name: Run clean-clone deploy and browser smoke in Linux container
+        shell: powershell
         run: |
+          & "$env:GITHUB_WORKSPACE\tools\ci\run-linux-container.ps1" -Image n8n-node-ci:latest -Command @'
           set -euo pipefail
-          git clone --quiet --no-hardlinks "$GITHUB_WORKSPACE" "$RUNNER_TEMP/clean-clone"
-          cd "$RUNNER_TEMP/clean-clone"
-          git checkout --quiet --detach "$GITHUB_SHA"
+          git config --global --add safe.directory '*' 2>/dev/null || true
+
+          CLEAN_TMP=/var/tmp/arena-clean-clone
+          rm -rf "$CLEAN_TMP" /workspace/.ci-clean-clone-evidence
+          mkdir -p "$CLEAN_TMP"
+
+          export APP_DIR="apps/n8n-lego"
+          export LEGO_URL="http://127.0.0.1:6200"
+
+          cleanup_clean_clone() {
+            if [ -f "$CLEAN_TMP/lego.pid" ]; then
+              kill "$(cat "$CLEAN_TMP/lego.pid")" 2>/dev/null || true
+            fi
+            mkdir -p /workspace/.ci-clean-clone-evidence
+            for item in shots p2-shots lego-start.log lego-restart.log smoke-state.json settings-visibility-p2.json; do
+              if [ -e "$CLEAN_TMP/$item" ]; then
+                cp -a "$CLEAN_TMP/$item" /workspace/.ci-clean-clone-evidence/ || true
+              fi
+            done
+            rm -rf "$CLEAN_TMP"
+          }
+          trap cleanup_clean_clone EXIT
+
+          echo "=== Clone the repository into a directory that has no local state ==="
+          TARGET_SHA="${GITHUB_SHA:-$(git -C /workspace rev-parse HEAD)}"
+          git clone --quiet --no-hardlinks /workspace "$CLEAN_TMP/clean-clone"
+          cd "$CLEAN_TMP/clean-clone"
+          git checkout --quiet --detach "$TARGET_SHA"
           echo "clone at $(git log --oneline -1)"
           for path in "$APP_DIR/node_modules" "$APP_DIR/vendor" dist data; do
             if [ -e "$path" ]; then echo "::error::unexpected $path in the clone"; exit 1; fi
           done
           echo "clean clone verified: no node_modules, vendor, dist or data directory"
 
-      - name: Install app dependencies in the clone
-        working-directory: ${{ runner.temp }}/clean-clone
-        run: npm --prefix "$APP_DIR" ci --no-audit --no-fund
+          echo "=== Install app dependencies in the clone ==="
+          npm --prefix "$APP_DIR" ci --no-audit --no-fund
 
-      - name: Start the instance on a fresh data directory
-        working-directory: ${{ runner.temp }}/clean-clone
-        run: |
-          set -euo pipefail
-          N8N_LEGO_USER_FOLDER="$RUNNER_TEMP/lego-data" N8N_LEGO_PORT=6200 N8N_LEGO_HOST=127.0.0.1 \
-            setsid nohup node "$APP_DIR/bin/n8n-lego.mjs" start > "$RUNNER_TEMP/lego-start.log" 2>&1 < /dev/null &
-          echo $! > "$RUNNER_TEMP/lego.pid"
-          echo "started pid $(cat "$RUNNER_TEMP/lego.pid")"
+          echo "=== Start the instance on a fresh data directory ==="
+          N8N_LEGO_USER_FOLDER="$CLEAN_TMP/lego-data" N8N_LEGO_PORT=6200 N8N_LEGO_HOST=127.0.0.1 \
+            setsid nohup node "$APP_DIR/bin/n8n-lego.mjs" start > "$CLEAN_TMP/lego-start.log" 2>&1 < /dev/null &
+          echo $! > "$CLEAN_TMP/lego.pid"
+          echo "started pid $(cat "$CLEAN_TMP/lego.pid")"
 
-      - name: Wait for /healthz (first start bootstraps the node catalog)
-        run: |
-          set -euo pipefail
-          # Runner protocol: poll every 1s (180 x 1s = the previous 90 x 2s budget).
+          echo "=== Wait for /healthz (first start bootstraps the node catalog) ==="
+          # Runner protocol: poll every 1s (180 x 1s = 180s budget).
+          healthy=0
           for attempt in $(seq 1 180); do
-            if curl -fsS "$LEGO_URL/healthz" > "$RUNNER_TEMP/health.json"; then
-              cat "$RUNNER_TEMP/health.json"; exit 0
+            if curl -fsS "$LEGO_URL/healthz" > "$CLEAN_TMP/health.json"; then
+              cat "$CLEAN_TMP/health.json"
+              healthy=1
+              break
             fi
             sleep 1
           done
-          echo "::error::health endpoint never answered"; tail -60 "$RUNNER_TEMP/lego-start.log"; exit 1
+          if [ "$healthy" -ne 1 ]; then
+            echo "::error::health endpoint never answered"
+            tail -60 "$CLEAN_TMP/lego-start.log" || true
+            exit 1
+          fi
 
-      - name: Assert the health payload and the served catalog
-        run: |
-          set -euo pipefail
-          node -e '
+          echo "=== Assert the health payload and the served catalog ==="
+          CLEAN_TMP="$CLEAN_TMP" node -e '
             const fs = require("fs");
-            const health = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + "/health.json", "utf8"));
+            const health = JSON.parse(fs.readFileSync(process.env.CLEAN_TMP + "/health.json", "utf8"));
             if (health.status !== "ok") throw new Error("health status " + health.status);
             if (health.checks?.editorUi !== "ok") throw new Error("editor UI not ok");
             if (health.checks?.nodeCatalog !== "ok") throw new Error("node catalog not ok");
@@ -377,55 +379,59 @@ jobs:
           if [ "$nodes" -lt 400 ]; then echo "::error::the node catalog is incomplete ($nodes node types)"; exit 1; fi
           curl -fsS "$LEGO_URL/rest/settings" >/dev/null && echo "rest settings ok"
 
-      - name: Install the browser smoke harness (puppeteer)
-        working-directory: ${{ runner.temp }}/clean-clone
-        run: npm --prefix tests/e2e ci --no-audit --no-fund
+          echo "=== Install the browser smoke harness (puppeteer) ==="
+          PREINSTALLED_CHROME="$(find /ms-playwright -type f -name chrome -executable 2>/dev/null | head -n 1 || true)"
+          if [ -n "$PREINSTALLED_CHROME" ]; then
+            export CHROME_PATH="$PREINSTALLED_CHROME"
+            export PUPPETEER_SKIP_DOWNLOAD=true
+            echo "using preinstalled Chromium: $CHROME_PATH"
+          fi
+          npm --prefix tests/e2e ci --no-audit --no-fund
 
-      - name: Browser smoke — create workflow → add node → save → execute → inspect
-        working-directory: ${{ runner.temp }}/clean-clone
-        env:
-          LEGO_SMOKE_STATE: ${{ runner.temp }}/smoke-state.json
-          LEGO_SMOKE_SHOTS: ${{ runner.temp }}/shots
-        run: node tests/e2e/lego-smoke.mjs "$LEGO_URL" --mode=create
+          echo "=== Browser smoke - create workflow -> add node -> save -> execute -> inspect ==="
+          LEGO_SMOKE_STATE="$CLEAN_TMP/smoke-state.json" \
+          LEGO_SMOKE_SHOTS="$CLEAN_TMP/shots" \
+            node tests/e2e/lego-smoke.mjs "$LEGO_URL" --mode=create
 
-      - name: P2 browser gate — settings visibility, route guards, unsupported semantics
-        working-directory: ${{ runner.temp }}/clean-clone
-        env:
-          LEGO_P2_EVIDENCE: ${{ runner.temp }}/settings-visibility-p2.json
-          LEGO_P2_SHOTS: ${{ runner.temp }}/p2-shots
-        run: node tests/e2e/settings-compat.mjs "$LEGO_URL"
+          echo "=== P2 browser gate - settings visibility, route guards, unsupported semantics ==="
+          LEGO_P2_EVIDENCE="$CLEAN_TMP/settings-visibility-p2.json" \
+          LEGO_P2_SHOTS="$CLEAN_TMP/p2-shots" \
+            node tests/e2e/settings-compat.mjs "$LEGO_URL"
 
-      - name: Restart the instance on the same data directory
-        run: |
-          set -euo pipefail
-          kill "$(cat "$RUNNER_TEMP/lego.pid")"
+          echo "=== Restart the instance on the same data directory ==="
+          kill "$(cat "$CLEAN_TMP/lego.pid")"
           for attempt in $(seq 1 30); do
             if ! curl -fsS "$LEGO_URL/healthz" >/dev/null 2>&1; then break; fi
             sleep 1
           done
-          cd "$RUNNER_TEMP/clean-clone"
-          N8N_LEGO_USER_FOLDER="$RUNNER_TEMP/lego-data" N8N_LEGO_PORT=6200 N8N_LEGO_HOST=127.0.0.1 \
-            setsid nohup node "$APP_DIR/bin/n8n-lego.mjs" start > "$RUNNER_TEMP/lego-restart.log" 2>&1 < /dev/null &
-          echo $! > "$RUNNER_TEMP/lego.pid"
-          # Runner protocol: poll every 1s (120 x 1s = the previous 60 x 2s budget).
+          N8N_LEGO_USER_FOLDER="$CLEAN_TMP/lego-data" N8N_LEGO_PORT=6200 N8N_LEGO_HOST=127.0.0.1 \
+            setsid nohup node "$APP_DIR/bin/n8n-lego.mjs" start > "$CLEAN_TMP/lego-restart.log" 2>&1 < /dev/null &
+          echo $! > "$CLEAN_TMP/lego.pid"
+          # Runner protocol: poll every 1s (120 x 1s = 120s budget).
+          restarted=0
           for attempt in $(seq 1 120); do
-            if curl -fsS "$LEGO_URL/healthz" >/dev/null; then echo "restarted and healthy"; exit 0; fi
+            if curl -fsS "$LEGO_URL/healthz" >/dev/null; then
+              echo "restarted and healthy"
+              restarted=1
+              break
+            fi
             sleep 1
           done
-          echo "::error::the instance did not come back after the restart"; tail -60 "$RUNNER_TEMP/lego-restart.log"; exit 1
+          if [ "$restarted" -ne 1 ]; then
+            echo "::error::the instance did not come back after the restart"
+            tail -60 "$CLEAN_TMP/lego-restart.log" || true
+            exit 1
+          fi
 
-      - name: Browser smoke — the workflow survived the restart
-        working-directory: ${{ runner.temp }}/clean-clone
-        env:
-          LEGO_SMOKE_STATE: ${{ runner.temp }}/smoke-state.json
-          LEGO_SMOKE_SHOTS: ${{ runner.temp }}/shots
-        run: node tests/e2e/lego-smoke.mjs "$LEGO_URL" --mode=verify
+          echo "=== Browser smoke - the workflow survived the restart ==="
+          LEGO_SMOKE_STATE="$CLEAN_TMP/smoke-state.json" \
+          LEGO_SMOKE_SHOTS="$CLEAN_TMP/shots" \
+            node tests/e2e/lego-smoke.mjs "$LEGO_URL" --mode=verify
+          '@
 
       # Failure evidence: screenshots and server logs are what make a red clean-clone
-      # run diagnosable, so this keeps `if: always()` and a longer retention than the
-      # release tarball. The upload is still non-fatal, because the smoke verdict was
-      # already asserted by the verify step above - losing the archive must not look
-      # like losing the test.
+      # run diagnosable, so this keeps `if: always()`. The upload is non-fatal, because
+      # the smoke verdict was already asserted by the verify step above.
       - name: Upload smoke evidence and server logs
         if: always()
         continue-on-error: true
@@ -433,23 +439,18 @@ jobs:
         with:
           name: n8n-lego-clean-clone-evidence
           path: |
-            ${{ runner.temp }}/shots
-            ${{ runner.temp }}/p2-shots
-            ${{ runner.temp }}/lego-start.log
-            ${{ runner.temp }}/lego-restart.log
-            ${{ runner.temp }}/smoke-state.json
-            ${{ runner.temp }}/settings-visibility-p2.json
+            .ci-clean-clone-evidence/shots
+            .ci-clean-clone-evidence/p2-shots
+            .ci-clean-clone-evidence/lego-start.log
+            .ci-clean-clone-evidence/lego-restart.log
+            .ci-clean-clone-evidence/smoke-state.json
+            .ci-clean-clone-evidence/settings-visibility-p2.json
           if-no-files-found: ignore
           retention-days: 3
 
-      - name: Stop the instance
-        if: always()
-        run: |
-          if [ -f "$RUNNER_TEMP/lego.pid" ]; then kill "$(cat "$RUNNER_TEMP/lego.pid")" 2>/dev/null || true; fi
-
   windows-portability:
     name: Windows worker portability probe (runtime tests are Linux)
-    runs-on: [self-hosted, windows, x64, rust-build, n8n-rust]
+    runs-on: [self-hosted, Windows, X64, rust-build, n8n-rust]
     if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name != 'pull_request'
     timeout-minutes: 15
     steps:
@@ -478,26 +479,24 @@ jobs:
           if ($pkg.os -notcontains 'linux') { throw 'apps/n8n-lego must declare "os": ["linux"] while the runtime is Linux-only' }
           if ($pkg.engines.node -ne '>=22.18.0') { throw "unexpected engines.node $($pkg.engines.node)" }
           Write-Host "os=$($pkg.os -join ',') engines.node=$($pkg.engines.node)"
-          Write-Host '::notice::The n8n-lego runtime is Linux-only; the unit, integration, clean-clone and browser gates run on ubuntu-latest.'
+          Write-Host '::notice::The n8n-lego runtime is Linux-only; the unit, integration, clean-clone and browser gates run in the self-hosted Linux container.'
 
       - name: Run the unit tests inside WSL when this worker has one
-        # Best effort: this is a laptop worker, not the runtime's platform. The
-        # blocking Linux runtime gate is the ubuntu-latest clean-clone job, so a
-        # quirk of this worker must not paint the whole gate red - it reports a
-        # warning with the failing output instead.
+        # Best effort: this is a laptop worker, not the runtime's native host OS.
+        # The blocking Linux runtime gate is the self-hosted Linux container
+        # clean-clone job, so a quirk of WSL on this worker must not paint the
+        # whole gate red - it reports a warning with the failing output instead.
         #
         # ASCII only in this block: Windows PowerShell 5.1 reads the generated
         # script as ANSI, so a UTF-8 em-dash (bytes E2 80 94) lands as byte 0x94
-        # which its tokenizer treats as a smart double quote. That used to break
-        # string parsing here ("Missing closing '}'"), and because the step is
-        # best effort the broken parse stayed invisible.
+        # which its tokenizer treats as a smart double quote.
         shell: powershell
         continue-on-error: true
         run: |
           $ErrorActionPreference = 'Continue'
           $wsl = Get-Command wsl.exe -ErrorAction SilentlyContinue
           if (-not $wsl) {
-            Write-Host '::notice::No WSL on this worker - the authoritative Linux runtime gate is the ubuntu-latest clean-clone job.'
+            Write-Host '::notice::No WSL on this worker - the authoritative Linux runtime gate is the self-hosted Linux container clean-clone job.'
             exit 0
           }
 
@@ -506,7 +505,7 @@ jobs:
           # linux-only install ("notsup Actual os: win32").
           $nodePlat = (wsl.exe -- bash -lc 'node -p "process.platform"' 2>&1 | Out-String).Trim()
           if ($nodePlat -ne 'linux') {
-            Write-Host "::notice::WSL on this worker has no native Linux Node (interop node reports '$nodePlat') - the authoritative Linux runtime gate is the ubuntu-latest clean-clone job."
+            Write-Host "::notice::WSL on this worker has no native Linux Node (interop node reports '$nodePlat') - the authoritative Linux runtime gate is the self-hosted Linux container clean-clone job."
             exit 0
           }
           $node = (wsl.exe -- bash -lc 'node -v' 2>&1 | Out-String).Trim()
@@ -521,7 +520,7 @@ jobs:
             }
           }
           if (-not $nodeOk) {
-            Write-Host "::notice::WSL has no usable Node >= 22 (got '$node') - the authoritative Linux runtime gate is the ubuntu-latest clean-clone job."
+            Write-Host "::notice::WSL has no usable Node >= 22 (got '$node') - the authoritative Linux runtime gate is the self-hosted Linux container clean-clone job."
             exit 0
           }
           Write-Host "WSL Node $node - preparing a Linux copy of the app"
@@ -534,7 +533,7 @@ jobs:
             # [char] codes keep this block free of quote/backslash escaping rules.
             $bs = [char]92
             $p = $winPath.Trim().TrimEnd($bs, [char]47)
-            if ($p.Length -ge 3 -and $p[1] -eq [char]58 -and ($p[2] -eq $bs -or $p[2] -eq [char]47)) {
+            if ($p.Length -ge 3 -and $p[1] -eq [char]58 -and ($p[2] -eq $bs -or $p[2] -eq $bs -or $p[2] -eq [char]47)) {
               return "/mnt/" + $p.Substring(0, 1).ToLowerInvariant() + $p.Substring(2).Replace($bs, [char]47)
             }
             return $p.Replace($bs, [char]47)
@@ -558,14 +557,9 @@ jobs:
           $scriptInWsl = Convert-ToWslPath $script
 
           # bash -lc (login) so the PATH matches the checks above: a plain
-          # non-login bash drops nvm/profile PATH and falls back to the Windows
-          # interop npm, which then fails EBADPLATFORM (os win32) on linux-only deps.
-          $out = (wsl.exe -- bash -lc 'bash "$1" "$2"' probe "$scriptInWsl" "$repo" 2>&1 | Out-String)
-          Write-Host $out
+          # non-login `bash` skips ~/.profile and misses nvm/fnm/volta installs.
+          wsl.exe -- bash -lc "bash '$scriptInWsl' '$repo'"
           if ($LASTEXITCODE -ne 0) {
-            $tail = ($out -split "`r?`n" | Where-Object { $_ -ne "" } | Select-Object -Last 4) -join " >> "
-            Write-Host "::warning::the Linux unit tests did not pass inside WSL on this worker: $tail"
-            exit 0
+            Write-Host "::warning::WSL unit test run exited with code $LASTEXITCODE (non-blocking - see clean-clone for the Linux gate)"
           }
-          Write-Host 'Linux unit tests passed inside WSL'
           exit 0
