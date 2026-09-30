@@ -29,9 +29,13 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $resolved = (Resolve-Path -LiteralPath $Workspace).Path
+$runnerName = if ([string]::IsNullOrWhiteSpace($env:RUNNER_NAME)) { "default" } else { $env:RUNNER_NAME }
+$volumeSuffix = $runnerName.ToLowerInvariant() -replace '[^a-z0-9_.-]', '-'
+$cargoTargetVolume = "n8n-rust-runner-cargo-target-$volumeSuffix"
+$cargoHomeVolume = "n8n-rust-runner-cargo-home-$volumeSuffix"
 $scriptPath = Join-Path $env:RUNNER_TEMP ("arena-linux-command-" + [guid]::NewGuid().ToString("N") + ".sh")
 
-$lfCommand = $Command.Replace("`r`n", "`n").Replace("`r", "`n")
+$lfCommand = $Command -replace '\r\n?', "`n"
 [System.IO.File]::WriteAllText(
   $scriptPath,
   $lfCommand + [char]10,
@@ -40,10 +44,13 @@ $lfCommand = $Command.Replace("`r`n", "`n").Replace("`r", "`n")
 
 Write-Host "Linux container image: $Image"
 Write-Host "Workspace: $resolved"
+Write-Host "Runner: $runnerName"
+Write-Host "Cargo target volume: $cargoTargetVolume"
+Write-Host "Cargo home volume: $cargoHomeVolume"
 Write-Host "Command script: $scriptPath"
 
 try {
-  docker run --rm --mount "type=bind,source=$resolved,target=/workspace" --mount "type=volume,source=n8n-rust-runner-cargo-target,target=/workspace/target" --mount "type=bind,source=$scriptPath,target=/tmp/arena-command.sh,readonly" --workdir /workspace $Image bash /tmp/arena-command.sh
+  docker run --rm --mount "type=bind,source=$resolved,target=/workspace" --mount "type=volume,source=$cargoTargetVolume,target=/workspace/target" --mount "type=volume,source=$cargoHomeVolume,target=/cargo" --env CARGO_HOME=/cargo --mount "type=bind,source=$scriptPath,target=/tmp/arena-command.sh,readonly" --workdir /workspace $Image bash /tmp/arena-command.sh
   if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
   }
