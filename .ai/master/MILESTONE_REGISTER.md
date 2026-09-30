@@ -7,16 +7,16 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 
 ## Delivery progress (same two metrics as README.md)
 
-**Realtime Delivery Progress 95.5%** — 18900/19800 checkpoint-weighted points, P0–P11 only. Future programs are excluded (1 slices). 9 current-delivery slice(s) have no checkpoint model and contribute 0.
+**Realtime Delivery Progress 94.0%** — 18900/20100 checkpoint-weighted points, P0–P11 only. Future programs are excluded (1 slices). 11 current-delivery slice(s) have no checkpoint model and contribute 0.
 
-**Slice Completion 95.5%** — 189/198 implemented. Verifying and blocked contribute 0. Program status is not this percentage.
+**Slice Completion 94.0%** — 189/201 implemented. Verifying and blocked contribute 0. Program status is not this percentage.
 
 | Program | Realtime | Slice completion | Implemented | State |
 | --- | ---: | ---: | ---: | --- |
 | P0 | 100.0% | 100.0% | 2/2 | complete |
 | P1 | 100.0% | 100.0% | 2/2 | complete |
 | P2 | 98.3% | 98.3% | 59/60 | complete |
-| P3 | 94.7% | 94.7% | 18/19 | complete |
+| P3 | 81.8% | 81.8% | 18/22 | complete |
 | P4 | 90.9% | 90.9% | 10/11 | complete |
 | P5 | 100.0% | 100.0% | 26/26 | complete |
 | P6 | 94.4% | 94.4% | 34/36 | complete |
@@ -31,11 +31,11 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | | |
 | --- | --- |
 | Latest completed slice | `P2-S03` — Frontend Evolution layers 3-6 (PR #392, merge `972b5afe`) |
-| Active slices | — (none) |
+| Active slices | `P3-M01` — Side-effect reliability, delivery 1 of 4 |
 | Verifying (merged, post-merge verification pending) | — (none) |
 | Planned queue (in order; planned ≠ authorized) | — |
 | Blocked | — |
-| Not authorized | planned is not authorized by itself: the Manager starts a queued slice by moving it to in-progress in a PR on main. AUTHORIZED QUEUE: EMPTY - every slice of the owner master prompt marathon BLOCKER-ZERO authorization has been delivered. That authorization named P8-S01, P5-M06, P5-M05, P5-M10, P5-M11..P5-M18 and P2-S10..P2-S29; all 32 now carry status implemented, so the list authorizes no remaining work and is retained here only as the record of what it covered. No delivery slice is authorized at present: a new authorization is an owner act, and planned or proposed status never substitutes for one. COMPLETED: P6-S05 (PR #355, merge d549d40d) and P5-M02 (same chain). DECIDED (DEC-0029): the P2-S03 Layer 6 legacy UI decommission executes NO removal - reference/n8n and n8n-editor-ui preserved per #240 permanent invariants 1-2, umbrella formally re-scoped; P6-S03, P6-S04 (proposed, no owner authorization for their scope); P10-S01 and P11-S01 (placeholders). |
+| Not authorized | AUTHORIZED QUEUE: P3-M01 ONLY, by owner instruction in issue #229 comment 5910726264 (2026-09-30T11:55:41Z), Priority-04 Authorized Delivery. Nothing else is authorized. P3-M02, P3-M03 and P3-M04 are the remaining decomposed P13 deliveries and stay planned until the owner authorizes them; P11-M02 and the rest of the planned queue are likewise unauthorized. The governing rule is unchanged and still exact: planned is not authorized by itself. The Manager starts a queued slice by moving it to in-progress in a PR on main, which is what this PR does for P3-M01. RETAINED RECORD: the earlier authorization that named P8-S01, P5-M06, P5-M05, P5-M10, P5-M11..P5-M18 and P2-S10..P2-S29 is spent - all 32 carry status implemented, so it authorizes no remaining work. COMPLETED: P6-S05 (PR #355, merge d549d40d) and P5-M02 (same chain). DECIDED (DEC-0029): the P2-S03 Layer 6 legacy UI decommission executes NO removal - reference/n8n and n8n-editor-ui preserved per #240 permanent invariants 1-2, umbrella formally re-scoped; P6-S03, P6-S04 (proposed, no owner authorization for their scope); P10-S01 and P11-S01 (placeholders). |
 | Historical P2 ladder pointer | `P2.27` (history, not active work) |
 | Last verified main | `59b8d2ea` |
 
@@ -46,7 +46,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | **P0** | Core Application Bootstrap | **COMPLETE** | 2/2 | 2 | — |
 | **P1** | n8n Compatibility / Behavioral Baseline | **COMPLETE** | 2/2 | 3 | — |
 | **P2** | LEGO / AI / Plugin Foundation | **COMPLETE** | 60/61 | 29 | `P2-M01` (planned) |
-| **P3** | Workflow + Execution + Unlimited Nodes | **COMPLETE** | 18/19 | 24 | `P3-M01` (planned) |
+| **P3** | Workflow + Execution + Unlimited Nodes | **COMPLETE** | 18/22 | 32 | `P3-M01` (in-progress) |
 | **P4** | Trigger / Webhook / Ingress | **COMPLETE** | 10/11 | 19 | `P4-M01` (planned) |
 | **P5** | Identity / Authentication / Authorization / Credentials (Security) | **COMPLETE** | 26/26 | 20 | — |
 | **P6** | Node Registry / Node Runtime | **COMPLETE** | 34/36 | 67 | — |
@@ -63,7 +63,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | Program | Title | Legacy milestones | Legacy issues | Status | Features | Next slice |
 | --- | --- | --- | --- | --- | --- | --- |
 | **FUTURE-EVENT** | Event & Automation Control Plane | P12 | #228 | planned | 8 | — |
-| **FUTURE-RELIABILITY** | Execution Reliability, Data Plane, Scheduling & Certification | P13, P16, P17, P21 | #229, #232, #233, #237 | planned | 31 | — |
+| **FUTURE-RELIABILITY** | Execution Reliability, Data Plane, Scheduling & Certification | P13, P16, P17, P21 | #229, #232, #233, #237 | planned | 23 | — |
 | **FUTURE-PLATFORM** | Release, Collaboration & Operator Platform | P14, P15, P22 | #230, #231, #238 | planned | 23 | — |
 | **FUTURE-DISTRIBUTION** | Worker Fabric, Storage Lifecycle & Disaster Recovery | P19, P20 | #235, #236 | planned | 21 | — |
 | **FUTURE-AI-ECOSYSTEM** | AI Runtime Optimization & Ecosystem Interoperability | P18, P23 | #234, #239 | planned | 29 | — |
@@ -270,7 +270,7 @@ Workflow and Execution as first-class LEGO domains; logical workflow size decoup
 
 **Source issues:** #75, #79, #91, #97
 
-<details><summary>Slices (19)</summary>
+<details><summary>Slices (22)</summary>
 
 | Slice | Title | Status | PR | Merge SHA | Issue |
 | --- | --- | --- | --- | --- | --- |
@@ -292,11 +292,14 @@ Workflow and Execution as first-class LEGO domains; logical workflow size decoup
 | `P3.15` | Slice P: closeout evidence, matrix reconciliation, mainBaseline refresh | implemented | #135 | `f833a5a5` | #97 |
 | `P3.15-fix` | Restore immutable mainBaseline + correct P3 closeout evidence | implemented | #136 | `6e31854d` | #97 |
 | `P3-S01` | Execution optimizer extensions (semantic node elimination, content-addressed subgraph cache, resource-aware compilation, incremental execution, self-profiling, hot/cold path split) | implemented | — | `048f5bf5` | #75 |
-| `P3-M01` | Side-effect reliability: effect ledger, outbox/inbox, idempotency before retry (activated from FUTURE-RELIABILITY-S02; legacy P13) | planned | — | — | #229 |
+| `P3-M01` | Side-effect reliability, delivery 1 of 4: effect ledger + idempotency before retry | in-progress | — | — | #229 |
+| `P3-M02` | Transactional outbox/inbox + saga/compensation (delivery 2 of 4) | planned | — | — | #229 |
+| `P3-M03` | Per-key concurrency semantics + entity-sharded stateful execution (delivery 3 of 4) | planned | — | — | #229 |
+| `P3-M04` | Circuit-breaker-aware global retry budget (delivery 4 of 4) | planned | — | — | #229 |
 
 </details>
 
-<details><summary>Features (24: 15 implemented, 9 planned)</summary>
+<details><summary>Features (32: 15 implemented, 17 planned)</summary>
 
 | Feature | Title | Status | Relevance | Slice | Issues | Merge SHA |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -324,6 +327,14 @@ Workflow and Execution as first-class LEGO domains; logical workflow size decoup
 | `P3-F-OPT-007` | Workflow-level query optimizer: projection / filter pushdown | planned | active | `P3-S01` | #224 | — |
 | `P3-F-OPT-008` | Hierarchical execution memory manager + artifact spilling | planned | active | `P3-S01` | #224 | — |
 | `P3-F-OPT-009` | Hot path / cold path runtime split | planned | active | `P3-S01` | #224 | — |
+| `P3-F-REL-001` | Transactional outbox / inbox | planned | active | `P3-M02` | #229 | — |
+| `P3-F-REL-002` | Effect ledger | planned | active | `P3-M01` | #229 | — |
+| `P3-F-REL-003` | Saga / compensation | planned | active | `P3-M02` | #229 | — |
+| `P3-F-REL-004` | Per-key concurrency semantics | planned | active | `P3-M03` | #229 | — |
+| `P3-F-REL-005` | Entity-sharded stateful execution | planned | active | `P3-M03` | #229 | — |
+| `P3-F-REL-006` | Idempotency engine before automatic retry | planned | active | `P3-M01` | #229, #224 | — |
+| `P3-F-REL-007` | Durable execution that never repeats a completed side effect | planned | active | `P3-M01` | #229, #224 | — |
+| `P3-F-REL-008` | Circuit-breaker-aware global retry budget | planned | active | `P3-M04` | #229, #225 | — |
 
 </details>
 
@@ -827,18 +838,10 @@ Thematic future program. Not a P number and not authorized: a slice starts only 
 
 </details>
 
-<details><summary>Features (31: 30 planned, 1 implemented)</summary>
+<details><summary>Features (23: 22 planned, 1 implemented)</summary>
 
 | Feature | Title | Status | Relevance | Slice | Issues | Merge SHA |
 | --- | --- | --- | --- | --- | --- | --- |
-| `FUTURE-RELIABILITY-F-P13-001` | Transactional outbox / inbox | planned | active | `FUTURE-RELIABILITY-S02` | #229 | — |
-| `FUTURE-RELIABILITY-F-P13-002` | Effect ledger | planned | active | `FUTURE-RELIABILITY-S02` | #229 | — |
-| `FUTURE-RELIABILITY-F-P13-003` | Saga / compensation | planned | active | `FUTURE-RELIABILITY-S02` | #229 | — |
-| `FUTURE-RELIABILITY-F-P13-004` | Per-key concurrency semantics | planned | active | `FUTURE-RELIABILITY-S02` | #229 | — |
-| `FUTURE-RELIABILITY-F-P13-005` | Entity-sharded stateful execution | planned | active | `FUTURE-RELIABILITY-S02` | #229 | — |
-| `FUTURE-RELIABILITY-F-P13-006` | Idempotency engine before automatic retry | planned | active | `FUTURE-RELIABILITY-S02` | #229, #224 | — |
-| `FUTURE-RELIABILITY-F-P13-007` | Durable execution that never repeats a completed side effect | planned | active | `FUTURE-RELIABILITY-S02` | #229, #224 | — |
-| `FUTURE-RELIABILITY-F-P13-008` | Circuit-breaker-aware global retry budget | planned | active | `FUTURE-RELIABILITY-S02` | #229, #225 | — |
 | `FUTURE-RELIABILITY-F-P16-001` | Multi-level execution cache (never authority) | planned | active | — | #232 | — |
 | `FUTURE-RELIABILITY-F-P16-002` | Adaptive compression | planned | active | — | #232 | — |
 | `FUTURE-RELIABILITY-F-P16-003` | Provider connection pooling / keep-alive | planned | active | — | #232 | — |

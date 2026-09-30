@@ -532,9 +532,14 @@ test('completion KPI is implemented/total and never counts verifying or blocked'
   // blocked -> implemented, blockedSlices -> []: 189/199 = 95.0 -> 190/199 = 95.5;
   // current 188/193 = 97.4 -> 189/193 = 97.9; P2 58/59 -> 59/59 (100.0).
   // Evidence: docs/n8n-lego/evidence/P2-S03-RESCOPE.md.
-  assert.equal(tally.percent, 95.5);
+  // Refresh 2026-09-30 (P3-M01 activation, owner issue #229 comment 5910726264): the legacy P13
+  // scope is decomposed into P3-M01..P3-M04, so three new `planned` maintenance rows entered the
+  // denominator: 199 -> 202 and 190/202 = 95.5 -> 94.1. The numerator is UNTOUCHED at 190 -
+  // this PR delivered nothing, and a planned row must never read as progress. Evidence:
+  // docs/n8n-lego/milestones.json (P3-M01 in-progress; P3-M02/M03/M04 planned and unauthorized).
+  assert.equal(tally.percent, 94.1);
   assert.equal(tally.implemented, 190);
-  assert.equal(tally.total, 199);
+  assert.equal(tally.total, 202);
   const verifying = verifyingIndex(REGISTER);
   const m08 = slices.find((slice) => slice.id === 'P5-M08');
   assert.equal(displayStatus(m08, verifying), 'implemented');
@@ -551,9 +556,12 @@ test('completion KPI is implemented/total and never counts verifying or blocked'
   // counted denominator. Evidence: docs/n8n-lego/milestones.json
   // (`sourceFutureProgram` / `sourceFutureSlice` on each activated row) and
   // docs/n8n-lego/evidence/PROGRESS-ACCOUNTING-AUDIT.md (PPA rules 1-4).
-  assert.equal(metrics.current.total, 198);
+  // Refresh 2026-09-30 (P3-M01 activation, owner #229 comment 5910726264): current denominator
+  // 198 -> 201 as the three decomposed P3-M0x planned rows join; numerator still 189, so
+  // completion is percent1(189, 201) = 94.0, DOWN from 95.5 because nothing was delivered.
+  assert.equal(metrics.current.total, 201);
   assert.equal(metrics.current.implemented, 189);
-  assert.equal(metrics.current.sliceCompletion, percent1(189, 198));
+  assert.equal(metrics.current.sliceCompletion, percent1(189, 201));
   assert.equal(metrics.future.total, 1);
   assert.equal(metrics.current.total + metrics.future.total, tally.total);
   const block = renderReadmeMilestoneSection(REGISTER);
@@ -759,12 +767,21 @@ test('declared checkpoints move realtime progress and never slice completion or 
   // rounding boundary depends on where the register's earned total happens to sit, so an
   // unrelated checkpoint addition (a new slice declaring its model) moves that value while the
   // fixture has not changed at all. The claim is unchanged and asserted directly: reopening
-  // CP-05 removes exactly its 30 points, leaves the denominator alone, and costs 0.2 realtime
-  // points at the declared denominator.
+  // CP-05 removes exactly its 30 points, leaves the denominator alone, and costs exactly
+  // percent1(30, points) of realtime at whatever denominator the register declares.
+  //
+  // Refresh 2026-09-30 (P3-M01 activation, owner #229 comment 5910726264): P3-M01's five-point
+  // checkpoint model took the denominator 19800 -> 20100, so the 30-point cost of CP-05 is now
+  // percent1(30, 20100) = 0.1 rather than the 0.2 it was at 19800. The fixture did not change
+  // and no delivery happened - which is precisely the rounding-boundary fragility described
+  // above, so the expectation is DERIVED from the register's own denominator rather than pinned
+  // to a literal that silently encodes one. The substantive claim (exactly CP-05's weight is
+  // removed, and the denominator does not move) is asserted on the two lines below and is
+  // unaffected by any refresh.
   assert.equal(before.current.earned - openMetrics.earned, 30, 'the fixture removes exactly CP-05 weight points');
   assert.equal(openMetrics.points, before.current.points, 'the denominator does not move');
   const realtimeDelta = Math.round(((before.current.earned - openMetrics.earned) / before.current.points) * 100 * 10) / 10;
-  assert.equal(realtimeDelta, 0.2, 'the fixture only moves P5-M08 realtime');
+  assert.equal(realtimeDelta, percent1(30, before.current.points), 'the fixture only moves P5-M08 realtime, by exactly the CP-05 weight at the declared denominator');
 
   const rendered = renderReadmeMilestoneSection(done);
   assert.match(rendered, /CP-05 DEC-0015 self-hosted runner verification on main[^\n]*\(completed, 30\)/);
