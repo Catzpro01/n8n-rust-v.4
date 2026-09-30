@@ -55,7 +55,6 @@ on:
       - 'scripts/release.sh'
       - 'package.json'
       - '.github/workflows/n8n-lego.yml'
-      - '.github/workflows/vps-runner-smoke.yml'
   push:
     branches: [main]
     paths:
@@ -83,7 +82,6 @@ on:
       - 'scripts/release.sh'
       - 'package.json'
       - '.github/workflows/n8n-lego.yml'
-      - '.github/workflows/vps-runner-smoke.yml'
   workflow_dispatch:
 
 concurrency:
@@ -106,12 +104,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          sparse-checkout: |
+            /*
+            !/reference/
+            /reference/n8n/packages/@n8n/permissions/
+          sparse-checkout-cone-mode: false
 
       - name: Run architecture and foundation gates in Linux container
         shell: powershell
         run: |
           & "$env:GITHUB_WORKSPACE\tools\ci\run-linux-container.ps1" -Image n8n-node-ci:latest -Command @'
           set -euo pipefail
+          git config --global --add safe.directory '*' 2>/dev/null || true
+
           ws=/var/tmp/arena-arch-ws
           rm -rf "$ws"
           mkdir -p "$ws"
@@ -128,7 +134,9 @@ jobs:
             fi
           }
           trap export_reports EXIT
-          ( cd /workspace && tar cf - --exclude=./reference --exclude=./.git --exclude=./target --exclude=./node_modules . ) | ( cd "$ws" && tar xf - )
+
+          # Extract directly from the Git packfile with pure LF line endings (avoids Windows CRLF conversion and NTFS bind-mount traversal).
+          git -C /workspace archive HEAD -- . ':!reference' | tar -x -C "$ws"
           cd "$ws"
 
           echo "=== Node version ==="
@@ -182,6 +190,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          sparse-checkout: |
+            /*
+            !/reference/
+            /reference/n8n/packages/@n8n/permissions/
+          sparse-checkout-cone-mode: false
 
       - name: Run unit, integration, workforce and release gates in Linux container
         shell: powershell
@@ -234,11 +248,10 @@ jobs:
           }
           trap export_release_evidence EXIT
 
-          ( cd /workspace && tar cf - --exclude=./reference --exclude=./target --exclude=./node_modules . ) | ( cd "$ws" && tar xf - )
-          if [ -d /workspace/reference/n8n/packages/@n8n/permissions ]; then
-            mkdir -p "$ws/reference/n8n/packages/@n8n"
-            cp -a /workspace/reference/n8n/packages/@n8n/permissions "$ws/reference/n8n/packages/@n8n/"
-          fi
+          # Extract directly from the Git packfile with pure LF line endings, plus reference/@n8n/permissions and .git metadata.
+          git -C /workspace archive HEAD -- . ':!reference' | tar -x -C "$ws"
+          git -C /workspace archive HEAD -- reference/n8n/packages/@n8n/permissions | tar -x -C "$ws"
+          cp -a /workspace/.git "$ws/.git"
 
           cd "$ws"
           export APP_DIR="apps/n8n-lego"
@@ -299,6 +312,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          sparse-checkout: |
+            /*
+            !/reference/
+            /reference/n8n/packages/@n8n/permissions/
+          sparse-checkout-cone-mode: false
 
       - name: Run clean-clone deploy and browser smoke in Linux container
         shell: powershell
@@ -330,9 +349,11 @@ jobs:
 
           echo "=== Clone the repository into a directory that has no local state ==="
           TARGET_SHA="${GITHUB_SHA:-$(git -C /workspace rev-parse HEAD)}"
-          git clone --quiet --no-hardlinks /workspace "$CLEAN_TMP/clean-clone"
+          git clone --no-checkout --quiet --no-hardlinks /workspace "$CLEAN_TMP/clean-clone"
           cd "$CLEAN_TMP/clean-clone"
-          git checkout --quiet --detach "$TARGET_SHA"
+          git config core.autocrlf false
+          git checkout --quiet "$TARGET_SHA" -- . ':!reference'
+          git checkout --quiet "$TARGET_SHA" -- reference/n8n/packages/@n8n/permissions
           echo "clone at $(git log --oneline -1)"
           for path in "$APP_DIR/node_modules" "$APP_DIR/vendor" dist data; do
             if [ -e "$path" ]; then echo "::error::unexpected $path in the clone"; exit 1; fi
@@ -456,6 +477,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          sparse-checkout: |
+            /*
+            !/reference/
+            /reference/n8n/packages/@n8n/permissions/
+          sparse-checkout-cone-mode: false
 
       - name: Set up Node.js
         uses: actions/setup-node@v5
