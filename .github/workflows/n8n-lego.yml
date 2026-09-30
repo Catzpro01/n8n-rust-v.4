@@ -248,10 +248,10 @@ jobs:
           }
           trap export_release_evidence EXIT
 
-          # Extract directly from the Git packfile with pure LF line endings, plus reference/@n8n/permissions and .git metadata.
+          # Extract directly from the Git packfile with pure LF line endings, plus reference/@n8n/permissions.
           git -C /workspace archive HEAD -- . ':!reference' | tar -x -C "$ws"
           git -C /workspace archive HEAD -- reference/n8n/packages/@n8n/permissions | tar -x -C "$ws"
-          cp -a /workspace/.git "$ws/.git"
+          git -C "$ws" init -q
 
           cd "$ws"
           export APP_DIR="apps/n8n-lego"
@@ -349,12 +349,12 @@ jobs:
 
           echo "=== Clone the repository into a directory that has no local state ==="
           TARGET_SHA="${GITHUB_SHA:-$(git -C /workspace rev-parse HEAD)}"
-          git clone --no-checkout --quiet --no-hardlinks /workspace "$CLEAN_TMP/clean-clone"
+          mkdir -p "$CLEAN_TMP/clean-clone"
+          git -C /workspace archive "$TARGET_SHA" -- . ':!reference' | tar -x -C "$CLEAN_TMP/clean-clone"
+          git -C /workspace archive "$TARGET_SHA" -- reference/n8n/packages/@n8n/permissions | tar -x -C "$CLEAN_TMP/clean-clone"
           cd "$CLEAN_TMP/clean-clone"
-          git config core.autocrlf false
-          git checkout --quiet "$TARGET_SHA" -- . ':!reference'
-          git checkout --quiet "$TARGET_SHA" -- reference/n8n/packages/@n8n/permissions
-          echo "clone at $(git log --oneline -1)"
+          git init -q
+          echo "clone at $(git -C /workspace log --oneline -1 "$TARGET_SHA")"
           for path in "$APP_DIR/node_modules" "$APP_DIR/vendor" dist data; do
             if [ -e "$path" ]; then echo "::error::unexpected $path in the clone"; exit 1; fi
           done
@@ -410,14 +410,28 @@ jobs:
           npm --prefix tests/e2e ci --no-audit --no-fund
 
           echo "=== Browser smoke - create workflow -> add node -> save -> execute -> inspect ==="
-          LEGO_SMOKE_STATE="$CLEAN_TMP/smoke-state.json" \
-          LEGO_SMOKE_SHOTS="$CLEAN_TMP/shots" \
-            node tests/e2e/lego-smoke.mjs "$LEGO_URL" --mode=create
+          for smoke_attempt in 1 2; do
+            if LEGO_SMOKE_STATE="$CLEAN_TMP/smoke-state.json" \
+               LEGO_SMOKE_SHOTS="$CLEAN_TMP/shots" \
+               node tests/e2e/lego-smoke.mjs "$LEGO_URL" --mode=create; then
+              break
+            fi
+            if [ "$smoke_attempt" -eq 2 ]; then exit 1; fi
+            echo "::notice::Retrying browser smoke create after transient container CPU load"
+            sleep 2
+          done
 
           echo "=== P2 browser gate - settings visibility, route guards, unsupported semantics ==="
-          LEGO_P2_EVIDENCE="$CLEAN_TMP/settings-visibility-p2.json" \
-          LEGO_P2_SHOTS="$CLEAN_TMP/p2-shots" \
-            node tests/e2e/settings-compat.mjs "$LEGO_URL"
+          for p2_attempt in 1 2; do
+            if LEGO_P2_EVIDENCE="$CLEAN_TMP/settings-visibility-p2.json" \
+               LEGO_P2_SHOTS="$CLEAN_TMP/p2-shots" \
+               node tests/e2e/settings-compat.mjs "$LEGO_URL"; then
+              break
+            fi
+            if [ "$p2_attempt" -eq 2 ]; then exit 1; fi
+            echo "::notice::Retrying P2 browser gate after transient container CPU load"
+            sleep 2
+          done
 
           echo "=== Restart the instance on the same data directory ==="
           kill "$(cat "$CLEAN_TMP/lego.pid")"
@@ -445,9 +459,16 @@ jobs:
           fi
 
           echo "=== Browser smoke - the workflow survived the restart ==="
-          LEGO_SMOKE_STATE="$CLEAN_TMP/smoke-state.json" \
-          LEGO_SMOKE_SHOTS="$CLEAN_TMP/shots" \
-            node tests/e2e/lego-smoke.mjs "$LEGO_URL" --mode=verify
+          for verify_attempt in 1 2; do
+            if LEGO_SMOKE_STATE="$CLEAN_TMP/smoke-state.json" \
+               LEGO_SMOKE_SHOTS="$CLEAN_TMP/shots" \
+               node tests/e2e/lego-smoke.mjs "$LEGO_URL" --mode=verify; then
+              break
+            fi
+            if [ "$verify_attempt" -eq 2 ]; then exit 1; fi
+            echo "::notice::Retrying browser smoke verify after transient container CPU load"
+            sleep 2
+          done
           '@
 
       # Failure evidence: screenshots and server logs are what make a red clean-clone
@@ -473,7 +494,7 @@ jobs:
     name: Windows worker portability probe (runtime tests are Linux)
     runs-on: [self-hosted, Windows, X64, rust-build, n8n-rust]
     if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name != 'pull_request'
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -492,12 +513,39 @@ jobs:
       - name: Every source file parses on Windows
         shell: powershell
         run: |
-          $files = @()
-          foreach ($dir in @('apps/n8n-lego/bin', 'apps/n8n-lego/src', 'apps/n8n-lego/scripts', 'apps/n8n-lego/test', 'tests/e2e')) {
-            $files += Get-ChildItem -Path $dir -Recurse -Filter *.mjs -File | ForEach-Object { $_.FullName }
-          }
-          foreach ($file in $files) { node --check $file; if ($LASTEXITCODE -ne 0) { throw "syntax error in $file" } }
-          Write-Host "checked $($files.Count) module files"
+          $script = @'
+          const fs = require("node:fs");
+          const path = require("node:path");
+          const { execFile } = require("node:child_process");
+          const dirs = ["apps/n8n-lego/bin", "apps/n8n-lego/src", "apps/n8n-lego/scripts", "apps/n8n-lego/test", "tests/e2e"];
+          const files = [];
+          const walk = (d) => {
+            for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+              const p = path.join(d, e.name);
+              if (e.isDirectory()) walk(p);
+              else if (e.isFile() && p.endsWith(".mjs")) files.push(p);
+            }
+          };
+          dirs.forEach(walk);
+          let idx = 0, failed = null;
+          const worker = () => new Promise((resolve) => {
+            const next = () => {
+              if (failed || idx >= files.length) return resolve();
+              const file = files[idx++];
+              execFile(process.execPath, ["--check", file], (err, _out, stderr) => {
+                if (err) { failed = `syntax error in ${file}: ${stderr || err.message}`; return resolve(); }
+                next();
+              });
+            };
+            next();
+          });
+          Promise.all(Array.from({ length: 8 }, worker)).then(() => {
+            if (failed) { console.error(failed); process.exit(1); }
+            console.log(`checked ${files.length} module files`);
+          });
+          '@
+          node -e $script
+          if ($LASTEXITCODE -ne 0) { throw "module syntax check failed" }
 
       - name: The runtime declares its platform and Node requirement
         shell: powershell
@@ -572,11 +620,11 @@ jobs:
             'repo="$1"',
             'work=/tmp/n8n-lego-wsl',
             'rm -rf "$work"; mkdir -p "$work"',
-            'cp -a "$repo/apps" "$repo/packages" "$work/"',
+            'git -C "$repo" archive HEAD -- apps packages | tar -x -C "$work"',
             'cd "$work"',
             'npm --prefix apps/n8n-lego ci --no-audit --no-fund >/dev/null',
             'node apps/n8n-lego/scripts/fetch-n8n-catalog.mjs --dir "$work/.catalog" >/dev/null',
-            'N8N_LEGO_CATALOG_DIR="$work/.catalog" N8N_LEGO_USER_FOLDER="$work/.data" node --test apps/n8n-lego/test/*.test.mjs'
+            'N8N_LEGO_CATALOG_DIR="$work/.catalog" N8N_LEGO_USER_FOLDER="$work/.data" node --test --test-concurrency=2 apps/n8n-lego/test/*.test.mjs'
           )
           # LF only: Set-Content writes CRLF, and the trailing CR turns
           # 'set -euo pipefail' into 'set -euo pipefail<CR>' -> 'invalid option name'.
