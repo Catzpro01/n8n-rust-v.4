@@ -186,11 +186,13 @@
       "id": "kernel.platform",
       "owner": "manager",
       "domain": "platform-kernel",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "status": "stable",
       "surface": [
         "src/config.mjs",
-        "src/logger.mjs"
+        "src/logger.mjs",
+        "src/platform-kernel/contract/config.mjs",
+        "src/platform-kernel/contract/logger.mjs"
       ],
       "exports": {
         "src/config.mjs": [
@@ -209,13 +211,35 @@
         ],
         "src/logger.mjs": [
           "createLogger"
+        ],
+        "src/platform-kernel/contract/config.mjs": [
+          "APP_NAME",
+          "APP_ID",
+          "VERSION",
+          "REFERENCE_VERSION",
+          "REPO_ROOT",
+          "APP_ROOT",
+          "defaultDataDir",
+          "defaultCatalogDir",
+          "ConfigError",
+          "readEnv",
+          "loadConfig",
+          "describeConfig"
+        ],
+        "src/platform-kernel/contract/logger.mjs": [
+          "createLogger"
         ]
       },
       "consumers": [
         "every backend domain"
       ],
       "tests": [
-        "apps/n8n-lego/test/rest.test.mjs"
+        "apps/n8n-lego/test/rest.test.mjs",
+        "apps/n8n-lego/test/platform-kernel-isolation.test.mjs"
+      ],
+      "previousVersion": "1.0.0",
+      "changelog": [
+        "1.1.0: publish physical platform-kernel contract paths; preserve historical exports through forwarding-only shims. No behavior or symbol removals."
       ]
     },
     {

@@ -12,7 +12,7 @@
  */
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { APP_ROOT } from '../config.mjs';
+import { APP_ROOT } from '../platform-kernel/contract/config.mjs';
 
 /**
  * Role → scope map, extracted from the pinned n8n source by

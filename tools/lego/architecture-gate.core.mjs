@@ -19,6 +19,7 @@
  *   R9 version-incompatible   registry/lock version drift, a declared consumer
  *                             requirement the provider no longer satisfies, or
  *                             an undeclared breaking change (P2.7)
+ *   R10 physical-layout       migrated LEGO implementation/contract roots and forwarding-only shims
  *
  * Owner: manager (cross-domain contract governance). Pure Node, no deps.
  */
@@ -36,6 +37,7 @@ import {
   getAncestors,
 } from '../../apps/n8n-lego/src/lego/registry.mjs';
 import { classifyChange, satisfies } from '../../apps/n8n-lego/src/lego/compat.mjs';
+import { checkPhysicalLayout } from './physical-layout.mjs';
 
 export const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const DEFAULT_APP_ROOT = join(REPO_ROOT, 'apps', 'n8n-lego');
@@ -58,7 +60,7 @@ function walk(dir, out = []) {
   return out;
 }
 
-const STATIC_IMPORT_RE = /(?:^|[\n;])\s*(?:import|export)\b[^'"\n]*?\bfrom\s*['"]([^'"]+)['"]/g;
+const STATIC_IMPORT_RE = /(?:^|[\n;])\s*(?:import|export)\b[^'"]*?\bfrom\s*['"]([^'"]+)['"]/g;
 const BARE_IMPORT_RE = /(?:^|[\n;])\s*import\s*['"]([^'"]+)['"]/g;
 const DYNAMIC_IMPORT_RE = /\bimport\(\s*['"]([^'"]+)['"]\s*\)/g;
 
@@ -101,6 +103,8 @@ export function runGate({ registry = loadRegistry({ reload: true }), appRoot = D
       fix: 'Correct the manifest so it satisfies its own structural rules.',
     });
   }
+
+  violations.push(...checkPhysicalLayout(registry, appRoot));
 
   const allowanceUse = new Map((registry.allowances ?? []).map((allowance) => [allowance.id, 0]));
   const legacyFiles = new Set(registry.legacy?.files ?? []);
@@ -152,7 +156,10 @@ export function runGate({ registry = loadRegistry({ reload: true }), appRoot = D
       const allowance = (registry.allowances ?? []).find(
         (entry) => entry.file === relPath && entry.imports === targetRel,
       );
-      if (allowance) {
+      // Physically migrated domains never grant private access to external callers,
+      // including the composition root and the legacy strangler zone.
+      const strictBoundary = Boolean(target.physical);
+      if (allowance && !strictBoundary) {
         allowanceUse.set(allowance.id, (allowanceUse.get(allowance.id) ?? 0) + 1);
         continue;
       }
@@ -182,7 +189,7 @@ export function runGate({ registry = loadRegistry({ reload: true }), appRoot = D
       // author fixing one needs to see the other.
       const isInternalPath = /(^|\/)internal\//.test(targetRel);
       const outsidePublic = (target.public ?? []).length > 0 && !isPublicPath(targetRel, target);
-      if ((isInternalPath || outsidePublic) && !isCompositionRoot && !legacyReachAllowed) {
+      if ((isInternalPath || outsidePublic) && (strictBoundary || (!isCompositionRoot && !legacyReachAllowed))) {
         violations.push({
           rule: 'R4 internal-import',
           file: relPath,

@@ -20,7 +20,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { APP_ROOT } from '../config.mjs';
+import { APP_ROOT } from '../platform-kernel/contract/config.mjs';
 import { loadRoles } from './scopes.mjs';
 
 // @scale-out-safe: immutable memo of a static file that ships with the package (extracted from the pinned n8n source); every process reads the same bytes, so two workers cannot diverge.
