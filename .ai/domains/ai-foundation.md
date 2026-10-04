@@ -39,6 +39,7 @@
 - `src/lego/tool-provider-adapter.mjs`
 - `src/lego/external-runtime.mjs`
 - `src/lego/provider-declaration.mjs`
+- `src/lego/agent-machine-runtime.mjs`
 
 ## Public contract surface
 

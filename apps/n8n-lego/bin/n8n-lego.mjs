@@ -17,7 +17,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
-import { defaultCatalogDir, readEnv } from '../src/config.mjs';
+import { defaultCatalogDir, readEnv } from '../src/platform-kernel/contract/config.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const APP_ROOT = resolve(HERE, '..');
@@ -192,7 +192,7 @@ function portFree(port) {
  */
 async function credentials() {
   const [{ loadConfig }, { createStore }, { runCredentialCommand }] = await Promise.all([
-    import('../src/config.mjs'),
+    import('../src/platform-kernel/contract/config.mjs'),
     import('../src/store.mjs'),
     import('../src/auth/credential-operator.mjs'),
   ]);

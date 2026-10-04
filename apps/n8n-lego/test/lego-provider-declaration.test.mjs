@@ -124,7 +124,9 @@ test('no capability was added: the ai-foundation capability list is still the sa
 
 test('ownership stays split: provider declaration joins ai-foundation paths; Workspace never moves', () => {
   assert.ok(DOMAIN.paths.includes('src/lego/provider-declaration.mjs'));
-  assert.equal(DOMAIN.paths.length, 19, '18 paths + the new module');
+  assert.equal(DOMAIN.paths.length, 20, '19 published paths + explicitly owned agent-machine runtime');
+  assert.ok(DOMAIN.paths.includes('src/lego/agent-machine-runtime.mjs'),
+    'multiline import scanning must not leave the AI runtime under lego-foundation ownership');
   assert.equal(DOMAIN.paths.includes('src/lego/workspace.mjs'), false,
     'workspace internals must not enter AI Foundation');
   assert.ok(WORKSPACE_DOMAIN.paths.includes('src/lego/workspace.mjs'),

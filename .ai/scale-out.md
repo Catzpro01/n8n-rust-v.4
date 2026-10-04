@@ -34,7 +34,7 @@ A LEGO contract must not assume it is the only process. P2.7 implements no worke
 | **C** | `src/lego/interaction.mjs` | the provider registry is process-local by design | agent-2 | P11 |
 | **C** | `src/lego/envelope.mjs` | cancellation uses an in-process AbortSignal | agent-2 | P11 |
 | **C** | `src/engine.mjs` | direct process.env read | agent-2 | P4 |
-| **D** | `src/config.mjs / src/server.mjs / bin/n8n-lego.mjs` | environment and path reads at the composition root | agent-6 | - |
+| **D** | `src/platform-kernel/internal/config.mjs / src/server.mjs / bin/n8n-lego.mjs` | environment and path reads at the composition root | agent-6 | - |
 
 ### Class A blocker — `src/store.mjs` (S2)
 
@@ -57,8 +57,8 @@ A LEGO contract must not assume it is the only process. P2.7 implements no worke
 - `src/store.mjs` — Module-scope counter state (same construct as S2). 
 - `src/catalog.mjs` — Module-scope memoization of the immutable node catalog read from disk at boot. 
 - `src/compat/scopes.mjs` — Module-scope roles cache (roles.json is static and ships with the package); resetRolesCache() already exists for tests. 
-- `src/config.mjs` — The kernel reads process.env — that is its job: it is the adapter that turns the environment into an injected config object. 
-- `src/config.mjs` — Writes the instance identity file (.instance.json) once at first boot. 
+- `src/platform-kernel/internal/config.mjs` — The kernel reads process.env — that is its job: it is the adapter that turns the environment into an injected config object. 
+- `src/platform-kernel/internal/config.mjs` — Writes the instance identity file (.instance.json) once at first boot. 
 - `src/server.mjs` — The composition root reads process.env to build the config it injects. 
 - `bin/n8n-lego.mjs` — The CLI reads the environment to construct the runtime. 
 - `src/engine.mjs` — The engine resolves its implementation path from N8N_LEGO_ENGINE_PATH directly instead of receiving it in config. 

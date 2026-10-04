@@ -12,7 +12,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { APP_ROOT, REPO_ROOT } from './config.mjs';
+import { APP_ROOT, REPO_ROOT } from './platform-kernel/contract/config.mjs';
 import { HttpError, badRequest } from './compat/error.mjs';
 
 /**

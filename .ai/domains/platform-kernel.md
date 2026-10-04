@@ -9,7 +9,7 @@
 | Kind / tier | `kernel` / `domain` |
 | Status | `implemented` (phase `P0`) |
 | Parent | _root_ |
-| Contract | `kernel.platform` v1.0.0 |
+| Contract | `kernel.platform` v1.1.0 |
 | Error namespace | `config` |
 | Trust | `core` |
 | Capabilities | `env` |
@@ -20,6 +20,7 @@
 
 ## Owns
 
+- `src/platform-kernel`
 - `src/config.mjs`
 - `src/logger.mjs`
 
@@ -27,6 +28,8 @@
 
 - `src/config.mjs`
 - `src/logger.mjs`
+- `src/platform-kernel/contract/config.mjs`
+- `src/platform-kernel/contract/logger.mjs`
 
 ## May call
 
@@ -55,3 +58,4 @@ _none_
 ## Tests that guard it
 
 - `test/rest.test.mjs`
+- `test/platform-kernel-isolation.test.mjs`

@@ -258,7 +258,9 @@ test('nothing imports the legacy zone except the composition root', () => {
 test('the shared kernel stays small and generic', () => {
   const kernel = getDomain('platform-kernel', registry);
   assert.deepEqual(kernel.dependsOn, [], 'the kernel must depend on nothing');
-  assert.ok(kernel.paths.length <= 3, `the kernel owns ${kernel.paths.length} files — it must not become a utility dump`);
+  const implementations = sourceFiles(join(APP_ROOT, kernel.physical.implementationRoot));
+  assert.ok(implementations.length <= 3, `the kernel owns ${implementations.length} implementation files — it must not become a utility dump`);
+  assert.deepEqual(kernel.physical.compatibilityShims, ['src/config.mjs', 'src/logger.mjs']);
 });
 
 test('the kernel contains no feature-domain LOGIC', () => {
@@ -275,8 +277,12 @@ test('the kernel contains no feature-domain LOGIC', () => {
     /\bclass\s+\w*(workflow|credential|execution|node|webhook)\w*/i,
     /from\s+['"][^'"]*(workflow|credential|engine|store|node-registry)[^'"]*['"]/i,
   ];
-  for (const path of getDomain('platform-kernel', registry).paths) {
-    const source = readFileSync(join(APP_ROOT, path), 'utf8');
+  const owned = getDomain('platform-kernel', registry).paths.flatMap((path) => {
+    const full = join(APP_ROOT, path);
+    return statSync(full).isDirectory() ? sourceFiles(full) : [full];
+  });
+  for (const path of owned) {
+    const source = readFileSync(path, 'utf8');
     const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
     for (const pattern of forbidden) {
       assert.ok(!pattern.test(code), `kernel file '${path}' contains feature-domain logic matching ${pattern}`);

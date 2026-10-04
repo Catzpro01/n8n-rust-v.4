@@ -14,7 +14,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { APP_ROOT, REFERENCE_VERSION, REPO_ROOT } from './config.mjs';
+import { APP_ROOT, REFERENCE_VERSION, REPO_ROOT } from './platform-kernel/contract/config.mjs';
 
 /**
  * The frontend LEGO is a sibling package in the repository and a vendored copy

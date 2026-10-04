@@ -86,12 +86,15 @@
       "phase": "P0",
       "errorNamespace": "config",
       "paths": [
+        "src/platform-kernel",
         "src/config.mjs",
         "src/logger.mjs"
       ],
       "public": [
         "src/config.mjs",
-        "src/logger.mjs"
+        "src/logger.mjs",
+        "src/platform-kernel/contract/config.mjs",
+        "src/platform-kernel/contract/logger.mjs"
       ],
       "dependsOn": [],
       "mustNotDependOn": [
@@ -118,9 +121,10 @@
       ],
       "contract": {
         "id": "kernel.platform",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "tests": [
-          "test/rest.test.mjs"
+          "test/rest.test.mjs",
+          "test/platform-kernel-isolation.test.mjs"
         ]
       },
       "capabilities": [
@@ -195,7 +199,7 @@
           "resources": "low"
         }
       ],
-      "notes": "Shared kernel. Only cross-domain primitives may live here: process configuration and structured logging. It is a graph leaf \u2014 it must never import a domain.",
+      "notes": "Shared kernel. Only cross-domain primitives may live here: process configuration and structured logging. It is a graph leaf \u2014 it must never import a domain. Physical implementation is under src/platform-kernel/internal; public contracts live under src/platform-kernel/contract. The two historical paths are forwarding-only compatibility shims, not additional implementation locations.",
       "tier": "domain",
       "dataOwner": "none",
       "stateOwner": "runtime",
@@ -214,6 +218,15 @@
         "network": false,
         "concurrency": "parallel-safe",
         "startup": "instant"
+      },
+      "physical": {
+        "root": "src/platform-kernel",
+        "contractRoot": "src/platform-kernel/contract",
+        "implementationRoot": "src/platform-kernel/internal",
+        "compatibilityShims": [
+          "src/config.mjs",
+          "src/logger.mjs"
+        ]
       }
     },
     {
@@ -593,7 +606,8 @@
         "src/lego/model-provider-adapter.mjs",
         "src/lego/tool-provider-adapter.mjs",
         "src/lego/external-runtime.mjs",
-        "src/lego/provider-declaration.mjs"
+        "src/lego/provider-declaration.mjs",
+        "src/lego/agent-machine-runtime.mjs"
       ],
       "public": [
         "src/lego/ai-foundation.mjs",
@@ -6376,7 +6390,7 @@
         "resolution": "Same as the catalog: identical in every process. Fold into an injected registry when the auth contract is published."
       },
       {
-        "file": "src/config.mjs",
+        "file": "src/platform-kernel/internal/config.mjs",
         "probe": "S4",
         "domain": "platform-kernel",
         "owner": "manager",
@@ -6386,7 +6400,7 @@
         "resolution": "Accepted permanently. Config is read once at the edge and injected everywhere else, which is exactly the property that keeps domains process-agnostic."
       },
       {
-        "file": "src/config.mjs",
+        "file": "src/platform-kernel/internal/config.mjs",
         "probe": "S3",
         "domain": "platform-kernel",
         "owner": "manager",
@@ -6556,7 +6570,7 @@
         },
         {
           "class": "D",
-          "file": "src/config.mjs / src/server.mjs / bin/n8n-lego.mjs",
+          "file": "src/platform-kernel/internal/config.mjs / src/server.mjs / bin/n8n-lego.mjs",
           "probe": "S3/S4",
           "finding": "environment and path reads at the composition root",
           "consequence": "none: the edge is exactly where configuration SHOULD be read",
